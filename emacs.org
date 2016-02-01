@@ -1,0 +1,1167 @@
+#+STARTUP: content
+* emacs
+  :PROPERTIES:
+  :tangle:   /home/amadev/.emacs.d/init.el
+  :END:
+
+** Инициализация emacs
+
+Запускаю emacs из консоли скрина, при этом скрин наследует переменные
+окружения, а именно ssh-agent, чтобы можно было нормально
+пользоваться magit без ввода паролей для ssh.
+
+Конфигурация создается через tangle всех исходников описанных ниже.
+Часть конфигурации представлена монолитным куском, который я буду
+обрабатывать и постепенно описывать.
+Для создания файла org-babel-tangle c-c c-v c-t.
+
+По умолчанию идет список пакетов от gnu http://elpa.gnu.org/packages/.
+melpa.milkbox.net - модерируемый, с автосборками и фильтром.
+marmalade-repo.org - не обновляется.
+#+BEGIN_SRC emacs-lisp
+(require 'package)
+(add-to-list 'package-archives
+             '("melpa" . "https://melpa.org/packages/"))
+;;(setq package-enable-at-startup nil)
+(package-initialize)
+#+END_SRC
+
+Для меня удобнее, когда я вижу одно окно, не отвлекаясь на
+дополнительные приложения. В один момент времени выполняю одну функцию.
+На fluxbox emacs не запускается в fullscreen mode ни опцией -fs, ни
+настройкой initial-frame-alist (fullscreen . maximized), решилось
+отправкой сигнала в X.
+Также убираются все GUI-свистелки.
+
+#+BEGIN_SRC emacs-lisp
+
+  (defun fullscreen ()
+    (interactive)
+    (x-send-client-message nil 0 nil "_NET_WM_STATE" 32
+                           '(2 "_NET_WM_STATE_FULLSCREEN" 0)))
+
+  (when window-system
+    (tooltip-mode -1)
+    (tool-bar-mode -1)
+    (menu-bar-mode -1)
+    (scroll-bar-mode -1)
+    (fullscreen))
+
+#+END_SRC
+
+Отключаю пригласительный экран и текст в скретч.
+
+#+BEGIN_SRC emacs-lisp
+  (setq inhibit-startup-screen t
+        initial-scratch-message nil)
+
+#+END_SRC
+
+ido - интерфейс для выбора из списка, добавлен, как встроенный модуль emacs.
+
+Включаем повсеместно, включаем flex-matching, поиск файла под курсом.
+#+BEGIN_SRC emacs-lisp
+(setq ido-enable-flex-matching t)
+(setq ido-use-filename-at-point 'guess)
+(require 'ido)
+(ido-mode t)
+(ido-everywhere t)
+#+END_SRC
+
+#+RESULTS:
+: guess
+
+** Работа с файлами dired
+
+Для просмотра содержимого папки можно C-x C-f C-f,
+либо C-x d, для второго варианта можно указать glob-шаблон,
+чтобы отфильтровать нужное, например *.org.
+
+Сортировка по дате/алфавиту - s.
+Задание переключателей для ls - C-u s, можно указать h, чтобы видеть
+размеры в человекопонятном виде.
+
+Режим wdired позволяет изменять имена файлов, как текст C-x C-q.
+
+Пометка файлов через regexp - % m.
+Выделить все - * s.
+Инвертировать выделение - * t.
+
+Скопировать, переместить, удалить - C, R, D.
+
+Скопировать полный путь до файла C-u 0 w.
+
+** Утилиты
+*** Общие функции
+#+BEGIN_SRC emacs-lisp
+(setenv "LANG" "en_US.UTF-8")
+#+END_SRC
+
+**** Удалениие пробелов вначале и конце строки.
+
+#+BEGIN_SRC emacs-lisp
+(defun chomp (str)
+      "Chomp leading and tailing whitespace from STR."
+      (while (string-match "\\`\n+\\|^\\s-+\\|\\s-+$\\|\n+\\'"
+                           str)
+        (setq str (replace-match "" t t str)))
+      str)
+#+END_SRC
+
+**** Получение пароля происходит через консольную команду
+
+[[file:system.org::*%D0%9F%D0%B0%D1%80%D0%BE%D0%BB%D0%B8][Пароли]]
+
+#+BEGIN_SRC emacs-lisp
+  (defun get-pass (name)
+    (let ((cname (if (symbolp name) (symbol-name name) name)))
+      (chomp (shell-command-to-string (concat "keepassx.sh " cname)))))
+#+END_SRC
+
+**** На клавиатуре сломался шифт и очень не хватало скобочек.
+
+#+BEGIN_SRC emacs-lisp :tangle no
+
+(define-key key-translation-map (kbd "9") (kbd "("))
+(define-key key-translation-map (kbd "C-9") (kbd "9"))
+(define-key key-translation-map (kbd "0") (kbd ")"))
+(define-key key-translation-map (kbd "C-0") (kbd "0"))
+(define-key key-translation-map (kbd "6") (kbd ":"))
+(define-key key-translation-map (kbd "C-6") (kbd "6"))
+
+#+END_SRC
+
+#+RESULTS:
+: 6
+
+**** Пути от домашней папки и emacs.d.
+#+BEGIN_SRC emacs-lisp
+  (defun may-be-add-first-slash (path)
+    (concat (if (string-match "^/" path) "" "/") path))
+
+  (defun with-home-dir (path)
+    (concat (expand-file-name "~") (may-be-add-first-slash path)))
+
+  (defun with-emacs-dir (path)
+    (with-home-dir (concat ".emacs.d" (may-be-add-first-slash path))))
+#+END_SRC
+
+**** Копирование имени файла текущего буфера в clipboard.
+#+BEGIN_SRC emacs-lisp
+  (defun copy-file-name-to-clipboard ()
+    "Copy the current buffer file name to the clipboard."
+    (interactive)
+    (let ((filename (if (equal major-mode 'dired-mode)
+                        default-directory
+                      (buffer-file-name))))
+      (when filename
+        (kill-new filename)
+        (message "Copied buffer file name '%s' to the clipboard." filename))))
+
+#+END_SRC
+
+#+RESULTS:
+: copy-file-name-to-clipboard
+: copy-file-name-to-clipboard
+
+**** Устанавливаем альтернативный метод ввода, срабатывает после С+\.
+#+BEGIN_SRC emacs-lisp
+(setq default-input-method "russian-computer")
+#+END_SRC
+
+#+RESULTS:
+: russian-computer
+
+**** Шаблоны
+
+Включаем возможность использования шаблонов везде.
+Личные шаблоны храняться в file:///~/.emacs.d/snippets/.
+Шаблоны могут использоваться как по ключу (key), так и по сочетанию
+клавиш (binding), последнее полезно для оборачивания региона шаблоном.
+yas-wrap-around-region включает такое поведение.
+
+#+BEGIN_SRC emacs-lisp
+(require 'yasnippet)
+(yas-global-mode 1)
+(setq yas-wrap-around-region t)
+#+END_SRC
+
+**** Браузер
+#+BEGIN_SRC emacs-lisp
+(setq browse-url-browser-function 'browse-url-generic
+     browse-url-generic-program "google-chrome")
+
+#+END_SRC
+
+**** Время
+
+#+BEGIN_SRC emacs-lisp
+(setq system-time-locale "C")
+#+END_SRC
+
+#+RESULTS:
+: C
+
+**** Смена сплита буферов вертикальный/горизонтальный
+#+BEGIN_SRC emacs-lisp
+(defun toggle-window-split ()
+  (interactive)
+  (if (= (count-windows) 2)
+      (let* ((this-win-buffer (window-buffer))
+	     (next-win-buffer (window-buffer (next-window)))
+	     (this-win-edges (window-edges (selected-window)))
+	     (next-win-edges (window-edges (next-window)))
+	     (this-win-2nd (not (and (<= (car this-win-edges)
+					 (car next-win-edges))
+				     (<= (cadr this-win-edges)
+					 (cadr next-win-edges)))))
+	     (splitter
+	      (if (= (car this-win-edges)
+		     (car (window-edges (next-window))))
+		  'split-window-horizontally
+		'split-window-vertically)))
+	(delete-other-windows)
+	(let ((first-win (selected-window)))
+	  (funcall splitter)
+	  (if this-win-2nd (other-window 1))
+	  (set-window-buffer (selected-window) this-win-buffer)
+	  (set-window-buffer (next-window) next-win-buffer)
+	  (select-window first-win)
+	  (if this-win-2nd (other-window 1))))))
+
+#+END_SRC
+
+#+RESULTS:
+: toggle-window-split
+
+**** Оформление
+
+#+BEGIN_SRC emacs-lisp
+(set-face-attribute 'default nil :height 140) ;; 14pt
+;; (load-theme 'adwaita t)
+(load-theme 'warm-night t)
+(set-cursor-color "#909090")
+;; (set-cursor-color "#474242")
+#+END_SRC
+
+*** История и бекапы
+**** Обработка истории comint-буферов
+
+Взято из https://oleksandrmanzyuk.wordpress.com/2011/10/23/a-persistent-command-history-in-emacs/.
+При старте буфера с comint вешаем хук, который устанавливает
+comint-input-ring-file-name, а также устанавливает callback для
+sentinel (функции, которая срабатывает при любых изменениях в
+процессе).
+
+#+BEGIN_SRC emacs-lisp
+
+(setq comint-input-ring-size 5000)
+(defun turn-on-comint-history ()
+  (let ((process (get-buffer-process (current-buffer))))
+    (when process
+      (setq comint-input-ring-file-name
+            (format "~/.emacs.d/history.d/inferior-%s-history"
+                    (process-name process)))
+      (comint-read-input-ring)
+      (set-process-sentinel process
+                            #'comint-write-history-on-exit))))
+
+#+END_SRC
+
+#+RESULTS:
+: turn-on-comint-history
+
+Записываем переменную из истории.
+Сохранение истории происходит для команд введенных в интерактивном режиме
+в ~/.emacs.d/comint-history/.
+Просмотр истории comint-dynamic-list-input-ring или напрямую в файле,
+что удобней. История подгружается при запуске буфера и сохраняется при
+остановке процесса. Поиск назад по многострочному запросу не работает.
+
+В shell работает helm-comint-input-ring, как вариант выбора предыдущей
+истории, в sqli - нет, но проблема с многострочными та же.
+
+#+BEGIN_SRC emacs-lisp
+
+(defun comint-write-history-on-exit (process event)
+  (comint-write-input-ring)
+  (let ((buf (process-buffer process)))
+    (when (buffer-live-p buf)
+      (with-current-buffer buf
+        (insert (format "\nProcess %s %s" process event))))))
+
+#+END_SRC
+
+#+RESULTS:
+: comint-write-history-on-exit
+
+Включение истории для режимов.
+#+BEGIN_SRC emacs-lisp
+(add-hook 'inferior-python-mode-hook 'turn-on-comint-history)
+(add-hook 'inferior-emacs-lisp-mode-hook 'turn-on-comint-history)
+#+END_SRC
+
+#+RESULTS:
+| turn-on-comint-history | my-sql-save-history-hook | sqli-add-hooks |
+
+Для обработки закрытия буфера и выключения emacs используется.
+
+#+BEGIN_SRC emacs-lisp
+(require 'comint)
+(add-hook 'kill-buffer-hook 'comint-write-input-ring)
+
+(defun mapc-buffers (fn)
+  (mapc (lambda (buffer)
+          (with-current-buffer buffer
+            (funcall fn)))
+        (buffer-list)))
+
+(defun comint-write-input-ring-all-buffers ()
+  (mapc-buffers 'comint-write-input-ring))
+
+(add-hook 'kill-emacs-hook 'comint-write-input-ring-all-buffers)
+
+#+END_SRC
+
+**** Минибуфер
+
+Работает автоматически, при загрузке emacs подгружается история.
+Для просмотра истории helm-minibuffer-history.
+
+#+BEGIN_SRC emacs-lisp
+(setq savehist-file "~/.emacs.d/history.d/minibuffer-history")
+(savehist-mode 1)
+(setq history-length t)
+(setq history-delete-duplicates t)
+(setq savehist-save-minibuffer-history 1)
+(setq savehist-additional-variables
+      '(kill-ring
+        search-ring
+        regexp-search-ring))
+#+END_SRC
+
+#+RESULTS:
+| kill-ring | search-ring | regexp-search-ring |
+
+**** Бекапы
+Бекап создается при первом сохранении буфера.
+Авто-сейв после 30 сек или 300 символов.
+Сохраняемые файлы вынес в отдельную папку, чтобы не гадить в рабочей
+директории. Используем версии бекапных файлов и делаем бекапы файлов,
+которые под контролем версий (git, svn).
+
+#+BEGIN_SRC emacs-lisp
+(setq backup-directory-alist '(("." . "~/.emacs.d/backups")))
+(setq auto-save-file-name-transforms '((".*" "~/.emacs.d/auto-save-list/" t)))
+(setq version-control t)
+(setq vc-make-backup-files t)
+(setq delete-old-versions -1)
+#+END_SRC
+
+#+RESULTS:
+: t
+
+** terminal
+
+В shell есть проблема с историей многострочных комманд.
+В ansi-term кривовато, но терпимо.
+
+** orgmode
+
+Установка orgmode и его расширений.
+#+BEGIN_SRC emacs-lisp
+(add-to-list 'package-archives '("org" . "http://orgmode.org/elpa/") t)
+#+END_SRC
+
+Устанавливаем org-plus-contrib, нужно обновлять в чистом emacs
+или удалять файлы elc при ошибках компиляции.
+
+Файлы с задачами.
+#+BEGIN_SRC emacs-lisp
+  (setq my-org-dir (with-home-dir "org/"))
+  (setq org-agenda-files 
+        (mapcar
+         #'(lambda (name) (concat my-org-dir name))
+         '("gtd.org" "office.org")))
+#+END_SRC
+
+#+RESULTS:
+| /home/amadev/org/gtd.org | /home/amadev/org/office.org |
+
+Файлы, в которые переносятся задачи.
+#+BEGIN_SRC emacs-lisp
+(defun refile-org-files ()
+(let ((files '("gtd.org" "office.org" "reference.org" "bookmarks.org")))
+(mapcar #'(lambda (x) (concat my-org-dir x)) files)))
+
+(setq org-refile-targets '((refile-org-files . (:level . 2))))
+#+END_SRC
+
+#+RESULTS:
+: ((refile-org-files :level . 2))
+
+Сочетание, для открытия агенды.
+#+BEGIN_SRC emacs-lisp
+(global-set-key (kbd "C-c a") 'org-agenda)
+#+END_SRC
+
+#+RESULTS:
+: org-agenda
+
+Назначаем свойства при переключении todo.
+#+BEGIN_SRC emacs-lisp
+  ;; add properties then trigger todo states
+  (setq org-todo-state-tags-triggers
+        '(("CANCELLED"
+           ("CANCELLED" . t)
+           ("STARTED")
+           ("WAITING"))
+          ("WAITING"
+           ("CANCELLED")
+           ("STARTED")
+           ("WAITING" . t))
+          ("SOMEDAY"
+           ("STARTED")
+           ("CANCELLED")
+           ("WAITING" . t))
+          ("STARTED"
+           ("STARTED" . t)
+           ("CANCELLED")
+           ("WAITING"))
+          ("TODO"
+           ("STARTED")
+           ("CANCELLED")
+           ("WAITING"))
+          ("DONE"
+           ("STARTED")
+           ("CANCELLED")
+           ("WAITING"))
+          ))
+#+END_SRC
+
+#+RESULTS:
+| CANCELLED | (CANCELLED . t) | (STARTED)   | (WAITING)     |
+| WAITING   | (CANCELLED)     | (STARTED)   | (WAITING . t) |
+| SOMEDAY   | (STARTED)       | (CANCELLED) | (WAITING . t) |
+| STARTED   | (STARTED . t)   | (CANCELLED) | (WAITING)     |
+| TODO      | (STARTED)       | (CANCELLED) | (WAITING)     |
+| DONE      | (STARTED)       | (CANCELLED) | (WAITING)     |
+
+*** Захват сообщений
+
+Шаблоны.
+
+%? - пользовательский ввод.
+%U - дата.
+%a - указатель на файл, в котором находишься при захвате.
+%i - активный регион.
+
+#+BEGIN_SRC emacs-lisp
+  (global-set-key (kbd "C-c c") 'org-capture)
+  (setq org-capture-templates
+        '(("i" "Inbox" entry (file+olp (concat my-org-dir "gtd.org") "gtd" "inbox")
+           "* TODO %?\n\nAdded: %U\n  %i\n%a\n")
+          ("b" "Bookmark" entry (file+olp (concat my-org-dir "bookmarks.org") "Bookmarks" "inbox")
+           "* TODO %c %?\n\nAdded: %U\n  %i\n")
+          ("o" "Office" entry (file+headline (concat my-org-dir "office.org") "office_inbox")
+           "* TODO %?\n\nAdded: %U\n  %i\n")))
+#+END_SRC
+
+#+RESULTS:
+| i | Inbox | entry | (file+olp (concat my-org-dir gtd.org) gtd inbox) | * TODO %? |
+
+*** babel
+
+Добавляем языки.
+#+BEGIN_SRC emacs-lisp
+  (org-babel-do-load-languages
+   'org-babel-load-languages
+   '((lisp . t)
+     (plantuml . t)
+     (sh . t)
+     (lisp . t)
+     (ditaa . t)
+     (R . t)
+     (python . t)
+     (ruby . t)
+     (sql . t)
+     (dot . t)
+     (C . t)
+     (sqlite . t)
+     (ledger . t)))
+#+END_SRC
+
+#+RESULTS:
+: ((lisp . t) (plantuml . t) (sh . t) (lisp . t) (ditaa . t) (R . t) (python . t) (ruby . t) (sql . t) (dot . t) (C . t) (sqlite . t) (ledger . t))
+
+Отключаем запрос на подтверждение выполнения.
+#+BEGIN_SRC emacs-lisp
+(setq org-confirm-babel-evaluate nil)
+#+END_SRC
+
+#+RESULTS:
+
+Задаем приложение для обработки.
+
+#+BEGIN_SRC emacs-lisp
+  (setq org-plantuml-jar-path
+        (expand-file-name "~/.emacs.d/bin/plantuml.jar"))
+  (setq org-ditaa-jar-path
+        (expand-file-name "~/.emacs.d/bin/ditaa0_9.jar"))
+  (setq org-babel-python-command "PYTHONPATH=$PYTHONPATH:~/files/prog python3")
+  (setq org-babel-sh-command "bash")
+#+END_SRC
+
+#+RESULTS:
+: bash
+
+Для заголовков можно указывать параметры через property или elisp.
+
+Например:
+\#+PROPERTY: header-args :session *my_python_session*
+\#+PROPERTY: header-args+ :results silent
+\#+PROPERTY: header-args+ :tangle yes
+или
+:header-args:SQL:  :cmdline -xxx :engine mysql
+
+#+BEGIN_SRC emacs-lisp
+  (setq org-babel-default-header-args:sh
+        (cons '(:results . "scalar replace")
+              (assq-delete-all :results org-babel-default-header-args)))
+#+END_SRC
+
+#+RESULTS:
+: ((:results . scalar) (:session . none) (:exports . code) (:cache . no) (:noweb . no) (:hlines . no) (:tangle . no))
+
+
+*** Время
+
+#+BEGIN_SRC emacs-lisp
+(defun bh/is-project-p-with-open-subtasks ()
+  "Any task with a todo keyword subtask"
+  (let ((has-subtask)
+        (subtree-end (save-excursion (org-end-of-subtree t))))
+    (save-excursion
+      (forward-line 1)
+      (while (and (not has-subtask)
+                  (< (point) subtree-end)
+                  (re-search-forward "^\*+ " subtree-end t))
+        (when (and
+               (member (org-get-todo-state) org-todo-keywords-1)
+               (not (member (org-get-todo-state) org-done-keywords)))
+          (setq has-subtask t))))
+    has-subtask))
+
+(defun bh/clock-in-to-started (kw)
+  "Switch task from TODO or NEXT to STARTED when clocking in.
+Skips capture tasks and tasks with subtasks"
+  (if (and (member (org-get-todo-state) (list "TODO" "NEXT"))
+           (not (and (boundp 'org-capture-mode) org-capture-mode))
+           (not (bh/is-project-p-with-open-subtasks)))
+      "STARTED"))
+
+(setq org-log-done t)
+;; Сохраняем историю подсчета времени между сессиями
+(setq org-clock-persist 'history)
+(org-clock-persistence-insinuate)
+;; Save clock data in the CLOCK drawer and state changes and notes in the LOGBOOK drawer
+(setq org-clock-into-drawer "CLOCK")
+;; Yes it's long... but more is better ;)
+(setq org-clock-history-length 28)
+;; Resume clocking task on clock-in if the clock is open
+(setq org-clock-in-resume t)
+;; Change task state to NEXT when clocking in
+(setq org-clock-in-switch-to-state (quote bh/clock-in-to-started))
+;; Separate drawers for clocking and logs
+(setq org-drawers (quote ("PROPERTIES" "LOGBOOK" "CLOCK")))
+;; Sometimes I change tasks I'm clocking quickly - this removes clocked tasks with 0:00 duration
+(setq org-clock-out-remove-zero-time-clocks t)
+;; Clock out when moving task to a done state
+(setq org-clock-out-when-done t)
+;; Save the running clock and all clock history when exiting Emacs, load it on startup
+(setq org-clock-persist (quote history))
+;; Enable auto clock resolution for finding open clocks
+(setq org-clock-auto-clock-resolution (quote when-no-clock-is-running))
+;; Include current clocking task in clock reports
+(setq org-clock-report-include-clocking-task t)
+(setq org-deadline-warning-days 1)
+#+END_SRC
+
+#+RESULTS:
+: 1
+
+*** Экспорт
+
+(setq org-export-babel-evaluate nil)
+
+** Почта
+Для работы с почтой используется mu4e (http://www.djcbsoftware.nl/code/mu/mu4e/).
+mu4e идет в составе индексатора mu, который устанавливается, как системный пакет.
+file://~/Dropbox/mu_0.9.15-1_amd64.deb
+
+lisp-файлы подключаются к emacs.
+#+BEGIN_SRC emacs-lisp
+(add-to-list 'load-path "/usr/local/share/emacs/site-lisp/mu4e")
+(require 'mu4e)
+#+END_SRC
+
+Почта стягивается со всех аккаунтов в ~/Maildir с помощью offlineimap
+и фильтруется imapfilter (общий конфиг для всех аккаунтов)
+[[file:~/files/settings/.offlineimaprc::%5Bgeneral%5D]]
+Для каждого аккаунта используется конфиг imapfilter.
+[[file:~/files/settings/.imapfilter/lamoda.lua::timeout%20=%20120][lamoda]]
+[[file:~/files/settings/.imapfilter/wolfanio.lua::timeout%20=%20120][wolfanio]]
+#TODO в перерыве между фильтрацией и скачиванием нежелательные письма просачиваются 
+
+Возможно, для ускорения следует попробовать серверную обработку
+http://kb.4rt.ru/mail/setup.
+
+Запуск mu4e.
+#+BEGIN_SRC emacs-lisp
+(global-set-key (kbd "C-; m") 'mu4e)
+#+END_SRC
+
+*** Общие настройки
+Команда для скачивания почты.
+#+BEGIN_SRC emacs-lisp
+(setq mu4e-get-mail-command "offlineimap")
+#+END_SRC
+
+Преобразование html-писем в текст.
+#+BEGIN_SRC emacs-lisp
+(setq mu4e-html2text-command "html2text -utf8 -width 72")
+#+END_SRC
+
+Пароли для отправки почты храняться локально в require ~/.authinfo.
+Формат:
+machine smtp.gmail.com login EMAIL port 587 password *******
+
+Отправляем почту через smtp, используя tls, без использования очереди.
+#+BEGIN_SRC emacs-lisp
+  (setq
+   message-send-mail-function 'smtpmail-send-it
+   smtpmail-stream-type 'starttls
+   smtpmail-queue-mail  nil)
+#+END_SRC
+
+Новые actions и bookmarks.
+#+BEGIN_SRC emacs-lisp
+(add-to-list 'mu4e-view-actions
+'("ViewInBrowser" . mu4e-action-view-in-browser) t)
+
+(add-to-list 'mu4e-headers-actions
+'("ViewInBrowser" . mu4e-action-view-in-browser) t)
+
+(add-to-list 'mu4e-bookmarks
+'("maildir:/wolfanio/INBOX or maildir:/lamoda/INBOX"  "Inbox"     ?i))
+#+END_SRC
+
+Сохранение ссылки на письмо.
+#+BEGIN_SRC emacs-lisp
+(require 'org-mu4e)
+#+END_SRC
+
+Всегда отображаем дату и время в заголовках.
+
+#+BEGIN_SRC emacs-lisp
+(setq mu4e-headers-fields '(
+  (:date . 24)
+  (:flags . 6)
+  (:mailing-list . 10)
+  (:from . 22)
+  (:subject)))
+
+(setq mu4e-headers-date-format "%x %T")
+#+END_SRC
+
+Скрываем сообщение об индексации.
+
+#+BEGIN_SRC emacs-lisp
+(setq mu4e-hide-index-messages t)
+#+END_SRC
+
+
+
+*** Настройки для accounts.
+#+BEGIN_SRC emacs-lisp
+  (defvar my-mu4e-account-alist
+    '(("wolfanio"
+       (mu4e-drafts-folder "/wolfanio/drafts")
+       (mu4e-sent-folder   "/wolfanio/sent")
+       (mu4e-trash-folder  "/wolfanio/trash")
+       (mu4e-refile-folder "/wolfanio/archive")
+
+       (user-mail-address "wolfanio@gmail.com")
+       (user-full-name  "Andrey Volkov")
+       (mu4e-compose-signature
+        (concat
+         "С уважением,\n"
+         "Андрей Волков.\n\n"
+         "mobile: +7(916) 86 88 942\n"
+         "skype:  amadev_alt\n"
+         "site:   http://amadev.ru/\n"))
+       (smtpmail-smtp-server "smtp.gmail.com")
+       (smtpmail-smtp-user "wolfanio@gmail.com")
+       (smtpmail-smtp-service 587))
+      ("lamoda"
+       (mu4e-drafts-folder "/lamoda/drafts")
+       (mu4e-sent-folder   "/lamoda/sent")
+       (mu4e-trash-folder  "/lamoda/trash")
+       (mu4e-refile-folder "/lamoda/archive")
+       (user-mail-address "andrey.volkov@lamoda.ru")
+       (user-full-name  "Andrey Volkov")
+       (mu4e-compose-signature
+        (concat
+         "Андрей Волков | Andrey Volkov\n"
+         "Руководитель группы разработки | Team leader\n"
+         "mobile: +7(916) 86 88 942\n"
+         "skype: amadev_alt\n"
+         "www.lamoda.ru\n"))
+       (smtpmail-smtp-server "smtp.gmail.com")
+       (smtpmail-smtp-user "andrey.volkov@lamoda.ru")
+       (smtpmail-smtp-service 587))))
+
+#+END_SRC
+
+Короткие ссылки для inbox.
+#+BEGIN_SRC emacs-lisp
+(setq mu4e-maildir-shortcuts
+      '(("/wolfanio/INBOX" . ?w)
+        ("/lamoda/INBOX" . ?l)))
+#+END_SRC
+
+*** Интерактивно выбираем account при создании письма.
+#+BEGIN_SRC emacs-lisp
+(defun my-mu4e-set-account ()
+  "Set the account for composing a message."
+  (let* ((account
+          (if mu4e-compose-parent-message
+              (let ((maildir (mu4e-message-field mu4e-compose-parent-message :maildir)))
+                (string-match "/\\(.*?\\)/" maildir)
+                (match-string 1 maildir))
+            (completing-read (format "Compose with account: (%s) "
+                                     (mapconcat #'(lambda (var) (car var))
+                                                my-mu4e-account-alist "/"))
+                             (mapcar #'(lambda (var) (car var)) my-mu4e-account-alist)
+                             nil t nil nil (caar my-mu4e-account-alist))))
+         (account-vars (cdr (assoc account my-mu4e-account-alist))))
+    (message "account: %s, account-vars: %s" account account-vars)
+    (if account-vars
+        (mapc #'(lambda (var)
+                  (set (car var) (cadr var)))
+              account-vars)
+      (error "No email account found"))))
+
+(setq mu4e-user-mail-address-list
+      (mapcar (lambda (account) (cadr (assq 'user-mail-address account)))
+              my-mu4e-account-alist))
+
+(add-hook 'mu4e-compose-pre-hook 'my-mu4e-set-account)
+#+END_SRC
+
+*** При архивировании переносим в соответствующую папку, в зависимости от текущего maildir.
+#+BEGIN_SRC emacs-lisp
+(setq mu4e-refile-folder
+      (lambda (msg)
+        (let* ((maildir (mu4e-message-field msg :maildir))
+               (account (progn (string-match "/\\(.*?\\)/" maildir)
+                               (match-string 1 maildir)))
+               (refile (cadr (assoc 'mu4e-refile-folder (assoc account my-mu4e-account-alist)))))
+          (message "maildir: %s, refile-folder: %s" maildir refile)
+          refile)))
+#+END_SRC
+
+
+
+
+*** Вложения
+
+Вложения можно добавлять с помощью dired (C-c RET C-a)
+#+BEGIN_SRC emacs-lisp
+(require 'gnus-dired)
+;; make the `gnus-dired-mail-buffers' function also work on
+;; message-mode derived modes, such as mu4e-compose-mode
+(defun gnus-dired-mail-buffers ()
+  "Return a list of active message buffers."
+  (let (buffers)
+    (save-current-buffer
+      (dolist (buffer (buffer-list t))
+        (set-buffer buffer)
+        (when (and (derived-mode-p 'message-mode)
+                (null message-sent-message-via))
+          (push (buffer-name buffer) buffers))))
+    (nreverse buffers)))
+
+(setq gnus-dired-mail-mode 'mu4e-user-agent)
+(add-hook 'dired-mode-hook 'turn-on-gnus-dired-mode)
+
+#+END_SRC
+
+
+*** Требования
+**** Вся почта собирается в одном месте
+**** В inbox попадает, то на что нужно реагировать
+
+
+** Работа с БД
+
+Соединения описываются в sql-connection-alist.
+Имя формируется, как название сервиса, тип (P - бой, l - прочее),
+есть ли запись (ro, rw - default) опционально.
+Пароль хранится в keepassx под тем же именем.
+
+Для единоразовых подключений можно использовать sql-mysql, sql-postgres.
+(require 'sql) нужен, т.к. там определяется sql-connection-alist, а
+без определенной переменной add-to-list работать не будет.
+
+#+BEGIN_SRC emacs-lisp
+  (require 'sql)
+
+  (setq sql-connection-alist
+        '(("dancespace-l"
+           (sql-product 'postgres)
+           (sql-server "127.0.0.1")
+           (sql-user "dancespace_user")
+           (sql-database "dancespace")
+           (sql-port 5432))
+          ("mysql-l"
+           (sql-product 'mysql)
+           (sql-server "127.0.0.1")
+           (sql-user "root")
+           (sql-database "madmin")
+           (sql-port 3306))
+          ("bob.ru-P-ro"
+           (sql-product 'mysql)
+           (sql-server "ha.moda.local")
+           (sql-user "recommend")
+           (sql-database "lamoda_bob_live")
+           (sql-port 3319))
+          ("madmin.avolkov-l"
+           (sql-product 'mysql)
+           (sql-server "mysql01.jail.local")
+           (sql-user "avolkov")
+           (sql-database "madmin")
+           (sql-port 3306))
+          ("site.kz-P"
+           (sql-product 'postgres)
+           (sql-server "ha.moda.local")
+           (sql-user "site_kz")
+           (sql-database "site_kz")
+           (sql-port 6432))
+          ("site.ua-P"
+           (sql-product 'postgres)
+           (sql-server "ha.moda.local")
+           (sql-user "site_ua")
+           (sql-database "site_ua")
+           (sql-port 6432))
+          ("site.by-P"
+           (sql-product 'postgres)
+           (sql-server "ha.moda.local")
+           (sql-user "site_by")
+           (sql-database "site_by")
+           (sql-port 6432))
+          ("lstat-P"
+           (sql-product 'postgres)
+           (sql-server "ha.moda.local")
+           (sql-user "rnd")
+           (sql-database "rnd_test")
+           (sql-port 6434))
+          ("expconfig-P"
+           (sql-product 'postgres)
+           (sql-server "ha.moda.local")
+           (sql-user "rnd")
+           (sql-database "exp")
+           (sql-port 6434))
+          ("asorokoumov-l"
+           (sql-product 'mysql)
+           (sql-server "asorokoumov.mysql01.qa.local")
+           (sql-user "qa")
+           (sql-database "frontend_live")
+           (sql-port 3306))))
+
+  (add-to-list
+   'sql-connection-alist
+   '("postgres-l"
+     (sql-product 'postgres)
+     (sql-server "localhost")
+     (sql-user "site")
+     (sql-database "site")
+     (sql-port 5432)))
+
+  (add-to-list
+   'sql-connection-alist
+   '("site.ru-P"
+     (sql-product 'postgres)
+     (sql-server "ha.moda.local")
+     (sql-user "site")
+     (sql-database "site")
+     (sql-port 6432)))
+
+  (add-to-list
+   'sql-connection-alist
+   '("comments-old-P"
+     (sql-product 'postgres)
+     (sql-server "ha.moda.local")
+     (sql-user "lcomments")
+     (sql-database "lcomments")
+     (sql-port 6432)))
+
+  (add-to-list
+   'sql-connection-alist
+   '("comments-P"
+     (sql-product 'postgres)
+     (sql-server "10.5.228.7")
+     (sql-user "comments")
+     (sql-database "comments")
+     (sql-port 6432)))
+
+  (add-to-list
+   'sql-connection-alist
+   '("madmin.ru-P"
+     (sql-product 'mysql)
+     (sql-server "ha.moda.local")
+     (sql-user "magento_live")
+     (sql-database "frontend_live")
+     (sql-port 3320)))
+
+  (add-to-list
+   'sql-connection-alist
+   '("madmin.kz-P"
+     (sql-product 'mysql)
+     (sql-server "ha.moda.local")
+     (sql-user "madmin_kz")
+     (sql-database "madmin_kz")
+     (sql-port 3320)))
+
+  (add-to-list
+   'sql-connection-alist
+   '("madmin.ua-P"
+     (sql-product 'mysql)
+     (sql-server "ha.moda.local")
+     (sql-user "madmin_ua")
+     (sql-database "madmin_ua")
+     (sql-port 3320)))
+
+  (add-to-list
+   'sql-connection-alist
+   '("madmin.by-P1"
+     (sql-product 'mysql)
+     (sql-server "ha.moda.local")
+     (sql-user "madmin_by")
+     (sql-database "madmin_by")
+     (sql-port 3320)))
+
+  (add-to-list
+   'sql-connection-alist
+   '("madmin.ru-P-ro"
+     (sql-product 'mysql)
+     (sql-server "ha.moda.local")
+     (sql-user "rnd")
+     (sql-database "frontend_live")
+     (sql-port 3321)))
+
+  (add-to-list
+   'sql-connection-alist
+   '("apilib-l"
+     (sql-product 'postgres)
+     (sql-server "localhost")
+     (sql-user "apilib")
+     (sql-database "apilib")))
+
+  (add-to-list
+   'sql-connection-alist
+   '("accengage-P"
+     (sql-product 'mysql)
+     (sql-server "ha.moda.local")
+     (sql-user "accengage")
+     (sql-database "accengage")
+     (sql-port 3320)))
+
+  (add-to-list
+   'sql-connection-alist
+   '("bs-P"
+     (sql-product 'postgres)
+     (sql-server "ha.moda.local")
+     (sql-user "bs")
+     (sql-database "bs")
+     (sql-port 6432)))
+
+  (add-to-list
+   'sql-connection-alist
+   '("bs-l"
+     (sql-product 'postgres)
+     (sql-server "pgsql01.jail.local")
+     (sql-user "bs")
+     (sql-database "bs")
+     (sql-port 6432)))
+
+#+END_SRC
+
+Интерактивно выбираем подключение, обновляем пароль в выбранной
+структуре через get-pass, также пароль копируется в буфер (для
+postgres).
+
+#+BEGIN_SRC emacs-lisp
+(defun sql-connect-with-pass (connection)
+  (interactive
+   (helm-comp-read "Select server: " (mapcar (lambda (item)
+                                               (list
+                                                (nth 0 item)
+                                                (nth 0 item)))
+                                             sql-connection-alist)))
+  ;; get the sql connection info and product from the sql-connection-alist
+  (let* ((connection-info (assoc connection sql-connection-alist))
+         (connection-product (nth 1 (nth 1 (assoc 'sql-product connection-info))))
+         (sql-password (get-pass connection)))
+    (kill-new sql-password)
+    ;; delete the connection info from the sql-connection-alist
+    (setq sql-connection-alist (assq-delete-all connection sql-connection-alist))
+    ;; delete the old password from the connection-info
+    (setq connection-info (assq-delete-all 'sql-password connection-info))
+    ;; add the password to the connection-info
+    (nconc connection-info `((sql-password ,sql-password)))
+    ;; add back the connection info to the beginning of sql-connection-alist
+    ;; (last used server will appear first for the next prompt)
+    (add-to-list 'sql-connection-alist connection-info)
+    ;; override the sql-product by the product of this connection
+    (setq sql-product connection-product)
+    ;; connect
+    (sql-connect connection connection)
+    ;; (if current-prefix-arg
+    ;;         (sql-connect connection connection)
+    ;;       (sql-connect connection))
+    ))
+#+END_SRC
+
+Добавляем перенос строки после ответа, т.к. при запросе из отдельного
+буфера может не добавиться. Включается обрезка длинных строк, не
+перенос.
+
+#+BEGIN_SRC emacs-lisp
+(global-set-key (kbd "C-c s s") 'sql-set-sqli-buffer)
+(global-set-key (kbd "C-c m d") 'sql-connect-with-pass)
+
+(setq sql-mysql-options
+      (list "--default-character-set=utf8" "-A"))
+
+(defun sql-add-newline-first (output)
+  "Add newline to beginning of OUTPUT for `comint-preoutput-filter-functions'"
+  (concat "\n" output))
+
+(defun sqli-add-hooks ()
+  "Add hooks to `sql-interactive-mode-hook'."
+  (add-hook 'comint-preoutput-filter-functions
+            'sql-add-newline-first)
+  (toggle-truncate-lines t))
+
+(add-hook 'sql-interactive-mode-hook 'sqli-add-hooks)
+#+END_SRC
+
+Сохранение истории таким способом не работает при закрытии буфера,
+поэтому нужно сначала убить процесс (TODO при закрытии буфера вызывать
+сохранение истории). 
+#+BEGIN_SRC emacs-lisp
+;; comint-input-ring-size 500
+  (defun my-sql-save-history-hook ()
+    (let ((lval 'sql-input-ring-file-name)
+          (rval 'sql-product))
+      (if (symbol-value rval)
+          (let ((filename
+                 (concat "~/.emacs.d/history.d/"
+                         (symbol-name (symbol-value rval))
+                         "-history.sql")))
+            (set (make-local-variable lval) filename))
+        (error
+         (format "SQL history will not be saved because %s is nil"
+                 (symbol-name rval))))))
+
+  (add-hook 'sql-interactive-mode-hook 'my-sql-save-history-hook)
+#+END_SRC
+
+#+RESULTS:
+| my-sql-save-history-hook | sqli-add-hooks |
+
+** Программирование
+*** Python
+
+Для поиска документации по используется pylookup,
+который индексирует документацию python, и сохраняет индекс локально.
+
+#+BEGIN_SRC emacs-lisp
+;; add pylookup to your loadpath, ex) "~/.lisp/addons/pylookup"
+(setq pylookup-dir (with-emacs-dir "plugins/pylookup"))
+(add-to-list 'load-path pylookup-dir)
+;; load pylookup when compile time
+(eval-when-compile (require 'pylookup))
+
+;; set executable file ande db file
+(setq pylookup-program (concat pylookup-dir "/pylookup.py"))
+(setq pylookup-db-file (concat pylookup-dir "/pylookup.db"))
+
+;; to speedup, just load it on demand
+(autoload 'pylookup-lookup "pylookup"
+  "Lookup SEARCH-TERM in the Python HTML indexes." t)
+(autoload 'pylookup-update "pylookup"
+  "Run pylookup-update and create the database at `pylookup-db-file'." t)
+#+END_SRC
+
+#+RESULTS:
+
+Просмотр документации: pylookup-lookup ищет слово под курсором и
+предлагает выбор.  
+#+BEGIN_SRC emacs-lisp
+  (defun pylookup-view-doc-index ()
+    (interactive)
+    (browse-url (concat "file://" 
+                        pylookup-dir 
+                        "/python-2.7.7-docs-html/index.html")))
+
+  (defun pylookup-keys ()
+    (local-set-key (kbd "C-c C-d h") 'pylookup-lookup)
+    (local-set-key (kbd "C-c C-d i") 'pylookup-view-doc-index))
+
+  (add-hook 'python-mode-hook 'pylookup-keys)
+#+END_SRC
+
+#+RESULTS:
+| pylookup-keys | wisent-python-default-setup | er/add-python-mode-expansions | jedi:setup | (lambda nil (local-set-key (kbd C-M-i) (quote jedi-complete)) (local-set-key (kbd C-<tab>) (quote jedi-complete)) (local-set-key (kbd C-c C-d C-d) (quote jedi:show-doc)) (local-set-key (kbd C-c C-d h) (quote pylookup-lookup)) (local-set-key (kbd C-c v) (quote pep8)) (local-set-key (kbd C-c l) (quote pylint)) (local-set-key (kbd C-c d) (quote pep257)) (jedi:setup)) |
+
+** Прочее
+
+(load-library "url-handlers")
+
+#+BEGIN_SRC emacs-lisp
+  (add-to-list 'load-path (expand-file-name "~/.emacs.d/my/"))
+
+  (require 'my_defaults)
+  (require 'my_prog)
+  (require 'my_python)
+  (require 'my_lamoda)
+  (require 'my_text)
+  (require 'my_shell)
+  (require 'my_time)
+  (require 'my_lisp)
+  (require 'my_desktop)
+  (require 'my_calendar)
+
+  (custom-set-faces
+   ;; custom-set-faces was added by Custom.
+   ;; If you edit it by hand, you could mess it up, so be careful.
+   ;; Your init file should contain only one such instance.
+   ;; If there is more than one, they won't work right.
+   '(chess-ics1-black-face ((t (:foreground "dim gray" :weight bold))))
+   '(chess-ics1-white-face ((t (:foreground "chocolate" :weight bold))))
+   '(secondary-selection ((t (:background "pale goldenrod")))))
+
+  (put 'narrow-to-region 'disabled nil)
+  (put 'downcase-region 'disabled nil)
+
+#+END_SRC
+
+** Автозапуск
+#+BEGIN_SRC emacs-lisp
+(find-file "~/lm/madmin/madmin")
+(find-file "~/org/gtd.org")
+(find-file "~/org/office.org")
+#+END_SRC
+
