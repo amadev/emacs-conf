@@ -1153,6 +1153,48 @@ postgres).
 #+RESULTS:
 | pylookup-keys | wisent-python-default-setup | er/add-python-mode-expansions | jedi:setup | (lambda nil (local-set-key (kbd C-M-i) (quote jedi-complete)) (local-set-key (kbd C-<tab>) (quote jedi-complete)) (local-set-key (kbd C-c C-d C-d) (quote jedi:show-doc)) (local-set-key (kbd C-c C-d h) (quote pylookup-lookup)) (local-set-key (kbd C-c v) (quote pep8)) (local-set-key (kbd C-c l) (quote pylint)) (local-set-key (kbd C-c d) (quote pep257)) (jedi:setup)) |
 
+*** Lisp
+
+#+BEGIN_SRC emacs-lisp
+(setq inferior-lisp-program "sbcl --dynamic-space-size 2048")
+(setq slime-net-coding-system 'utf-8-unix)
+(setq slime-contribs '(slime-fancy))
+#+END_SRC
+
+Включаем paredit для мест, где вводится lisp.
+
+#+BEGIN_SRC emacs-lisp
+(add-hook 'emacs-lisp-mode-hook #'enable-paredit-mode)
+(add-hook 'eval-expression-minibuffer-setup-hook #'enable-paredit-mode)
+(add-hook 'ielm-mode-hook #'enable-paredit-mode)
+(add-hook 'lisp-mode-hook #'enable-paredit-mode)
+(add-hook 'lisp-interaction-mode-hook #'enable-paredit-mode)
+(add-hook 'scheme-mode-hook #'enable-paredit-mode)
+#+END_SRC
+
+#+RESULTS:
+| enable-paredit-mode | 
+
+#+BEGIN_SRC emacs-lisp
+  (add-hook 'slime-repl-mode-hook (lambda () (paredit-mode +1)))
+  ;; SLIME’s REPL has the very annoying habit of grabbing DEL 
+  ;; which interferes with paredit’s normal operation. 
+  ;; To alleviate this problem use the following code:
+
+  ;; Stop SLIME's REPL from grabbing DEL,
+  ;; which is annoying when backspacing over a '('
+  (defun override-slime-repl-bindings-with-paredit ()
+    (define-key slime-repl-mode-map
+      (read-kbd-macro paredit-backward-delete-key) nil))
+  (add-hook 'slime-repl-mode-hook 'override-slime-repl-bindings-with-paredit)  
+
+#+END_SRC
+
+#+RESULTS:
+| override-slime-repl-bindings-with-paredit | (lambda nil (paredit-mode 1)) | slime-trace-dialog-enable | #[nil \301\300!\210\302\303\304\305\306\302$\207 [parse-sexp-lookup-properties make-local-variable t add-hook after-change-functions slime-after-change-function append] 5] | slime-autodoc--on | slime-repl-add-easy-menu |
+
+
+
 ** Прочее
 
 (load-library "url-handlers")
