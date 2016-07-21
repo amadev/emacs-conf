@@ -92,6 +92,15 @@ ido - интерфейс для выбора из списка, добавлен
 
 Скопировать полный путь до файла C-u 0 w.
 
+Настройки отображения dired по умолчанию.
+Показываем все, сортируем по дате (новые внизу), но сначала директории.
+#+BEGIN_SRC emacs-lisp
+(setq dired-listing-switches "-altrh  --group-directories-first")
+#+END_SRC
+
+#+RESULTS:
+: -altrh
+
 ** Утилиты
 *** Общие функции
 #+BEGIN_SRC emacs-lisp
