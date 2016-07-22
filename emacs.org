@@ -615,16 +615,16 @@ TODO сделать mapping sh-buffer -> shell process.
 #+BEGIN_SRC emacs-lisp
   (global-set-key (kbd "C-c c") 'org-capture)
   (setq org-capture-templates
-        '(("i" "Inbox" entry (file+olp (concat my-org-dir "gtd.org") "gtd" "inbox")
+        '(("i" "Inbox" entry (file+olp (concat my-org-dir "task.org") "task" "inbox")
+           "* TODO %?\n\nAdded: %U\n  %i\n")
+          ("f" "Inbox with file link" entry (file+olp (concat my-org-dir "task.org") "task" "inbox")
            "* TODO %?\n\nAdded: %U\n  %i\n%a\n")
           ("b" "Bookmark" entry (file+olp (concat my-org-dir "bookmarks.org") "Bookmarks" "inbox")
-           "* TODO %c %?\n\nAdded: %U\n  %i\n")
-          ("o" "Office" entry (file+headline (concat my-org-dir "office.org") "office_inbox")
-           "* TODO %?\n\nAdded: %U\n  %i\n")))
+           "* TODO %c %?\n\nAdded: %U\n  %i\n")))
 #+END_SRC
 
 #+RESULTS:
-| i | Inbox | entry | (file+olp (concat my-org-dir gtd.org) gtd inbox) | * TODO %? |
+| i | Inbox | entry | (file+olp (concat my-org-dir task.org) task inbox) | * TODO %? |
 
 *** babel
 
@@ -1358,8 +1358,6 @@ postgres).
 
 ** Автозапуск
 #+BEGIN_SRC emacs-lisp
-(find-file "~/lm/madmin/madmin")
-(find-file "~/org/gtd.org")
-(find-file "~/org/office.org")
+(find-file "~/org/task.org")
 #+END_SRC
 
