@@ -398,8 +398,129 @@ sentinel (функции, которая срабатывает при любы�
 
 ** terminal
 
-В shell есть проблема с историей многострочных комманд.
-В ansi-term кривовато, но терпимо.
+Для работы с терминалом вполне хватает shell + rename buffer.
+Если нужно запустить новый, использовать (start-shell <shell_name> <initial_cmd).
+
+Проблема с tab completion очень элегантно решается с помощью /proc.
+
+#+BEGIN_SRC emacs-lisp
+(defun track-shell-directory/procfs ()
+  (shell-dirtrack-mode 0)
+  (add-hook 'comint-preoutput-filter-functions
+            (lambda (str)
+              (prog1 str
+                (when (string-match comint-prompt-regexp str)
+                  (cd (file-symlink-p
+                       (format "/proc/%s/cwd" (process-id
+                                               (get-buffer-process
+                                                (current-buffer)))))))))
+            nil t))ьп
+
+(add-hook 'shell-mode-hook 'track-shell-directory/procfs)
+
+(defun start-shell(name cmd)
+  (interactive)
+  (shell name)
+  (comint-send-string name (concat cmd "\n")))
+
+(defun start-shells ()
+  (interactive)
+  (start-shell "shell_default" "cd")
+  (start-shell "shell_nova" "nact")
+  (start-shell "shell_mos-con1" "ssh mos-con1")
+  (start-shell "shell_mos-fuel" "ssh mos-fuel"))
+#+END_SRC
+
+Запуск текущего файла в compilation mode.
+#+BEGIN_SRC emacs-lisp
+(global-set-key (kbd "<f7>") 'run-current-file)
+
+(defun run-current-file ()
+      "Execute or compile the current file.
+   For example, if the current buffer is the file x.pl,
+   then it'll call “perl x.pl” in a shell.
+   The file can be php, perl, python, ruby, javascript, bash, ocaml, java.
+   File suffix is used to determine what program to run."
+      (interactive)
+      (let (extention-alist fname suffix progName cmdStr)
+        (setq extention-alist ; a keyed list of file suffix to comand-line program to run
+              '(
+                ("php" . "php")
+                ("pl" . "perl")
+                ("py" . "python")
+                ("rb" . "ruby")
+                ("js" . "js")
+                ("sh" . "bash")
+                ("" . "bash")
+                ("ml" . "ocaml")
+                ("vbs" . "cscript")
+                ("java" . "javac")
+                )
+              )
+        (setq fname (buffer-file-name))
+        (setq suffix (file-name-extension fname))
+        (setq progName (cdr (assoc suffix extention-alist)))
+        (setq cmdStr (concat progName " \"" fname "\""))
+
+        (if (string-equal suffix "el")
+            (load-file fname)
+          (if progName                  ; is not nil
+              (progn
+                (message "Running...")
+                (compile (read-shell-command "Command: " cmdStr)))
+            ;;(shell-command cmdStr))
+            (message "No recognized program file suffix for this file.")
+            ))))
+#+END_SRC
+
+Посыл региона в shell (посылает в первый запущенный shell).
+TODO сделать mapping sh-buffer -> shell process.
+#+BEGIN_SRC emacs-lisp
+(defun sh-send-line-or-region (&optional step)
+  (interactive ())
+  (let ((proc (get-process "shell"))
+        pbuf min max command)
+    (unless proc
+      (let ((currbuff (current-buffer)))
+        (shell)
+        (switch-to-buffer currbuff)
+        (setq proc (get-process "shell"))
+        ))
+    (setq pbuff (process-buffer proc))
+    (if (use-region-p)
+        (setq min (region-beginning)
+              max (region-end))
+      (setq min (point-at-bol)
+            max (point-at-eol)))
+    (setq command (concat (buffer-substring min max) "\n"))
+    (with-current-buffer pbuff
+      (goto-char (process-mark proc))
+      (insert command)
+      (move-marker (process-mark proc) (point))
+      ) ;;pop-to-buffer does not work with save-current-buffer -- bug?
+    (process-send-string  proc command)
+    (display-buffer (process-buffer proc) t)
+    (when step
+      (goto-char max)
+      (next-line))))
+
+(defun sh-send-line-or-region-and-step ()
+  (interactive)
+  (sh-send-line-or-region t))
+
+(defun sh-switch-to-process-buffer ()
+  (interactive)
+  (pxop-to-buffer (process-buffer (get-process "shell")) t))
+
+(defun my-shell-mode-hook ()
+  (progn
+    (local-set-key (kbd "C-c C-c") 'sh-send-line-or-region)
+    (local-set-key (kbd "C-u C-c C-c") 'sh-send-line-or-region-and-step)
+    (local-set-key (kbd "C-c C-z") 'sh-switch-to-process-buffer)))
+
+(add-hook 'sh-mode-hook 'my-shell-mode-hook)
+#+END_SRC
+
 
 ** orgmode
 
@@ -1216,7 +1337,6 @@ postgres).
   (require 'my_python)
   (require 'my_lamoda)
   (require 'my_text)
-  (require 'my_shell)
   (require 'my_time)
   (require 'my_lisp)
   (require 'my_desktop)
