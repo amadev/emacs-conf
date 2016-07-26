@@ -985,68 +985,6 @@ machine smtp.gmail.com login EMAIL port 587 password *******
 #+BEGIN_SRC emacs-lisp
   (require 'sql)
 
-  (setq sql-connection-alist
-        '(("dancespace-l"
-           (sql-product 'postgres)
-           (sql-server "127.0.0.1")
-           (sql-user "dancespace_user")
-           (sql-database "dancespace")
-           (sql-port 5432))
-          ("mysql-l"
-           (sql-product 'mysql)
-           (sql-server "127.0.0.1")
-           (sql-user "root")
-           (sql-database "madmin")
-           (sql-port 3306))
-          ("bob.ru-P-ro"
-           (sql-product 'mysql)
-           (sql-server "ha.moda.local")
-           (sql-user "recommend")
-           (sql-database "lamoda_bob_live")
-           (sql-port 3319))
-          ("madmin.avolkov-l"
-           (sql-product 'mysql)
-           (sql-server "mysql01.jail.local")
-           (sql-user "avolkov")
-           (sql-database "madmin")
-           (sql-port 3306))
-          ("site.kz-P"
-           (sql-product 'postgres)
-           (sql-server "ha.moda.local")
-           (sql-user "site_kz")
-           (sql-database "site_kz")
-           (sql-port 6432))
-          ("site.ua-P"
-           (sql-product 'postgres)
-           (sql-server "ha.moda.local")
-           (sql-user "site_ua")
-           (sql-database "site_ua")
-           (sql-port 6432))
-          ("site.by-P"
-           (sql-product 'postgres)
-           (sql-server "ha.moda.local")
-           (sql-user "site_by")
-           (sql-database "site_by")
-           (sql-port 6432))
-          ("lstat-P"
-           (sql-product 'postgres)
-           (sql-server "ha.moda.local")
-           (sql-user "rnd")
-           (sql-database "rnd_test")
-           (sql-port 6434))
-          ("expconfig-P"
-           (sql-product 'postgres)
-           (sql-server "ha.moda.local")
-           (sql-user "rnd")
-           (sql-database "exp")
-           (sql-port 6434))
-          ("asorokoumov-l"
-           (sql-product 'mysql)
-           (sql-server "asorokoumov.mysql01.qa.local")
-           (sql-user "qa")
-           (sql-database "frontend_live")
-           (sql-port 3306))))
-
   (add-to-list
    'sql-connection-alist
    '("postgres-l"
@@ -1058,110 +996,13 @@ machine smtp.gmail.com login EMAIL port 587 password *******
 
   (add-to-list
    'sql-connection-alist
-   '("site.ru-P"
-     (sql-product 'postgres)
-     (sql-server "ha.moda.local")
-     (sql-user "site")
-     (sql-database "site")
-     (sql-port 6432)))
-
-  (add-to-list
-   'sql-connection-alist
-   '("comments-old-P"
-     (sql-product 'postgres)
-     (sql-server "ha.moda.local")
-     (sql-user "lcomments")
-     (sql-database "lcomments")
-     (sql-port 6432)))
-
-  (add-to-list
-   'sql-connection-alist
-   '("comments-P"
-     (sql-product 'postgres)
-     (sql-server "10.5.228.7")
-     (sql-user "comments")
-     (sql-database "comments")
-     (sql-port 6432)))
-
-  (add-to-list
-   'sql-connection-alist
-   '("madmin.ru-P"
+   '("devstack-l"
      (sql-product 'mysql)
-     (sql-server "ha.moda.local")
-     (sql-user "magento_live")
-     (sql-database "frontend_live")
+     (sql-server "james")
+     (sql-user "root")
+     (sql-database "nova")
      (sql-port 3320)))
 
-  (add-to-list
-   'sql-connection-alist
-   '("madmin.kz-P"
-     (sql-product 'mysql)
-     (sql-server "ha.moda.local")
-     (sql-user "madmin_kz")
-     (sql-database "madmin_kz")
-     (sql-port 3320)))
-
-  (add-to-list
-   'sql-connection-alist
-   '("madmin.ua-P"
-     (sql-product 'mysql)
-     (sql-server "ha.moda.local")
-     (sql-user "madmin_ua")
-     (sql-database "madmin_ua")
-     (sql-port 3320)))
-
-  (add-to-list
-   'sql-connection-alist
-   '("madmin.by-P1"
-     (sql-product 'mysql)
-     (sql-server "ha.moda.local")
-     (sql-user "madmin_by")
-     (sql-database "madmin_by")
-     (sql-port 3320)))
-
-  (add-to-list
-   'sql-connection-alist
-   '("madmin.ru-P-ro"
-     (sql-product 'mysql)
-     (sql-server "ha.moda.local")
-     (sql-user "rnd")
-     (sql-database "frontend_live")
-     (sql-port 3321)))
-
-  (add-to-list
-   'sql-connection-alist
-   '("apilib-l"
-     (sql-product 'postgres)
-     (sql-server "localhost")
-     (sql-user "apilib")
-     (sql-database "apilib")))
-
-  (add-to-list
-   'sql-connection-alist
-   '("accengage-P"
-     (sql-product 'mysql)
-     (sql-server "ha.moda.local")
-     (sql-user "accengage")
-     (sql-database "accengage")
-     (sql-port 3320)))
-
-  (add-to-list
-   'sql-connection-alist
-   '("bs-P"
-     (sql-product 'postgres)
-     (sql-server "ha.moda.local")
-     (sql-user "bs")
-     (sql-database "bs")
-     (sql-port 6432)))
-
-  (add-to-list
-   'sql-connection-alist
-   '("bs-l"
-     (sql-product 'postgres)
-     (sql-server "pgsql01.jail.local")
-     (sql-user "bs")
-     (sql-database "bs")
-     (sql-port 6432)))
 
 #+END_SRC
 
@@ -1292,7 +1133,7 @@ postgres).
 #+END_SRC
 
 #+RESULTS:
-| pylookup-keys | wisent-python-default-setup | er/add-python-mode-expansions | jedi:setup | (lambda nil (local-set-key (kbd C-M-i) (quote jedi-complete)) (local-set-key (kbd C-<tab>) (quote jedi-complete)) (local-set-key (kbd C-c C-d C-d) (quote jedi:show-doc)) (local-set-key (kbd C-c C-d h) (quote pylookup-lookup)) (local-set-key (kbd C-c v) (quote pep8)) (local-set-key (kbd C-c l) (quote pylint)) (local-set-key (kbd C-c d) (quote pep257)) (jedi:setup)) |
+| pylookup-keys | wisent-python-default-setup | er/add-python-mode-expansions | jedi:setup | (lambda nil (local-set-key (kbd C-M-i) (quote jedi-complete)) (local-set-key (kbd C-<tab>) (quote jedi-complete)) (local-set-key (kbd C-c C-d C-d) (quote jedi:show-doc)) (local-set-key (kbd C-c C-d h) (quote pylookup-lookup)) (local-set-key (kbd C-c v) (quote pep8)) (local-set-key (kbd C-c l) (quote pylint)) (local-set-key (kbd C-c d) (quote pep257)) (jedi:setup))  |
 
 *** Lisp
 
@@ -1349,7 +1190,6 @@ postgres).
   (require 'my_lamoda)
   (require 'my_text)
   (require 'my_time)
-  (require 'my_lisp)
   (require 'my_desktop)
   (require 'my_calendar)
 
