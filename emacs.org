@@ -407,6 +407,33 @@ sentinel (функции, которая срабатывает при любы�
 #+RESULTS:
 : t
 
+*** Поиск
+По умолчанию запускаем поиск regexp.
+#+BEGIN_SRC emacs-lisp
+(global-set-key (kbd "C-s") 'isearch-forward-regexp)
+(global-set-key (kbd "C-r") 'isearch-backward-regexp)
+(global-set-key (kbd "C-M-s") 'isearch-forward)
+(global-set-key (kbd "C-M-r") 'isearch-backward)
+#+END_SRC
+
+Для поиска символа под курсором можно воспользоваться
+(isearch-forward-symbol-at-point) M-s .
+либо дополнительной функцией в режиме поиска.
+#+BEGIN_SRC emacs-lisp
+(define-key isearch-mode-map (kbd "C-*")
+  (lambda ()
+    "Reset current isearch to a word-mode search of the word under point."
+    (interactive)
+    (setq isearch-word t
+          isearch-string ""
+          isearch-message "")
+    (isearch-yank-string (word-at-point))))
+#+END_SRC
+Полезные сочетания в режиме поиска:
+М-r - переключение regexp,
+M-c - перечлючение case sensitive,
+M-e - редактирование.
+
 ** terminal
 
 Для работы с терминалом вполне хватает shell + rename buffer.
@@ -1187,7 +1214,6 @@ postgres).
   (require 'my_defaults)
   (require 'my_prog)
   (require 'my_python)
-  (require 'my_lamoda)
   (require 'my_text)
   (require 'my_time)
   (require 'my_desktop)
