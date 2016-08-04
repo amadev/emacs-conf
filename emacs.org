@@ -290,6 +290,12 @@ yas-wrap-around-region включает такое поведение.
 (key-chord-define-global "gg" 'magit-status)
 #+END_SRC
 
+**** Работа c unicode
+Часто используемые символы удобно смотреть:
+http://xahlee.info/comp/unicode_index.html
+http://www.unexpected-vortices.com/doc-notes/some-common-unicode-characters.html
+Вставка c-x 8 ret.
+
 *** История и бекапы
 **** Обработка истории comint-буферов
 
