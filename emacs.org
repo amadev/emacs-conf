@@ -273,7 +273,7 @@ yas-wrap-around-region включает такое поведение.
 Разбивать окна вертикально.
 
 #+BEGIN_SRC emacs-lisp
-(setq split-width-threshold 80)
+(setq split-width-threshold 120)
 #+END_SRC
 
 #+RESULTS:
@@ -576,7 +576,7 @@ TODO сделать mapping sh-buffer -> shell process.
   (setq org-agenda-files 
         (mapcar
          #'(lambda (name) (concat my-org-dir name))
-         '("gtd.org" "office.org")))
+         '("task.org" "office.org")))
 #+END_SRC
 
 #+RESULTS:
@@ -1161,6 +1161,23 @@ postgres).
 
 #+RESULTS:
 | pylookup-keys | wisent-python-default-setup | er/add-python-mode-expansions | jedi:setup | (lambda nil (local-set-key (kbd C-M-i) (quote jedi-complete)) (local-set-key (kbd C-<tab>) (quote jedi-complete)) (local-set-key (kbd C-c C-d C-d) (quote jedi:show-doc)) (local-set-key (kbd C-c C-d h) (quote pylookup-lookup)) (local-set-key (kbd C-c v) (quote pep8)) (local-set-key (kbd C-c l) (quote pylint)) (local-set-key (kbd C-c d) (quote pep257)) (jedi:setup))  |
+
+**** virtualenv
+
+Для удобства работы используется virtualevwrapper for emacs,
+порт virtualevwrapper.sh, делает все то же но внутри emacs.
+Команды run-python, shell-command, org-evaluate выполняются с учетом
+текущей virtualenv
+
+#+BEGIN_SRC emacs-lisp
+(require 'virtualenvwrapper)
+(venv-initialize-interactive-shells) ;; if you want interactive shell support
+(venv-initialize-eshell) ;; if you want eshell support
+(setq venv-location "~/m/nova/.tox/")
+#+END_SRC
+
+#+RESULTS:
+: ~/.ve
 
 *** Lisp
 
