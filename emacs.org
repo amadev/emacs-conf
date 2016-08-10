@@ -809,7 +809,6 @@ lisp-файлы подключаются к emacs.
 и фильтруется imapfilter (общий конфиг для всех аккаунтов)
 [[file:~/files/settings/.offlineimaprc::%5Bgeneral%5D]]
 Для каждого аккаунта используется конфиг imapfilter.
-[[file:~/files/settings/.imapfilter/lamoda.lua::timeout%20=%20120][lamoda]]
 [[file:~/files/settings/.imapfilter/wolfanio.lua::timeout%20=%20120][wolfanio]]
 #TODO в перерыве между фильтрацией и скачиванием нежелательные письма просачиваются 
 
@@ -854,7 +853,7 @@ machine smtp.gmail.com login EMAIL port 587 password *******
 '("ViewInBrowser" . mu4e-action-view-in-browser) t)
 
 (add-to-list 'mu4e-bookmarks
-'("maildir:/wolfanio/INBOX or maildir:/lamoda/INBOX"  "Inbox"     ?i))
+'("maildir:/wolfanio/INBOX or maildir:/mirantis/INBOX"  "Inbox"     ?i))
 #+END_SRC
 
 Сохранение ссылки на письмо.
@@ -904,31 +903,32 @@ machine smtp.gmail.com login EMAIL port 587 password *******
        (smtpmail-smtp-server "smtp.gmail.com")
        (smtpmail-smtp-user "wolfanio@gmail.com")
        (smtpmail-smtp-service 587))
-      ("lamoda"
-       (mu4e-drafts-folder "/lamoda/drafts")
-       (mu4e-sent-folder   "/lamoda/sent")
-       (mu4e-trash-folder  "/lamoda/trash")
-       (mu4e-refile-folder "/lamoda/archive")
-       (user-mail-address "andrey.volkov@lamoda.ru")
+      ("mirantis"
+       (mu4e-drafts-folder "/mirantis/drafts")
+       (mu4e-sent-folder   "/mirantis/sent")
+       (mu4e-trash-folder  "/mirantis/trash")
+       (mu4e-refile-folder "/mirantis/archive")
+       (user-mail-address "avolkov@mirantis.com")
        (user-full-name  "Andrey Volkov")
        (mu4e-compose-signature
         (concat
-         "Андрей Волков | Andrey Volkov\n"
-         "Руководитель группы разработки | Team leader\n"
-         "mobile: +7(916) 86 88 942\n"
-         "skype: amadev_alt\n"
-         "www.lamoda.ru\n"))
+        "Thanks,\n\n"
+        "Andrey Volkov,"
+        "Software Engineer, Mirantis, Inc."))
        (smtpmail-smtp-server "smtp.gmail.com")
-       (smtpmail-smtp-user "andrey.volkov@lamoda.ru")
+       (smtpmail-smtp-user "avolkov@mirantis.com")
        (smtpmail-smtp-service 587))))
 
 #+END_SRC
+
+#+RESULTS:
+: my-mu4e-account-alist
 
 Короткие ссылки для inbox.
 #+BEGIN_SRC emacs-lisp
 (setq mu4e-maildir-shortcuts
       '(("/wolfanio/INBOX" . ?w)
-        ("/lamoda/INBOX" . ?l)))
+        ("/mirantis/INBOX" . ?m)))
 #+END_SRC
 
 *** Интерактивно выбираем account при создании письма.
