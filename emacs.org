@@ -296,6 +296,20 @@ http://xahlee.info/comp/unicode_index.html
 http://www.unexpected-vortices.com/doc-notes/some-common-unicode-characters.html
 Вставка c-x 8 ret.
 
+**** Spell checking
+
+Для проверки можно использовать flyspell-region или ispell-region,
+также можно влючить проверку для mode через mode-hook (flyspell-mode).
+
+http://endlessparentheses.com/ispell-and-org-mode.html
+
+M-$ - исправление первого слова с ошибкой после курсора.
+В сессии исправления можно принять текущее слова (a/A),
+
+добавить в личный словарь (i).
+
+Переключение словаря - ispell-change-dictionary.
+
 *** История и бекапы
 **** Обработка истории comint-буферов
 
