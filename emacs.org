@@ -1140,6 +1140,7 @@ postgres).
 ** Программирование
 *** Python
 
+**** Просмотр документации
 Для поиска документации по используется pylookup,
 который индексирует документацию python, и сохраняет индекс локально.
 
@@ -1171,16 +1172,31 @@ postgres).
     (browse-url (concat "file://" 
                         pylookup-dir 
                         "/python-2.7.7-docs-html/index.html")))
-
-  (defun pylookup-keys ()
-    (local-set-key (kbd "C-c C-d h") 'pylookup-lookup)
-    (local-set-key (kbd "C-c C-d i") 'pylookup-view-doc-index))
-
-  (add-hook 'python-mode-hook 'pylookup-keys)
 #+END_SRC
 
 #+RESULTS:
 | pylookup-keys | wisent-python-default-setup | er/add-python-mode-expansions | jedi:setup | (lambda nil (local-set-key (kbd C-M-i) (quote jedi-complete)) (local-set-key (kbd C-<tab>) (quote jedi-complete)) (local-set-key (kbd C-c C-d C-d) (quote jedi:show-doc)) (local-set-key (kbd C-c C-d h) (quote pylookup-lookup)) (local-set-key (kbd C-c v) (quote pep8)) (local-set-key (kbd C-c l) (quote pylint)) (local-set-key (kbd C-c d) (quote pep257)) (jedi:setup))  |
+
+**** Display current buffer structure
+#+BEGIN_SRC emacs-lisp
+(defun occur-python-structure ()
+  (interactive)
+  (occur "def\\b\\|class\\b\\|=[ ]?lambda"))
+#+END_SRC
+
+**** Keys
+#+BEGIN_SRC emacs-lisp
+(defun python-keys ()
+  (local-set-key (kbd "C-c C-d h") 'pylookup-lookup)
+  (local-set-key (kbd "C-c C-d i") 'pylookup-view-doc-index)
+  (local-set-key (kbd "C-c v") 'pep8)
+  (local-set-key (kbd "C-c l") 'pylint)
+  (local-set-key (kbd "C-c d") 'pep257)
+  (local-set-key (kbd "C-; s") 'occur-python-structure))
+
+(add-hook 'python-mode-hook 'python-keys)
+#+END_SRC
+
 
 **** virtualenv
 
