@@ -454,6 +454,45 @@ sentinel (функции, которая срабатывает при любы�
 M-c - перечлючение case sensitive,
 M-e - редактирование.
 
+*** erc
+
+echo "machine irc.freenode.net login avolkov port 6667 password $(cpp.sh irc.freenode.net)" >> \
+   ~/.authinfo
+echo "machine miracloud.irc.slack.com login andrey.volkov port 6667 password $(cpp.sh mirantis_irc)" >> \
+   ~/.authinfo
+
+#+BEGIN_SRC emacs-lisp
+(defun irc-start ()
+  (interactive)
+  (erc :server "irc.freenode.net" :port 6667
+    :nick "avolkov" :full-name "Andrey Volkov")
+  (erc-tls :server "miracloud.irc.slack.com" :port 6667
+    :nick "andrey.volkov" :full-name "Andrey Volkov")
+)
+
+(require 'erc-join)
+(erc-autojoin-mode 1)
+
+(setq erc-autojoin-channels-alist
+  '(
+    ("freenode.net" "#openstack-nova")
+  ))
+
+(setq erc-track-exclude-types '("JOIN" "NICK" "PART" "QUIT" "MODE"
+                                    "324" "329" "332" "333" "353" "477"))
+
+(setq erc-format-query-as-channel-p t
+      erc-track-priority-faces-only 'all
+      erc-track-faces-priority-list '(erc-error-face
+                                      erc-current-nick-face
+                                      erc-keyword-face
+                                      erc-nick-msg-face
+                                      erc-direct-msg-face
+                                      erc-dangerous-host-face
+                                      erc-notice-face
+                                      erc-prompt-face))
+#+END_SRC
+
 ** terminal
 
 Для работы с терминалом вполне хватает shell + rename buffer.
