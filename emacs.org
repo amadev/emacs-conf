@@ -462,7 +462,7 @@ echo "machine miracloud.irc.slack.com login andrey.volkov port 6667 password $(c
    ~/.authinfo
 
 #+BEGIN_SRC emacs-lisp
-(defun irc-start ()
+(defun start-ircs ()
   (interactive)
   (erc :server "irc.freenode.net" :port 6667
     :nick "avolkov" :full-name "Andrey Volkov")
@@ -491,6 +491,30 @@ echo "machine miracloud.irc.slack.com login andrey.volkov port 6667 password $(c
                                       erc-dangerous-host-face
                                       erc-notice-face
                                       erc-prompt-face))
+
+(setq erc-log-channels-directory "~/.emacs.d/erc/logs/")
+
+(setq erc-save-buffer-on-part nil
+      erc-save-queries-on-quit nil
+      erc-log-write-after-send t
+      erc-log-write-after-insert t)
+#+END_SRC
+
+#+BEGIN_SRC elisp
+  (defun my-erc-joined-channels ()
+    "Return all the channels you're in as a list. This does not include queries."
+    (save-excursion
+      ;; need to get out of ERC mode so we can have *all* channels returned
+      (set-buffer "*scratch*")
+      (mapcar #'(lambda (chanbuf)
+                  (with-current-buffer chanbuf (erc-default-target)))
+              (erc-channel-list erc-process))))
+
+  (defun my-erc-tracked-channels ()
+    (let ((excluded '("#mos-nova" "#mos-nova-flood-ru")))
+      (remove-if #'(lambda (row) (member row excluded)) (my-erc-joined-channels))))
+
+  ;; (setq erc-track-priority-faces-only (my-erc-tracked-channels))
 #+END_SRC
 
 ** terminal
@@ -1328,5 +1352,9 @@ postgres).
 ** Автозапуск
 #+BEGIN_SRC emacs-lisp
 (find-file "~/org/task.org")
+(find-file "~/org/mirantis.org")
+(magit-status "~/m/nova")
+(start-shells)
+(start-ircs)
 #+END_SRC
 
