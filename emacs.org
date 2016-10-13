@@ -1260,6 +1260,41 @@ postgres).
 (add-hook 'python-mode-hook 'python-keys)
 #+END_SRC
 
+**** Запуск тестов
+
+#+BEGIN_SRC elisp
+  (defun run-test (arg)
+    (interactive "P")
+    (compile (concat "ltests.sh" " " (what-function arg)))
+    (compile "rtests.sh"))
+
+  (defun multiple-replace (replaces string)
+    (if (null replaces)
+        string
+      (let ((replace (first replaces)))
+       (multiple-replace
+        (rest replaces)
+        (replace-regexp-in-string (first replace) (second replace) string)))))
+
+  (defun python-path (file-name function-name)
+    (concat (multiple-replace
+             '(( "/home/amadev/m/nova/" "")
+               ("/" "\.")
+               ("\.py$" ""))
+             file-name) "." function-name))
+
+  (defun what-function (arg)
+    (interactive "P")
+    (let ((func (if (eq (car arg) 4)
+                    (python-path (buffer-file-name) (which-function))
+                  (cadr (split-string (which-function) "\\.")))))
+     (kill-new func)
+     (message "Copied function name '%s' to the clipboard." func)
+     func))
+#+END_SRC
+
+#+RESULTS:
+: what-function
 
 **** virtualenv
 
