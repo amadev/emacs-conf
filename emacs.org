@@ -310,6 +310,16 @@ M-$ - исправление первого слова с ошибкой пос�
 
 Переключение словаря - ispell-change-dictionary.
 
+**** Keys
+
+#+BEGIN_SRC elisp
+(defun magit-nova ()
+  (interactive)
+  (switch-to-buffer "*magit: nova"))
+
+(global-set-key (kbd "C-; n") 'magit-nova)
+#+END_SRC
+
 *** История и бекапы
 **** Обработка истории comint-буферов
 
@@ -1249,15 +1259,20 @@ postgres).
 
 **** Keys
 #+BEGIN_SRC emacs-lisp
-(defun python-keys ()
-  (local-set-key (kbd "C-c C-d h") 'pylookup-lookup)
-  (local-set-key (kbd "C-c C-d i") 'pylookup-view-doc-index)
-  (local-set-key (kbd "C-c v") 'pep8)
-  (local-set-key (kbd "C-c l") 'pylint)
-  (local-set-key (kbd "C-c d") 'pep257)
-  (local-set-key (kbd "C-; s") 'occur-python-structure))
+  (defun python-keys ()
+    (local-unset-key "\C-c\C-d")
+    (local-set-key (kbd "C-c C-d h") 'pylookup-lookup)
+    (local-set-key (kbd "C-c C-d i") 'pylookup-view-doc-index)
+    (local-set-key (kbd "C-c C-d C-d") 'jedi:show-doc)
+    (local-set-key (kbd "C-c v") 'pep8)
+    (local-set-key (kbd "C-c l") 'pylint)
+    (local-set-key (kbd "C-c d") 'pep257)
+    (local-set-key (kbd "C-; s") 'occur-python-structure)
+    (local-set-key (kbd "C-M-i") 'jedi-complete)
+    (local-set-key (kbd "C-<tab>") 'jedi-complete)
+    (jedi:setup))
 
-(add-hook 'python-mode-hook 'python-keys)
+  (add-hook 'python-mode-hook 'python-keys)
 #+END_SRC
 
 **** Запуск тестов
