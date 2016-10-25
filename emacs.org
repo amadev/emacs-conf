@@ -529,37 +529,78 @@ echo "machine miracloud.irc.slack.com login andrey.volkov port 6667 password $(c
 
 ** terminal
 
-Для работы с терминалом вполне хватает shell + rename buffer.
-Если нужно запустить новый, использовать (start-shell <shell_name> <initial_cmd).
+Для работы с терминалом вполне хватает shell + rename buffer.  Если
+нужно запустить новый, использовать (start-shell <shell_name>
+<initial_cmd).
 
-Проблема с tab completion очень элегантно решается с помощью /proc.
+Для управления несколькими консолями используется: C-; b runs the
+command run-or-get-shell.  Команда может запускать или переключаться
+на запущенные консоли с помощью helm.
+
+Список консолей определяется в переменной shell-alist.  Каждой консоли
+может быть указана инициализирующая команда, либо хост для ssh
+консоли.
+
+Directory tracking для локальных консолей работает из коробки, для
+ssh-консолей требуется выставление comint-file-name-prefix.
 
 #+BEGIN_SRC emacs-lisp
-(defun track-shell-directory/procfs ()
-  (shell-dirtrack-mode 0)
-  (add-hook 'comint-preoutput-filter-functions
-            (lambda (str)
-              (prog1 str
-                (when (string-match comint-prompt-regexp str)
-                  (cd (file-symlink-p
-                       (format "/proc/%s/cwd" (process-id
-                                               (get-buffer-process
-                                                (current-buffer)))))))))
-            nil t))
+  (defun make-comint-directory-tracking-work-remotely ()
+    "Add this to comint-mode-hook to make directory tracking work
+  while sshed into a remote host, e.g. for remote shell buffers
+  started in tramp. (This is a bug fix backported from Emacs 24:
+  http://comments.gmane.org/gmane.emacs.bugs/39082"
+    (set (make-local-variable 'comint-file-name-prefix)
+         (or (file-remote-p default-directory) "")))
 
-(add-hook 'shell-mode-hook 'track-shell-directory/procfs)
+  (add-hook 'comint-mode-hook 'make-comint-directory-tracking-work-remotely)
 
-(defun start-shell(name cmd)
-  (interactive)
-  (shell name)
-  (comint-send-string name (concat cmd "\n")))
+  (defun start-shell(name cmd)
+    (interactive)
+    (shell name)
+    (comint-send-string name (concat cmd "\n")))
 
-(defun start-shells ()
-  (interactive)
-  (start-shell "shell_default" "cd")
-  (start-shell "shell_nova" "nact")
-  (start-shell "shell_mos-con1" "ssh mos-con1")
-  (start-shell "shell_mos-fuel" "ssh mos-fuel"))
+  (setq shell-alist
+        '(("default" . nil)
+          ("nova" . (cmd "nact"))
+          ("python" . (cmd "ipython"))
+          ("python3" . (cmd "ipython3"))
+          ("james" . (host "james"))
+          ("mos-con2-6-n2" . (host "root@mos-con2"))
+          ("mos-con1-3-n1" . (host "root@mos-con1"))
+          ("mos-cp1-4-n3" . (host "root@mos-cp1"))
+          ("mos-cp2-5-n4" . (host "root@mos-cp2"))
+          ("mos-fuel" . (host "root@mos-fuel"))
+          ("sally" . (host "sally"))))
+
+  (defun start-shells ()
+    (interactive)
+    (start-shell "shell_default" "cd")
+    (start-shell "shell_nova" "nact")
+    (start-shell "shell_python" "ipython")
+    (start-shell "shell_python3" "ipython3"))
+
+  (defun run-or-get-shell (name)
+    (interactive
+     (helm-comp-read "Select shell: "
+                     (mapcar (lambda (item)
+                               (list
+                                (nth 0 item)
+                                (nth 0 item)))
+                             shell-alist)))
+    (let* ((opts (cdr (assoc name shell-alist)))
+           (host (plist-get opts 'host))
+           (cmd (or (plist-get opts 'cmd) "cd"))
+           (auto (plist-get opts 'auto))
+           (bf (concat "shell_" name)))
+      (message "%s is picked, cmd %s, host %s" name cmd host)
+      (if (get-buffer bf)
+          (switch-to-buffer bf)
+        (if host
+            (ssh host bf)
+          (start-shell name cmd)))))
+
+  (global-set-key (kbd "C-; b") 'run-or-get-shell)
 #+END_SRC
 
 Запуск текущего файла в compilation mode.
