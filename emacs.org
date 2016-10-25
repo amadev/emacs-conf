@@ -474,7 +474,7 @@ echo "machine miracloud.irc.slack.com login andrey.volkov port 6667 password $(c
 #+BEGIN_SRC emacs-lisp
 (defun start-ircs ()
   (interactive)
-  (erc :server "irc.freenode.net" :port 6667
+  (erc-tls :server "irc.freenode.net" :port 6697
     :nick "avolkov" :full-name "Andrey Volkov")
   (erc-tls :server "miracloud.irc.slack.com" :port 6667
     :nick "andrey.volkov" :full-name "Andrey Volkov")
@@ -502,7 +502,9 @@ echo "machine miracloud.irc.slack.com login andrey.volkov port 6667 password $(c
                                       erc-notice-face
                                       erc-prompt-face))
 
+(require 'erc-log)
 (setq erc-log-channels-directory "~/.emacs.d/erc/logs/")
+(erc-log-enable)
 
 (setq erc-save-buffer-on-part nil
       erc-save-queries-on-quit nil
@@ -521,7 +523,7 @@ echo "machine miracloud.irc.slack.com login andrey.volkov port 6667 password $(c
               (erc-channel-list erc-process))))
 
   (defun my-erc-tracked-channels ()
-    (let ((excluded '("#mos-nova" "#mos-nova-flood-ru")))
+    (let ((excluded '("#quotas" "#emacs" "#mos-ere" "#mos-nova" "#mos-nova-flood-ru")))
       (remove-if #'(lambda (row) (member row excluded)) (my-erc-joined-channels))))
 
   ;; (setq erc-track-priority-faces-only (my-erc-tracked-channels))
