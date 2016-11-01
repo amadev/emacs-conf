@@ -41,12 +41,11 @@ marmalade-repo.org - не обновляется.
     (x-send-client-message nil 0 nil "_NET_WM_STATE" 32
                            '(2 "_NET_WM_STATE_FULLSCREEN" 0)))
 
-  (when window-system
-    (tooltip-mode -1)
-    (tool-bar-mode -1)
-    (menu-bar-mode -1)
-    (scroll-bar-mode -1)
-    (fullscreen))
+  (tooltip-mode -1)
+  (tool-bar-mode -1)
+  (menu-bar-mode -1)
+  (scroll-bar-mode -1)
+  (fullscreen)
 
 #+END_SRC
 
@@ -125,7 +124,7 @@ ido - интерфейс для выбора из списка, добавлен
 #+BEGIN_SRC emacs-lisp
   (defun get-pass (name)
     (let ((cname (if (symbolp name) (symbol-name name) name)))
-      (chomp (shell-command-to-string (concat "keepassx.sh " cname)))))
+      (chomp (shell-command-to-string (concat "cpp.sh " cname)))))
 #+END_SRC
 
 **** На клавиатуре сломался шифт и очень не хватало скобочек.
@@ -547,11 +546,12 @@ Directory tracking для локальных консолей работает �
 ssh-консолей требуется выставление comint-file-name-prefix.
 
 #+BEGIN_SRC emacs-lisp
+
   (defun make-comint-directory-tracking-work-remotely ()
     "Add this to comint-mode-hook to make directory tracking work
-  while sshed into a remote host, e.g. for remote shell buffers
-  started in tramp. (This is a bug fix backported from Emacs 24:
-  http://comments.gmane.org/gmane.emacs.bugs/39082"
+    while sshed into a remote host, e.g. for remote shell buffers
+    started in tramp. (This is a bug fix backported from Emacs 24:
+    http://comments.gmane.org/gmane.emacs.bugs/39082"
     (set (make-local-variable 'comint-file-name-prefix)
          (or (file-remote-p default-directory) "")))
 
@@ -684,7 +684,7 @@ TODO сделать mapping sh-buffer -> shell process.
 
 (defun sh-switch-to-process-buffer ()
   (interactive)
-  (pxop-to-buffer (process-buffer (get-process "shell")) t))
+  (pop-to-buffer (process-buffer (get-process "shell")) t))
 
 (defun my-shell-mode-hook ()
   (progn
@@ -721,7 +721,7 @@ TODO сделать mapping sh-buffer -> shell process.
 Файлы, в которые переносятся задачи.
 #+BEGIN_SRC emacs-lisp
 (defun refile-org-files ()
-(let ((files '("gtd.org" "office.org" "reference.org" "bookmarks.org")))
+(let ((files '("task.org" "office.org" "reference.org" "bookmarks.org")))
 (mapcar #'(lambda (x) (concat my-org-dir x)) files)))
 
 (setq org-refile-targets '((refile-org-files . (:level . 2))))
@@ -835,7 +835,7 @@ TODO сделать mapping sh-buffer -> shell process.
 
 #+BEGIN_SRC emacs-lisp
   (setq org-plantuml-jar-path
-        (expand-file-name "~/.emacs.d/bin/plantuml.jar"))
+        (expand-file-name "~/bin/plantuml.jar"))
   (setq org-ditaa-jar-path
         (expand-file-name "~/.emacs.d/bin/ditaa0_9.jar"))
   (setq org-babel-python-command "PYTHONPATH=$PYTHONPATH:~/files/prog python3")
@@ -1043,7 +1043,7 @@ machine smtp.gmail.com login EMAIL port 587 password *******
        (mu4e-compose-signature
         (concat
         "Thanks,\n\n"
-        "Andrey Volkov,"
+        "Andrey Volkov,\n"
         "Software Engineer, Mirantis, Inc."))
        (smtpmail-smtp-server "smtp.gmail.com")
        (smtpmail-smtp-user "avolkov@mirantis.com")
@@ -1164,9 +1164,7 @@ machine smtp.gmail.com login EMAIL port 587 password *******
      (sql-server "james")
      (sql-user "root")
      (sql-database "nova")
-     (sql-port 3320)))
-
-
+     (sql-port 3306)))
 #+END_SRC
 
 Интерактивно выбираем подключение, обновляем пароль в выбранной
@@ -1303,7 +1301,7 @@ postgres).
 **** Keys
 #+BEGIN_SRC emacs-lisp
   (defun python-keys ()
-    (local-unset-key "\C-c\C-d")
+    (local-unset-key (kbd "C-c C-d"))
     (local-set-key (kbd "C-c C-d h") 'pylookup-lookup)
     (local-set-key (kbd "C-c C-d i") 'pylookup-view-doc-index)
     (local-set-key (kbd "C-c C-d C-d") 'jedi:show-doc)
@@ -1395,8 +1393,8 @@ postgres).
 
 #+BEGIN_SRC emacs-lisp
   (add-hook 'slime-repl-mode-hook (lambda () (paredit-mode +1)))
-  ;; SLIME’s REPL has the very annoying habit of grabbing DEL 
-  ;; which interferes with paredit’s normal operation. 
+  ;; SLIME’s REPL has the very annoying habit of grabbing DEL
+  ;; which interferes with paredit’s normal operation.
   ;; To alleviate this problem use the following code:
 
   ;; Stop SLIME's REPL from grabbing DEL,
@@ -1404,7 +1402,7 @@ postgres).
   (defun override-slime-repl-bindings-with-paredit ()
     (define-key slime-repl-mode-map
       (read-kbd-macro paredit-backward-delete-key) nil))
-  (add-hook 'slime-repl-mode-hook 'override-slime-repl-bindings-with-paredit)  
+  (add-hook 'slime-repl-mode-hook 'override-slime-repl-bindings-with-paredit)
 
 #+END_SRC
 
@@ -1425,7 +1423,6 @@ postgres).
   (require 'my_python)
   (require 'my_text)
   (require 'my_time)
-  (require 'my_desktop)
   (require 'my_calendar)
 
   (custom-set-faces
@@ -1441,13 +1438,22 @@ postgres).
   (put 'downcase-region 'disabled nil)
 
 #+END_SRC
+** Макросы
+
+#+BEGIN_SRC elisp
+(fset 'convert_shell_env_to_emacs
+      (lambda (&optional arg)
+        "Keyboard macro."
+        (interactive "p")
+        (kmacro-exec-ring-item
+         (quote ([40 4 115 101 116 101 110 118 32 34 4 19 61 return backspace 34 32 34 4 5 34 41 14 1] 0 "%d")) arg)))
+#+END_SRC
 
 ** Автозапуск
 #+BEGIN_SRC emacs-lisp
 (find-file "~/org/task.org")
 (find-file "~/org/mirantis.org")
-(magit-status "~/m/nova")
+(magit-status-internal "~/m/nova")
 (start-shells)
-(start-ircs)
 #+END_SRC
 
