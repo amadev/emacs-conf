@@ -512,7 +512,10 @@ echo "machine miracloud.irc.slack.com login andrey.volkov port 6667 password $(c
 #+END_SRC
 
 #+BEGIN_SRC elisp
-  (defun my-erc-joined-channels ()
+  (setq erc-important-channels
+        '("#quotas" "#emacs" "#mos-ere" "#mos-nova" "#mos-nova-flood-ru"))
+
+  (defun list-erc-joined-channels ()
     "Return all the channels you're in as a list. This does not include queries."
     (save-excursion
       ;; need to get out of ERC mode so we can have *all* channels returned
@@ -521,11 +524,15 @@ echo "machine miracloud.irc.slack.com login andrey.volkov port 6667 password $(c
                   (with-current-buffer chanbuf (erc-default-target)))
               (erc-channel-list erc-process))))
 
-  (defun my-erc-tracked-channels ()
-    (let ((excluded '("#quotas" "#emacs" "#mos-ere" "#mos-nova" "#mos-nova-flood-ru")))
-      (remove-if #'(lambda (row) (member row excluded)) (my-erc-joined-channels))))
+  (defun list-erc-tracked-channels (excluded)
+    (remove-if #'(lambda (row) (member row excluded)) (list-erc-joined-channels)))
 
-  ;; (setq erc-track-priority-faces-only (my-erc-tracked-channels))
+  (defun enable-erc-notification-for-important-channels-only ()
+    (interactive)
+    (setq erc-track-priority-faces-only (list-erc-tracked-channels erc-important-channels)))
+
+  (defun disable-non-priority-notification ()
+    (setq erc-track-priority-faces-only 'all))
 #+END_SRC
 
 ** terminal
