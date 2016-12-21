@@ -277,7 +277,7 @@ yas-wrap-around-region включает такое поведение.
 (key-chord-mode 1)
 (key-chord-define-global "yy" 'ack)
 (key-chord-define-global "jj" 'ace-jump-mode)
-(key-chord-define-global "gg" 'magit-status)
+(key-chord-define-global "hh" 'magit-status)
 #+END_SRC
 
 **** Работа c unicode
