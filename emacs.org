@@ -520,10 +520,19 @@ echo "machine miracloud.irc.slack.com login andrey.volkov port 6667 password $(c
 
   (defun enable-erc-notification-for-important-channels-only ()
     (interactive)
-    (setq erc-track-priority-faces-only (list-erc-tracked-channels erc-important-channels)))
+    (setq erc-track-priority-faces-only (list-erc-tracked-channels erc-important-channels))
+    (message "Enable notifications for channels %s" erc-important-channels))
 
   (defun disable-non-priority-notification ()
-    (setq erc-track-priority-faces-only 'all))
+    (interactive)
+    (setq erc-track-priority-faces-only 'all)
+    (message "Notifications from all channels are disabled"))
+
+  (defun enable-all-notifications ()
+    (interactive)
+    (setq erc-track-priority-faces-only nil)
+    (message "Notifications from all channels are enabled"))
+
 #+END_SRC
 
 ** terminal
