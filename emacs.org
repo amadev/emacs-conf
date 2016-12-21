@@ -565,13 +565,16 @@ ssh-консолей требуется выставление comint-file-name-
   (add-hook 'comint-mode-hook 'make-comint-directory-tracking-work-remotely)
 
   (defun start-shell(name cmd)
-    (interactive)
     (shell name)
     (comint-send-string name (concat cmd "\n")))
 
+  (defun start-ssh (name host)
+    (find-file (format "/ssh:%s:" host))
+    (shell name))
+
   (setq shell-alist
         '(("default" . nil)
-          ("nova" . (cmd "nact"))
+          ("nova" . (cmd "cd ~/m/nova && vact"))
           ("python" . (cmd "ipython"))
           ("python3" . (cmd "ipython3"))
           ("james" . (host "james"))
@@ -584,10 +587,9 @@ ssh-консолей требуется выставление comint-file-name-
 
   (defun start-shells ()
     (interactive)
-    (start-shell "shell_default" "cd")
-    (start-shell "shell_nova" "nact")
-    (start-shell "shell_python" "ipython")
-    (start-shell "shell_python3" "ipython3"))
+    (run-or-get-shell "default")
+    (run-or-get-shell "nova")
+    (run-or-get-shell "python"))
 
   (defun run-or-get-shell (name)
     (interactive
@@ -606,10 +608,11 @@ ssh-консолей требуется выставление comint-file-name-
       (if (get-buffer bf)
           (switch-to-buffer bf)
         (if host
-            (ssh host bf)
-          (start-shell name cmd)))))
+            (start-ssh bf host)
+          (start-shell bf cmd)))))
 
   (global-set-key (kbd "C-; b") 'run-or-get-shell)
+
 #+END_SRC
 
 Запуск текущего файла в compilation mode.
@@ -701,7 +704,6 @@ TODO сделать mapping sh-buffer -> shell process.
 
 (add-hook 'sh-mode-hook 'my-shell-mode-hook)
 #+END_SRC
-
 
 ** orgmode
 
@@ -1139,7 +1141,6 @@ machine smtp.gmail.com login EMAIL port 587 password *******
 *** Требования
 **** Вся почта собирается в одном месте
 **** В inbox попадает, то на что нужно реагировать
-
 
 ** Работа с БД
 
