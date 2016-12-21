@@ -29,23 +29,14 @@ marmalade-repo.org - не обновляется.
 
 Для меня удобнее, когда я вижу одно окно, не отвлекаясь на
 дополнительные приложения. В один момент времени выполняю одну функцию.
-На fluxbox emacs не запускается в fullscreen mode ни опцией -fs, ни
-настройкой initial-frame-alist (fullscreen . maximized), решилось
-отправкой сигнала в X.
-Также убираются все GUI-свистелки.
+Убираем лишние GUI-свистелки.
 
 #+BEGIN_SRC emacs-lisp
-
-  (defun fullscreen ()
-    (interactive)
-    (x-send-client-message nil 0 nil "_NET_WM_STATE" 32
-                           '(2 "_NET_WM_STATE_FULLSCREEN" 0)))
 
   (tooltip-mode -1)
   (tool-bar-mode -1)
   (menu-bar-mode -1)
   (scroll-bar-mode -1)
-  (fullscreen)
 
 #+END_SRC
 
