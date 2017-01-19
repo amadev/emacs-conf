@@ -1327,11 +1327,13 @@ postgres).
 **** Запуск тестов
 
 #+BEGIN_SRC elisp
-  (defun run-test-quick ()
-    (interactive)
-    (message
-     (shell-command-to-string
-      (concat "~/prog/ttr/bin/ttr " (what-function '(4))))))
+  (defun run-test-quick (arg)
+    (interactive "P")
+    (let ((cmd '(concat "~/prog/ttr/bin/ttr " (what-function '(4)))))
+      (if (eq (car arg) 4)
+          (compile (eval cmd))
+        (message
+         (shell-command-to-string (eval cmd))))))
 
   (defun multiple-replace (replaces string)
     (if (null replaces)
