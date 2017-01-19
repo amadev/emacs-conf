@@ -1327,10 +1327,11 @@ postgres).
 **** Запуск тестов
 
 #+BEGIN_SRC elisp
-  (defun run-test (arg)
-    (interactive "P")
-    (compile (concat "ltests.sh" " " (what-function arg)))
-    (compile "rtests.sh"))
+  (defun run-test-quick ()
+    (interactive)
+    (message
+     (shell-command-to-string
+      (concat "~/prog/ttr/bin/ttr " (what-function '(4))))))
 
   (defun multiple-replace (replaces string)
     (if (null replaces)
@@ -1342,7 +1343,7 @@ postgres).
 
   (defun python-path (file-name function-name)
     (concat (multiple-replace
-             '(( "/home/amadev/m/nova/" "")
+             `((,(concat (chomp (shell-command-to-string "git rev-parse --show-toplevel")) "/") "")
                ("/" "\.")
                ("\.py$" ""))
              file-name) "." function-name))
@@ -1355,6 +1356,11 @@ postgres).
      (kill-new func)
      (message "Copied function name '%s' to the clipboard." func)
      func))
+
+  (defun add-run-test-quick-key ()
+    (local-set-key (kbd "C-c C-t C-t") 'run-test-quick))
+
+  (add-hook 'python-mode-hook 'add-run-test-quick-key)
 #+END_SRC
 
 #+RESULTS:
