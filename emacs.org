@@ -253,8 +253,9 @@ yas-wrap-around-region включает такое поведение.
 **** Оформление
 
 #+BEGIN_SRC emacs-lisp
-(set-face-attribute 'default nil :height 140) ;; 14pt
+(set-face-attribute 'default nil :height 130) ;; 13pt
 ;; (load-theme 'adwaita t)
+;; (set-cursor-color "#ccc")
 (load-theme 'warm-night t)
 (set-cursor-color "#909090")
 ;; (set-cursor-color "#474242")
@@ -456,10 +457,13 @@ M-e - редактирование.
 
 *** erc
 
-echo "machine irc.freenode.net login avolkov port 6667 password $(cpp.sh irc.freenode.net)" >> \
+echo "machine irc.freenode.net login avolkov port 6697 password $(cpp.sh irc.freenode.net)" >> \
    ~/.authinfo
 echo "machine miracloud.irc.slack.com login andrey.volkov port 6667 password $(cpp.sh mirantis_irc)" >> \
    ~/.authinfo
+
+Возможно, файл сильно кешируется, т.к. после обновления файла из запущенного
+emacs данные не подхватывались, решилось перезапуском.
 
 #+BEGIN_SRC emacs-lisp
 (defun start-ircs ()
@@ -578,6 +582,10 @@ ssh-консолей требуется выставление comint-file-name-
           ("python" . (cmd "ipython"))
           ("python3" . (cmd "ipython3"))
           ("james" . (host "james"))
+          ("mcp-config" . (host "amadev-mcp-config"))
+          ("mcp-compute" . (host "amadev-mcp-compute"))
+          ("mcp-controller" . (host "amadev-mcp-controller"))
+          ("mcp" . (host "mcp"))
           ("mos-con2-6-n2" . (host "root@mos-con2"))
           ("mos-con1-3-n1" . (host "root@mos-con1"))
           ("mos-cp1-4-n3" . (host "root@mos-cp1"))
@@ -670,7 +678,7 @@ TODO сделать mapping sh-buffer -> shell process.
         (switch-to-buffer currbuff)
         (setq proc (get-process "shell"))
         ))
-    (setq pbuff (process-buffer proc))
+    (setq pbuff (get-buffer "shell_default"))
     (if (use-region-p)
         (setq min (region-beginning)
               max (region-end))
@@ -718,10 +726,10 @@ TODO сделать mapping sh-buffer -> shell process.
 Файлы с задачами.
 #+BEGIN_SRC emacs-lisp
   (setq my-org-dir (with-home-dir "org/"))
-  (setq org-agenda-files 
+  (setq org-agenda-files
         (mapcar
          #'(lambda (name) (concat my-org-dir name))
-         '("task.org" "office.org")))
+         '("task.org" "office.org" "bookmarks.org")))
 #+END_SRC
 
 #+RESULTS:
@@ -827,7 +835,8 @@ TODO сделать mapping sh-buffer -> shell process.
      (dot . t)
      (C . t)
      (sqlite . t)
-     (ledger . t)))
+     (ledger . t)
+     (gnuplot . t)))
 #+END_SRC
 
 #+RESULTS:
@@ -847,7 +856,7 @@ TODO сделать mapping sh-buffer -> shell process.
         (expand-file-name "~/bin/plantuml.jar"))
   (setq org-ditaa-jar-path
         (expand-file-name "~/.emacs.d/bin/ditaa0_9.jar"))
-  (setq org-babel-python-command "PYTHONPATH=$PYTHONPATH:~/files/prog python3")
+  (setq org-babel-python-command "PYTHONPATH=$PYTHONPATH:~/files/prog python")
   (setq org-babel-sh-command "bash")
 #+END_SRC
 
@@ -871,7 +880,6 @@ TODO сделать mapping sh-buffer -> shell process.
 
 #+RESULTS:
 : ((:results . scalar) (:session . none) (:exports . code) (:cache . no) (:noweb . no) (:hlines . no) (:tangle . no))
-
 
 *** Время
 
@@ -899,6 +907,7 @@ Skips capture tasks and tasks with subtasks"
            (not (bh/is-project-p-with-open-subtasks)))
       "STARTED"))
 
+;; добавляет время закрытия таска
 (setq org-log-done t)
 ;; Сохраняем историю подсчета времени между сессиями
 (setq org-clock-persist 'history)
@@ -924,6 +933,8 @@ Skips capture tasks and tasks with subtasks"
 ;; Include current clocking task in clock reports
 (setq org-clock-report-include-clocking-task t)
 (setq org-deadline-warning-days 1)
+
+(setq org-clock-mode-line-total 'current)
 #+END_SRC
 
 #+RESULTS:
@@ -940,7 +951,7 @@ file://~/Dropbox/mu_0.9.15-1_amd64.deb
 
 lisp-файлы подключаются к emacs.
 #+BEGIN_SRC emacs-lisp
-(add-to-list 'load-path "/usr/local/share/emacs/site-lisp/mu4e")
+(add-to-list 'load-path "/usr/share/emacs/site-lisp/mu4e")
 (require 'mu4e)
 #+END_SRC
 
@@ -949,7 +960,7 @@ lisp-файлы подключаются к emacs.
 [[file:~/files/settings/.offlineimaprc::%5Bgeneral%5D]]
 Для каждого аккаунта используется конфиг imapfilter.
 [[file:~/files/settings/.imapfilter/wolfanio.lua::timeout%20=%20120][wolfanio]]
-#TODO в перерыве между фильтрацией и скачиванием нежелательные письма просачиваются 
+#TODO в перерыве между фильтрацией и скачиванием нежелательные письма просачиваются
 
 Возможно, для ускорения следует попробовать серверную обработку
 http://kb.4rt.ru/mail/setup.
@@ -1237,7 +1248,7 @@ postgres).
 
 Сохранение истории таким способом не работает при закрытии буфера,
 поэтому нужно сначала убить процесс (TODO при закрытии буфера вызывать
-сохранение истории). 
+сохранение истории).
 #+BEGIN_SRC emacs-lisp
 ;; comint-input-ring-size 500
   (defun my-sql-save-history-hook ()
@@ -1263,6 +1274,7 @@ postgres).
 *** Python
 
 **** Просмотр документации
+
 Для поиска документации по используется pylookup,
 который индексирует документацию python, и сохраняет индекс локально.
 
@@ -1287,12 +1299,12 @@ postgres).
 #+RESULTS:
 
 Просмотр документации: pylookup-lookup ищет слово под курсором и
-предлагает выбор.  
+предлагает выбор.
 #+BEGIN_SRC emacs-lisp
   (defun pylookup-view-doc-index ()
     (interactive)
-    (browse-url (concat "file://" 
-                        pylookup-dir 
+    (browse-url (concat "file://"
+                        pylookup-dir
                         "/python-2.7.7-docs-html/index.html")))
 #+END_SRC
 
@@ -1300,6 +1312,7 @@ postgres).
 | pylookup-keys | wisent-python-default-setup | er/add-python-mode-expansions | jedi:setup | (lambda nil (local-set-key (kbd C-M-i) (quote jedi-complete)) (local-set-key (kbd C-<tab>) (quote jedi-complete)) (local-set-key (kbd C-c C-d C-d) (quote jedi:show-doc)) (local-set-key (kbd C-c C-d h) (quote pylookup-lookup)) (local-set-key (kbd C-c v) (quote pep8)) (local-set-key (kbd C-c l) (quote pylint)) (local-set-key (kbd C-c d) (quote pep257)) (jedi:setup))  |
 
 **** Display current buffer structure
+
 #+BEGIN_SRC emacs-lisp
 (defun occur-python-structure ()
   (interactive)
@@ -1307,6 +1320,7 @@ postgres).
 #+END_SRC
 
 **** Keys
+
 #+BEGIN_SRC emacs-lisp
   (defun python-keys ()
     (local-unset-key (kbd "C-c C-d"))
@@ -1327,6 +1341,9 @@ postgres).
 **** Запуск тестов
 
 #+BEGIN_SRC elisp
+  (defun colorize-test-message (message)
+    )
+
   (defun run-test-quick (arg)
     (interactive "P")
     (let ((cmd '(concat "~/prog/ttr/bin/ttr " (what-function '(4)))))
@@ -1348,7 +1365,7 @@ postgres).
              `((,(concat (chomp (shell-command-to-string "git rev-parse --show-toplevel")) "/") "")
                ("/" "\.")
                ("\.py$" ""))
-             file-name) "." function-name))
+               file-name) "." function-name))
 
   (defun what-function (arg)
     (interactive "P")
@@ -1405,7 +1422,7 @@ postgres).
 #+END_SRC
 
 #+RESULTS:
-| enable-paredit-mode | 
+| enable-paredit-mode |
 
 #+BEGIN_SRC emacs-lisp
   (add-hook 'slime-repl-mode-hook (lambda () (paredit-mode +1)))
@@ -1425,7 +1442,10 @@ postgres).
 #+RESULTS:
 | override-slime-repl-bindings-with-paredit | (lambda nil (paredit-mode 1)) | slime-trace-dialog-enable | #[nil \301\300!\210\302\303\304\305\306\302$\207 [parse-sexp-lookup-properties make-local-variable t add-hook after-change-functions slime-after-change-function append] 5] | slime-autodoc--on | slime-repl-add-easy-menu |
 
-
+;; (checkdoc)
+;; (package-buffer-info)
+;; (byte-compile-file "~/.emacs.d/init.el")
+;; (elint-file "~/.emacs.d/init.el")g
 
 ** Прочее
 
@@ -1446,6 +1466,7 @@ postgres).
    ;; If you edit it by hand, you could mess it up, so be careful.
    ;; Your init file should contain only one such instance.
    ;; If there is more than one, they won't work right.
+   '(which-func ((t (:foreground "#b680b1" :weight bold))))
    '(chess-ics1-black-face ((t (:foreground "dim gray" :weight bold))))
    '(chess-ics1-white-face ((t (:foreground "chocolate" :weight bold))))
    '(secondary-selection ((t (:background "pale goldenrod")))))
@@ -1466,10 +1487,10 @@ postgres).
 #+END_SRC
 
 ** Автозапуск
+
 #+BEGIN_SRC emacs-lisp
 (find-file "~/org/task.org")
 (find-file "~/org/mirantis.org")
 (magit-status-internal "~/m/nova")
 (start-shells)
 #+END_SRC
-
