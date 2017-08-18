@@ -591,6 +591,7 @@ ssh-консолей требуется выставление comint-file-name-
           ("mos-cp1-4-n3" . (host "root@mos-cp1"))
           ("mos-cp2-5-n4" . (host "root@mos-cp2"))
           ("mos-fuel" . (host "root@mos-fuel"))
+          ("mmcp" . (host "mmcp"))
           ("sally" . (host "sally"))))
 
   (defun start-shells ()
@@ -712,6 +713,29 @@ TODO сделать mapping sh-buffer -> shell process.
 
 (add-hook 'sh-mode-hook 'my-shell-mode-hook)
 #+END_SRC
+
+*** Шаблоны для создания shell buffers
+
+#+BEGIN_SRC elisp
+(defun mmcp ()
+  (interactive)
+  (start-ssh "m_cfg" "mmcp")
+  (comint-send-string "m_cfg" "sudo su\n")
+
+  (start-ssh "m_ctl01" "mmcp")
+  (comint-send-string "m_ctl01" "sudo su\n")
+  (comint-send-string "m_ctl01" "ssh ctl01\n")
+
+  (start-ssh "m_cmp01" "mmcp")
+  (comint-send-string "m_cmp01" "sudo su\n")
+  (comint-send-string "m_cmp01" "ssh cmp01\n")
+
+  (start-ssh "m_sql" "mmcp")
+  (comint-send-string "m_sql" "sudo su\n")
+  (comint-send-string "m_sql" "ssh ctl01\n")
+  (comint-send-string "m_sql" "mysql -unova -h172.16.10.254 -pworkshop nova\n"))
+#+END_SRC
+
 
 ** orgmode
 
