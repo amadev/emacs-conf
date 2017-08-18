@@ -825,7 +825,7 @@ TODO сделать mapping sh-buffer -> shell process.
    'org-babel-load-languages
    '((lisp . t)
      (plantuml . t)
-     (sh . t)
+     (shell . t)
      (lisp . t)
      (ditaa . t)
      (R . t)
