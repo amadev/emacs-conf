@@ -1348,13 +1348,17 @@ postgres).
 #+BEGIN_SRC emacs-lisp
   (defun python-keys ()
     (local-unset-key (kbd "C-c C-d"))
+    (local-unset-key (kbd "C-; s"))
     (local-set-key (kbd "C-c C-d h") 'pylookup-lookup)
     (local-set-key (kbd "C-c C-d i") 'pylookup-view-doc-index)
     (local-set-key (kbd "C-c C-d C-d") 'jedi:show-doc)
     (local-set-key (kbd "C-c v") 'pep8)
     (local-set-key (kbd "C-c l") 'pylint)
     (local-set-key (kbd "C-c d") 'pep257)
-    (local-set-key (kbd "C-; s") 'occur-python-structure)
+    (local-set-key (kbd "C-; s s") 'occur-python-structure)
+    (local-set-key (kbd "C-; s c") 'grep-at-point)
+    (local-set-key (kbd "C-; s f") 'grep-function-at-point)
+    (local-set-key (kbd "C-; s w") 'what-function-full)
     (local-set-key (kbd "C-M-i") 'jedi-complete)
     (local-set-key (kbd "C-<tab>") 'jedi-complete)
     (jedi:setup))
@@ -1393,12 +1397,19 @@ postgres).
 
   (defun what-function (arg)
     (interactive "P")
-    (let ((func (if (eq (car arg) 4)
-                    (python-path (buffer-file-name) (which-function))
-                  (cadr (split-string (which-function) "\\.")))))
+    (let* ((orig-func (which-function))
+           (func (if (eq (car arg) 4)
+                    (python-path (buffer-file-name) orig-func)
+                   (if (string-match "\\." orig-func)
+                       (cadr (split-string orig-func "\\."))
+                     orig-func))))
      (kill-new func)
      (message "Copied function name '%s' to the clipboard." func)
      func))
+
+  (defun what-function-full ()
+    (interactive)
+    (what-function '(4)))
 
   (defun add-run-test-quick-key ()
     (local-set-key (kbd "C-c C-t C-t") 'run-test-quick))
@@ -1425,6 +1436,20 @@ postgres).
 
 #+RESULTS:
 : ~/.ve
+
+**** Search symbol at point
+
+#+BEGIN_SRC elisp
+  (defun grep-at-point ()
+    (interactive)
+    (let ((s (thing-at-point 'symbol t)))
+      (ack (concat "ag -i --nogroup " s) (ack-default-directory 4))))
+
+  (defun grep-function-at-point ()
+    (interactive)
+    (let ((s (what-function '(0))))
+      (ack (concat "ag -i --nogroup " s) (ack-default-directory 4))))
+#+END_SRC
 
 *** Lisp
 
