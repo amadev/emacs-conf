@@ -753,7 +753,8 @@ TODO сделать mapping sh-buffer -> shell process.
   (setq org-agenda-files
         (mapcar
          #'(lambda (name) (concat my-org-dir name))
-         '("task.org" "office.org" "bookmarks.org")))
+         '("task.org" "bookmarks.org" "reference.org" "google-calendar.org" "book.org" "film.org")))
+
 #+END_SRC
 
 #+RESULTS:
@@ -1495,6 +1496,26 @@ postgres).
 ;; (package-buffer-info)
 ;; (byte-compile-file "~/.emacs.d/init.el")
 ;; (elint-file "~/.emacs.d/init.el")g
+
+*** JS
+
+Для просмотра json нужна возможность свертывать отдельные блоки,
+есть hs-minor-mode, который позволяет свертывать только {} блоки.
+
+Настраиваем, чтобы можно было свертывать [].
+
+#+BEGIN_SRC elisp
+(add-to-list 'hs-special-modes-alist '(js-mode . ("[{[]" "[}\\]]" "/[*/]" nil)))
+#+END_SRC
+
+Включаем hs-minor-mode для JS.
+
+#+BEGIN_SRC elisp
+(defun add-hs-minor-mode()
+  (hs-minor-mode))
+
+(add-hook 'js-mode-hook 'add-hs-minor-mode)
+#+END_SRC
 
 ** Прочее
 
