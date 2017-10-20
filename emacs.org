@@ -540,21 +540,20 @@ emacs данные не подхватывались, решилось пере�
 #+END_SRC
 
 ** terminal
+*** Shell management
 
-Для работы с терминалом вполне хватает shell + rename buffer.  Если
-нужно запустить новый, использовать (start-shell <shell_name>
-<initial_cmd).
+Для удобства запуска новых консолей есть две функции:
+- start-shell(buffer-name &optional cmd)
+  Например: (start-shell "shell_nova" "cd ~/m/nova && vact")
+- start-ssh (buffer-name host &optional cmd)
+  Подключается к хосту, используя tramp, затем запускает shell.
+  Для подключения к хосту можно использовать tramp, например:
+  (start-ssh "shell_ctl" "fuel|sudo:fuel|ssh:ctl01")
 
-Для управления несколькими консолями используется: C-; b runs the
-command run-or-get-shell.  Команда может запускать или переключаться
-на запущенные консоли с помощью helm.
+Часто используемые shell добавляются в shell-alist и вызываются
+через helm (c-; b).
 
-Список консолей определяется в переменной shell-alist.  Каждой консоли
-может быть указана инициализирующая команда, либо хост для ssh
-консоли.
-
-Directory tracking для локальных консолей работает из коробки, для
-ssh-консолей требуется выставление comint-file-name-prefix.
+autostart-shells - запускает shell, требующиеся всегда, автоматически.
 
 #+BEGIN_SRC emacs-lisp
 
@@ -568,33 +567,25 @@ ssh-консолей требуется выставление comint-file-name-
 
   (add-hook 'comint-mode-hook 'make-comint-directory-tracking-work-remotely)
 
-  (defun start-shell(name cmd)
-    (shell name)
-    (comint-send-string name (concat cmd "\n")))
+  (defun start-shell(buffer-name &optional cmd)
+    (shell buffer-name)
+    (if cmd
+        (comint-send-string buffer-name (concat cmd "\n"))))
 
-  (defun start-ssh (name host)
+  (defun start-ssh (buffer-name host &optional cmd)
     (find-file (format "/ssh:%s:" host))
-    (shell name))
+    (shell buffer-name)
+    (if cmd
+        (comint-send-string buffer-name (concat cmd "\n"))))
 
   (setq shell-alist
         '(("default" . nil)
           ("nova" . (cmd "cd ~/m/nova && vact"))
           ("python" . (cmd "ipython"))
           ("python3" . (cmd "ipython3"))
-          ("james" . (host "james"))
-          ("mcp-config" . (host "amadev-mcp-config"))
-          ("mcp-compute" . (host "amadev-mcp-compute"))
-          ("mcp-controller" . (host "amadev-mcp-controller"))
-          ("mcp" . (host "mcp"))
-          ("mos-con2-6-n2" . (host "root@mos-con2"))
-          ("mos-con1-3-n1" . (host "root@mos-con1"))
-          ("mos-cp1-4-n3" . (host "root@mos-cp1"))
-          ("mos-cp2-5-n4" . (host "root@mos-cp2"))
-          ("mos-fuel" . (host "root@mos-fuel"))
-          ("mmcp" . (host "mmcp"))
-          ("sally" . (host "sally"))))
+          ("amadev" . (host "amadev"))))
 
-  (defun start-shells ()
+  (defun autostart-shells ()
     (interactive)
     (run-or-get-shell "default")
     (run-or-get-shell "nova")
@@ -621,10 +612,12 @@ ssh-консолей требуется выставление comint-file-name-
           (start-shell bf cmd)))))
 
   (global-set-key (kbd "C-; b") 'run-or-get-shell)
-
 #+END_SRC
 
+*** Run current file
+
 Запуск текущего файла в compilation mode.
+
 #+BEGIN_SRC emacs-lisp
 (global-set-key (kbd "<f7>") 'run-current-file)
 
@@ -666,8 +659,11 @@ ssh-консолей требуется выставление comint-file-name-
             ))))
 #+END_SRC
 
+*** Send region to shell from shell-script buffer
+
 Посыл региона в shell (посылает в первый запущенный shell).
 TODO сделать mapping sh-buffer -> shell process.
+
 #+BEGIN_SRC emacs-lisp
 (defun sh-send-line-or-region (&optional step)
   (interactive ())
@@ -714,17 +710,15 @@ TODO сделать mapping sh-buffer -> shell process.
 (add-hook 'sh-mode-hook 'my-shell-mode-hook)
 #+END_SRC
 
-*** Шаблоны для создания shell buffers
+*** Cоздание нескольких shell buffer одной командой
 
 #+BEGIN_SRC elisp
-(defun mmcp ()
+(defun start-shells-for-mmcp ()
   (interactive)
-  (start-ssh "m_cfg" "mmcp")
-  (comint-send-string "m_cfg" "sudo su\n")
+  (start-ssh "shell_amadev" "amadev")
+  (start-ssh "m_cfg" "mmcp|sudo:mmcp")
 
-  (start-ssh "m_ctl01" "mmcp")
-  (comint-send-string "m_ctl01" "sudo su\n")
-  (comint-send-string "m_ctl01" "ssh ctl01\n")
+  (start-ssh "m_ctl01" "mmcp|ssh:172.16.10.94|sudo:172.16.10.94:")
 
   (start-ssh "m_cmp01" "mmcp")
   (comint-send-string "m_cmp01" "sudo su\n")
@@ -736,6 +730,14 @@ TODO сделать mapping sh-buffer -> shell process.
   (comint-send-string "m_sql" "mysql -unova -h172.16.10.254 -pworkshop nova\n"))
 #+END_SRC
 
+*** Run tmp command
+
+#+BEGIN_SRC elisp
+  (defun tmp-command()
+    (interactive)
+    (comint-send-string "shell_placement" "~/m/python-openstackclient/.tox/py27/bin/pytest -vxlk TestSetInventory\n"))
+  (global-set-key (kbd "<f8>") 'tmp-command)
+#+END_SRC
 
 ** orgmode
 
@@ -1562,5 +1564,5 @@ postgres).
 (find-file "~/org/task.org")
 (find-file "~/org/mirantis.org")
 (magit-status-internal "~/m/nova")
-(start-shells)
+(autostart-shells)
 #+END_SRC
