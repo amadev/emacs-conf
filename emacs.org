@@ -724,26 +724,6 @@ TODO сделать mapping sh-buffer -> shell process.
 (add-hook 'sh-mode-hook 'my-sh-mode-hook)
 #+END_SRC
 
-*** Cоздание нескольких shell buffer одной командой
-
-#+BEGIN_SRC elisp
-(defun start-shells-for-mmcp ()
-  (interactive)
-  (start-ssh "shell_amadev" "amadev")
-  (start-ssh "m_cfg" "mmcp|sudo:mmcp")
-
-  (start-ssh "m_ctl01" "mmcp|ssh:172.16.10.94|sudo:172.16.10.94:")
-
-  (start-ssh "m_cmp01" "mmcp")
-  (comint-send-string "m_cmp01" "sudo su\n")
-  (comint-send-string "m_cmp01" "ssh cmp01\n")
-
-  (start-ssh "m_sql" "mmcp")
-  (comint-send-string "m_sql" "sudo su\n")
-  (comint-send-string "m_sql" "ssh ctl01\n")
-  (comint-send-string "m_sql" "mysql -unova -h172.16.10.254 -pworkshop nova\n"))
-#+END_SRC
-
 *** Run tmp command
 
 #+BEGIN_SRC elisp
@@ -752,7 +732,6 @@ TODO сделать mapping sh-buffer -> shell process.
     (comint-send-string "shell_placement" "~/m/python-openstackclient/.tox/py27/bin/pytest -vxlk TestSetInventory\n"))
   (global-set-key (kbd "<f8>") 'tmp-command)
 #+END_SRC
-
 
 ** orgmode
 
@@ -835,6 +814,11 @@ TODO сделать mapping sh-buffer -> shell process.
 | STARTED   | (STARTED . t)   | (CANCELLED) | (WAITING)     |
 | TODO      | (STARTED)       | (CANCELLED) | (WAITING)     |
 | DONE      | (STARTED)       | (CANCELLED) | (WAITING)     |
+
+#+BEGIN_SRC elisp
+(setq org-mobile-directory "~/Dropbox/org-mobile")
+(setq org-mobile-files '("~/org/" ))
+#+END_SRC
 
 *** Захват сообщений
 
@@ -982,9 +966,53 @@ Skips capture tasks and tasks with subtasks"
 #+RESULTS:
 : 1
 
+Отображение clock-table в часах.
+
+#+BEGIN_SRC elisp
+  (setq org-time-clocksum-format
+        '(:hours "%d"
+          :require-hours t
+          :minutes ":%02d"
+          :require-minutes t))
+#+END_SRC
+
 *** Экспорт
 
 (setq org-export-babel-evaluate nil)
+
+*** Agenda
+
+#+BEGIN_SRC elisp
+  ;; (setq org-agenda-custom-commands
+  ;;       '(("x" agenda)
+  ;;         ("y" agenda*)
+  ;;         ("w" todo "WAITING")
+  ;;         ("W" todo-tree "WAITING")
+  ;;         ("u" tags "+boss-urgent")
+  ;;         ("v" tags-todo "+boss-urgent")
+  ;;         ("U" tags-tree "+boss-urgent")
+  ;;         ("f" occur-tree "\\<FIXME\\>")
+  ;;         ("h" . "HOME+Name tags searches") ; description for "h" prefix
+  ;;         ("hl" tags "+home+Lisa")
+  ;;         ("hp" tags "+home+Peter")
+  ;;         ("hk" tags "+home+Kim")))
+  (setq org-agenda-custom-commands
+        '(("tb" tags-todo "+BOOK")
+          ("tr" tags-todo "+READ")
+          ("tt" tags-todo "+TASK")
+          ("tp" tags-todo "+PROJECT")
+          ("tf" tags-todo "+FILM")))
+#+END_SRC
+
+*** Настройки блоков
+
+#+BEGIN_SRC elisp
+(setq org-src-fontify-natively t
+      org-src-window-setup 'current-window
+      org-src-strip-leading-and-trailing-blank-lines t
+      org-src-preserve-indentation t
+      org-src-tab-acts-natively t)
+#+END_SRC
 
 ** Почта
 
