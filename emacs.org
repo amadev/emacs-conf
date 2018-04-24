@@ -566,62 +566,55 @@ emacs данные не подхватывались, решилось пере�
 autostart-shells - запускает shell, требующиеся всегда, автоматически.
 
 #+BEGIN_SRC emacs-lisp
+(defun read-shells-config (fname)
+  (read (format "(%s)"
+                (with-temp-buffer
+                  (insert-file-contents fname)
+                  (buffer-string)))))
 
-  (defun make-comint-directory-tracking-work-remotely ()
-    "Add this to comint-mode-hook to make directory tracking work
+(defun make-comint-directory-tracking-work-remotely ()
+  "Add this to comint-mode-hook to make directory tracking work
     while sshed into a remote host, e.g. for remote shell buffers
     started in tramp. (This is a bug fix backported from Emacs 24:
     http://comments.gmane.org/gmane.emacs.bugs/39082"
-    (set (make-local-variable 'comint-file-name-prefix)
-         (or (file-remote-p default-directory) "")))
+  (set (make-local-variable 'comint-file-name-prefix)
+       (or (file-remote-p default-directory) "")))
 
-  (add-hook 'comint-mode-hook 'make-comint-directory-tracking-work-remotely)
+(add-hook 'comint-mode-hook 'make-comint-directory-tracking-work-remotely)
 
-  (defun start-shell(buffer-name &optional cmd)
-    (shell buffer-name)
-    (if cmd
-        (comint-send-string buffer-name (concat cmd "\n"))))
+(defun start-shell(buffer-name &optional cmd)
+  (shell buffer-name)
+  (if cmd
+      (comint-send-string buffer-name (concat cmd "\n"))))
 
-  (defun start-ssh (buffer-name host &optional cmd)
-    (find-file (format "/ssh:%s:" host))
-    (shell buffer-name)
-    (if cmd
-        (comint-send-string buffer-name (concat cmd "\n"))))
+(defun start-ssh (buffer-name host &optional cmd)
+  (find-file (format "/ssh:%s:" host))
+  (shell buffer-name)
+  (if cmd
+      (comint-send-string buffer-name (concat cmd "\n"))))
 
-  (setq shell-alist
-        '(("default" . nil)
-          ("nova" . (cmd "cd ~/m/nova && vact"))
-          ("python" . (cmd "ipython"))
-          ("python3" . (cmd "ipython3"))
-          ("amadev" . (host "amadev"))))
+(defun run-or-get-shell (name)
+  (interactive
+   (progn (setq shell-alist (read-shells-config "~/.emacs.d/shells.el"))
+          (helm-comp-read "Select shell: "
+                          (mapcar (lambda (item)
+                                    (list
+                                     (nth 0 item)
+                                     (nth 0 item)))
+                                  shell-alist))))
+  (let* ((opts (cadr (assoc name shell-alist)))
+         (host (plist-get opts 'host))
+         (cmd (or (plist-get opts 'cmd) "cd"))
+         (auto (plist-get opts 'auto))
+         (bf (concat "shell-" name)))
+    (message "%s is choosen, cmd: %s, host: %s" name cmd host)
+    (if (get-buffer bf)
+        (switch-to-buffer bf)
+      (if host
+          (start-ssh bf host cmd)
+        (start-shell bf cmd)))))
 
-  (defun autostart-shells ()
-    (interactive)
-    (run-or-get-shell "default")
-    (run-or-get-shell "nova")
-    (run-or-get-shell "python"))
-
-  (defun run-or-get-shell (name)
-    (interactive
-     (helm-comp-read "Select shell: "
-                     (mapcar (lambda (item)
-                               (list
-                                (nth 0 item)
-                                (nth 0 item)))
-                             shell-alist)))
-    (let* ((opts (cdr (assoc name shell-alist)))
-           (host (plist-get opts 'host))
-           (cmd (or (plist-get opts 'cmd) "cd"))
-           (auto (plist-get opts 'auto))
-           (bf (concat "shell_" name)))
-      (message "%s is picked, cmd %s, host %s" name cmd host)
-      (if (get-buffer bf)
-          (switch-to-buffer bf)
-        (if host
-            (start-ssh bf host)
-          (start-shell bf cmd)))))
-
-  (global-set-key (kbd "C-; b") 'run-or-get-shell)
+(global-set-key (kbd "C-; b") 'run-or-get-shell)
 #+END_SRC
 
 *** Run current file
@@ -711,13 +704,13 @@ TODO сделать mapping sh-buffer -> shell process.
   (interactive)
   (pop-to-buffer (process-buffer (get-process "shell")) t))
 
-(defun my-shell-mode-hook ()
+(defun my-sh-mode-hook ()
   (progn
     (local-set-key (kbd "C-c C-c") 'sh-send-line-or-region)
     (local-set-key (kbd "C-u C-c C-c") 'sh-send-line-or-region-and-step)
     (local-set-key (kbd "C-c C-z") 'sh-switch-to-process-buffer)))
 
-(add-hook 'sh-mode-hook 'my-shell-mode-hook)
+(add-hook 'sh-mode-hook 'my-sh-mode-hook)
 #+END_SRC
 
 *** Cоздание нескольких shell buffer одной командой
@@ -1574,5 +1567,4 @@ postgres).
 (find-file "~/org/task.org")
 (find-file "~/org/mirantis.org")
 (magit-status-internal "~/m/nova")
-(autostart-shells)
 #+END_SRC
