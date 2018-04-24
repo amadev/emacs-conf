@@ -1,8 +1,7 @@
 #+STARTUP: content
 * emacs
   :PROPERTIES:
-  :tangle:   /home/amadev/.emacs.d/init.el
-  :results: replace
+  :header-args: :tangle /home/amadev/.emacs.d/init.el :results silent
   :END:
 
 ** Инициализация emacs
