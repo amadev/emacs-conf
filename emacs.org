@@ -1795,6 +1795,7 @@ Uses `current-date-time-format' for the formatting the date/time."
 *** calendar
 
 #+BEGIN_SRC elisp
+(require 'calendar)
 (setq calendar-week-start-day 1)
 (setq calendar-holidays '((holiday-fixed 11 4 "")
                           (holiday-fixed 1 1 "")
