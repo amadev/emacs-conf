@@ -1531,32 +1531,315 @@ postgres).
 #+END_SRC
 
 ** Прочее
-
-(load-library "url-handlers")
+*** defaults
 
 #+BEGIN_SRC emacs-lisp
-  (add-to-list 'load-path (expand-file-name "~/.emacs.d/my/"))
+(require 'smex)
+(smex-initialize)
+(global-set-key (kbd "M-x") 'smex)
+(global-set-key (kbd "M-X") 'smex-major-mode-commands)
+(global-set-key (kbd "C-c C-c M-x") 'execute-extended-command)
 
-  (require 'my_defaults)
-  (require 'my_prog)
-  (require 'my_python)
-  (require 'my_text)
-  (require 'my_time)
-  (require 'my_calendar)
+(require 'uniquify)
+(setq uniquify-buffer-name-style 'forward)
 
-  (custom-set-faces
-   ;; custom-set-faces was added by Custom.
-   ;; If you edit it by hand, you could mess it up, so be careful.
-   ;; Your init file should contain only one such instance.
-   ;; If there is more than one, they won't work right.
-   '(which-func ((t (:foreground "#b680b1" :weight bold))))
-   '(chess-ics1-black-face ((t (:foreground "dim gray" :weight bold))))
-   '(chess-ics1-white-face ((t (:foreground "chocolate" :weight bold))))
-   '(secondary-selection ((t (:background "pale goldenrod")))))
+(require 'saveplace)
+(setq-default save-place t)
 
-  (put 'narrow-to-region 'disabled nil)
-  (put 'downcase-region 'disabled nil)
+(global-set-key (kbd "M-/") 'hippie-expand)
+(global-set-key (kbd "C-x C-b") 'ibuffer)
+(global-set-key [remap other-window] 'ace-window)
 
+(fset 'yes-or-no-p 'y-or-n-p)
+
+(require 'expand-region)
+(global-set-key (kbd "C-=") 'er/expand-region)
+
+(global-set-key (kbd "M-n") 'delete-indentation)
+
+(setq jiralib-url "http://jira.lamoda.ru/")
+(require 'org-jira)
+
+(require 'recentf)
+(recentf-mode 1)
+(setq recentf-max-menu-items 50)
+(global-set-key "\C-x\ \C-r" 'recentf-open-files)
+
+(global-set-key (kbd "C-x f") 'find-file-in-project)
+(show-paren-mode 1)
+
+;; show buffer file path or buffer name
+(setq frame-title-format '(buffer-file-name "emacs %f" ("emacs %b")))
+
+;; NO TABS, spaces only
+(setq-default indent-tabs-mode nil)
+(setq tab-width 4)
+(defvaralias 'c-basic-offset 'tab-width)
+(defvaralias 'cperl-indent-level 'tab-width)
+
+(setq find-program "find")
+
+(setq x-select-enable-clipboard t
+      x-select-enable-primary t
+      save-interprogram-paste-before-kill t
+      apropos-do-all t
+      mouse-yank-at-point t
+      save-place-file (concat user-emacs-directory "places")
+      Info-additional-directory-list '("/usr/share/info/emacs-snapshot/" "/usr/local/share/info"))
+
+(setq tramp-default-method "ssh")
+(setq ack-command "ag -i --nogroup ")
+
+(require 'multiple-cursors)
+(require 'mark-multiple)
+(require 'inline-string-rectangle)
+
+(defun fc-eval-and-replace ()
+  "Replace the preceding sexp with its value."
+  (interactive)
+  (backward-kill-sexp)
+  (condition-case nil
+      (prin1 (eval (read (current-kill 0)))
+             (current-buffer))
+    (error (message "Invalid expression")
+           (insert (current-kill 0)))))
+
+(display-time-mode t)
+
+(add-hook 'before-save-hook 'delete-trailing-whitespace)
+
+(global-set-key "\C-w" 'clipboard-kill-region)
+(global-set-key "\M-w" 'clipboard-kill-ring-save)
+(global-set-key "\C-y" 'clipboard-yank)
+(global-set-key (kbd "C-x r t") 'inline-string-rectangle)
+(global-set-key (kbd "C-<") 'mark-previous-like-this)
+(global-set-key (kbd "C->") 'mark-next-like-this)
+;; like the other two, but takes an argument (negative is previous)
+(global-set-key (kbd "C-M-m") 'mark-more-like-this)
+
+(custom-set-faces
+ '(which-func ((t (:foreground "#b680b1" :weight bold))))
+ '(chess-ics1-black-face ((t (:foreground "dim gray" :weight bold))))
+ '(chess-ics1-white-face ((t (:foreground "chocolate" :weight bold))))
+ '(secondary-selection ((t (:background "pale goldenrod")))))
+
+(put 'narrow-to-region 'disabled nil)
+(put 'downcase-region 'disabled nil)
+
+(setq helm-locate-project-list '("~/m/nova"))
+#+END_SRC
+
+*** prog
+
+#+BEGIN_SRC elisp
+(defun my-prog-mode-hook ()
+  (setq whitespace-style '(face lines-tail tabs trailing)
+        whitespace-line-column 79)
+  (whitespace-mode t)
+  (which-function-mode -1)
+  (idle-highlight-mode t)
+  (make-local-variable 'column-number-mode)
+  (column-number-mode t)
+  (hl-line-mode t)
+  (smartparens-mode 1)
+  (add-to-list 'write-file-functions 'delete-trailing-whitespace))
+
+(add-hook  'prog-mode-hook 'my-prog-mode-hook)
+#+END_SRC
+
+*** python
+
+#+BEGIN_SRC elisp
+(setq pylint-cmd
+    (concat "pylint --rcfile ~/files/settings/linters/pylintrc"
+            " -rn --msg-template='{path}:{line}: [{msg_id}({symbol}), {obj}] {msg}' "))
+
+(defvar pep257-hist nil)
+
+(defun pep257 ()
+  (interactive)
+  (let* ((cmd (read-shell-command
+               "Command: "
+               (concat "~/bin/pep257.py " (file-name-nondirectory (or (buffer-file-name) "")))
+               'pep257-hist))
+         (null-device nil))
+    (grep cmd)))
+
+(setq jedi:tooltip-method '(pos-tip popup))
+(setq jedi:server-args '("--virtual-env" "~/m/nova/.tox/py27"))
+(setq jedi:setup-keys t)                      ; optional
+(setq jedi:complete-on-dot t)                 ; optional
+
+
+(setq
+ python-shell-interpreter "ipython"
+ python-shell-interpreter-args "-i")
+#+END_SRC
+
+*** text
+
+#+BEGIN_SRC elisp
+(global-set-key (kbd "C-c s d") 'duplicate-line-c)
+
+(defun rows2one (start end)
+  (interactive "r")
+  (save-restriction
+    (narrow-to-region start end)
+    (goto-char (point-min))
+    (replace-regexp "^" "'")
+    (goto-char (point-min))
+    (replace-regexp "$" "',")
+    (goto-char (point-min))
+    (while (search-forward "\n" nil t) (replace-match " " nil t))
+    (move-end-of-line)
+    ))
+
+(defun pretty-print-xml-region (begin end)
+  "Pretty format XML markup in region. You need to have nxml-mode
+http://www.emacswiki.org/cgi-bin/wiki/NxmlMode installed to do
+this. The function inserts linebreaks to separate tags that have
+nothing but whitespace between them. It then indents the markup
+by using nxml's indentation rules."
+  (interactive "r")
+  (save-excursion
+    (goto-char begin)
+    (while (search-forward-regexp "\>[ \\t]*\<" nil t)
+      (backward-char) (insert "\n") (setq end (1+ end)))
+    (indent-region begin end))
+  (message "Ah, much better!"))
+
+(defun duplicate-line-c (arg)
+  "Duplicate current line, leaving point in lower line."
+  (interactive "*p")
+
+  ;; save the point for undo
+  (setq buffer-undo-list (cons (point) buffer-undo-list))
+
+  ;; local variables for start and end of line
+  (let ((bol (save-excursion (beginning-of-line) (point)))
+        eol)
+    (save-excursion
+
+      ;; don't use forward-line for this, because you would have
+      ;; to check whether you are at the end of the buffer
+      (end-of-line)
+      (setq eol (point))
+
+      ;; store the line and disable the recording of undo information
+      (let ((line (buffer-substring bol eol))
+            (buffer-undo-list t)
+            (count arg))
+        ;; insert the line arg times
+        (while (> count 0)
+          (newline)         ;; because there is no newline in 'line'
+          (insert line)
+          (setq count (1- count)))
+        )
+
+      ;; create the undo information
+      (setq buffer-undo-list (cons (cons eol (point)) buffer-undo-list)))
+    ) ; end-of-let
+
+  ;; put the point in the lowest line and return
+  (next-line arg))
+
+(defvar current-date-time-format "%Y-%m-%d %H:%M:%S %Z %Y"
+  "Format of date to insert with `insert-current-date-time' func
+See help of `format-time-string' for possible replacements")
+
+(defvar current-time-format "%a %H:%M:%S"
+  "Format of date to insert with `insert-current-time' func.
+Note the weekly scope of the command's precision.")
+
+(defun insert-current-date-time ()
+  "insert the current date and time into current buffer.
+Uses `current-date-time-format' for the formatting the date/time."
+       (interactive)
+       (insert (format-time-string current-date-time-format (current-time))))
+
+(defun insert-current-time ()
+  "insert the current time (1-week scope) into the current buffer."
+       (interactive)
+       (insert (format-time-string current-time-format (current-time))))
+
+(defun sentence-from-func-name-in-string (func-name)
+  (let ((splitted-fn (split-string func-name "_")))
+    (setf (first splitted-fn) (capitalize (first splitted-fn)))
+    (concat (mapconcat 'identity splitted-fn " ") "."))
+  )
+
+(defun sentence-from-func-name (start end)
+  (interactive "r")
+  (let ((result
+         (sentence-from-func-name-in-string
+          (buffer-substring-no-properties start end))))
+    (save-excursion
+      (delete-region start end)
+      (goto-char start)
+      (insert result))))
+#+END_SRC
+
+*** time
+
+#+BEGIN_SRC elisp
+(defun yesterday-time ()
+"Provide the date/time 24 hours before the time now in the format of current-time."
+  (setq
+   now-time (current-time)              ; get the time now
+   hi (car now-time)                    ; save off the high word
+   lo (car (cdr now-time))              ; save off the low word
+   msecs (nth 2 now-time)               ; save off the milliseconds
+   )
+
+  (if (< lo 20864)                      ; if the low word is too small for subtracting
+      (setq hi (- hi 2)  lo (+ lo 44672)) ; take 2 from the high word and add to the low
+    (setq hi (- hi 1) lo (- lo 20864))  ; else, add 86400 seconds (in two parts)
+    )
+  (list hi lo msecs)                    ; regurgitate the new values
+  )
+#+END_SRC
+
+*** calendar
+
+#+BEGIN_SRC elisp
+(setq calendar-week-start-day 1)
+(setq calendar-holidays '((holiday-fixed 11 4 "")
+                          (holiday-fixed 1 1 "")
+                          (holiday-fixed 1 2 "")
+                          (holiday-fixed 1 5 "")
+                          (holiday-fixed 1 6 "")
+                          (holiday-fixed 1 7 "")
+                          (holiday-fixed 1 8 "")
+                          (holiday-fixed 1 9 "")
+                          (holiday-fixed 2 23 "")
+                          (holiday-fixed 3 9 "")
+                          (holiday-fixed 5 1 "")
+                          (holiday-fixed 5 4 "")
+                          (holiday-fixed 5 11 "")
+                          (holiday-fixed 6 12 "")))
+
+(defvar iy/calendar-copy-date-format-history '("%Y-%m-%d"))
+
+(defun iy/calendar-copy-date (arg)
+  "Copy date under the cursor      . Read format from minibuffer if ARG,
+      use recently used format if no ARG . See the function `format-time-string'
+      for the document of time format string"
+  (interactive "P")
+  (let ((date (calendar-cursor-to-date t))
+        (format (if arg
+                    (completing-read
+                     "Date Format:"
+                     iy/calendar-copy-date-format-history nil nil nil
+                     'iy/calendar-copy-date-format-history nil nil)
+                  (car iy/calendar-copy-date-format-history)))
+        string)
+    (setq date (encode-time 0 0 0 (cadr date) (car date) (nth 2 date)))
+    (setq string (format-time-string format date))
+    (if (eq last-command 'kill-region)
+        (kill-append string nil)
+      (kill-new string))))
+
+(define-key calendar-mode-map "c" 'iy/calendar-copy-date)
 #+END_SRC
 
 ** Макросы
@@ -1576,4 +1859,5 @@ postgres).
 (find-file "~/org/task.org")
 (find-file "~/org/mirantis.org")
 (magit-status-internal "~/m/nova")
+(server-start)
 #+END_SRC
