@@ -313,6 +313,7 @@ M-$ - исправление первого слова с ошибкой пос�
   (switch-to-buffer "*magit: nova"))
 
 (global-set-key (kbd "C-; n") 'magit-nova)
+(global-set-key (kbd "C-; j") 'ace-jump-mode)
 #+END_SRC
 
 *** История и бекапы
