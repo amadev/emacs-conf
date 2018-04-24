@@ -1360,24 +1360,25 @@ postgres).
 **** Keys
 
 #+BEGIN_SRC emacs-lisp
-  (defun python-keys ()
-    (local-unset-key (kbd "C-c C-d"))
-    (local-unset-key (kbd "C-; s"))
-    (local-set-key (kbd "C-c C-d h") 'pylookup-lookup)
-    (local-set-key (kbd "C-c C-d i") 'pylookup-view-doc-index)
-    (local-set-key (kbd "C-c C-d C-d") 'jedi:show-doc)
-    (local-set-key (kbd "C-c v") 'pep8)
-    (local-set-key (kbd "C-c l") 'pylint)
-    (local-set-key (kbd "C-c d") 'pep257)
-    (local-set-key (kbd "C-; s s") 'occur-python-structure)
-    (local-set-key (kbd "C-; s c") 'grep-at-point)
-    (local-set-key (kbd "C-; s f") 'grep-function-at-point)
-    (local-set-key (kbd "C-; s w") 'what-function-full)
-    (local-set-key (kbd "C-M-i") 'jedi-complete)
-    (local-set-key (kbd "C-<tab>") 'jedi-complete)
-    (jedi:setup))
+(defun python-keys ()
+  (smartparens-mode 1)
+  (local-unset-key (kbd "C-c C-d"))
+  (local-unset-key (kbd "C-; s"))
+  (local-set-key (kbd "C-c C-d h") 'pylookup-lookup)
+  (local-set-key (kbd "C-c C-d i") 'pylookup-view-doc-index)
+  (local-set-key (kbd "C-c C-d C-d") 'jedi:show-doc)
+  (local-set-key (kbd "C-c v") 'pep8)
+  (local-set-key (kbd "C-c l") 'pylint)
+  (local-set-key (kbd "C-c d") 'pep257)
+  (local-set-key (kbd "C-; s s") 'occur-python-structure)
+  (local-set-key (kbd "C-; s c") 'grep-at-point)
+  (local-set-key (kbd "C-; s f") 'grep-function-at-point)
+  (local-set-key (kbd "C-; s w") 'what-function-full)
+  (local-set-key (kbd "C-M-i") 'jedi-complete)
+  (local-set-key (kbd "C-<tab>") 'jedi-complete)
+  (jedi:setup))
 
-  (add-hook 'python-mode-hook 'python-keys)
+(add-hook 'python-mode-hook 'python-keys)
 #+END_SRC
 
 **** Запуск тестов
@@ -1484,31 +1485,24 @@ postgres).
 (add-hook 'scheme-mode-hook #'enable-paredit-mode)
 #+END_SRC
 
-#+RESULTS:
-| enable-paredit-mode |
-
 #+BEGIN_SRC emacs-lisp
-  (add-hook 'slime-repl-mode-hook (lambda () (paredit-mode +1)))
-  ;; SLIME’s REPL has the very annoying habit of grabbing DEL
-  ;; which interferes with paredit’s normal operation.
-  ;; To alleviate this problem use the following code:
+(add-hook 'slime-repl-mode-hook (lambda () (paredit-mode +1)))
+;; SLIME’s REPL has the very annoying habit of grabbing DEL
+;; which interferes with paredit’s normal operation.
+;; To alleviate this problem use the following code:
 
-  ;; Stop SLIME's REPL from grabbing DEL,
-  ;; which is annoying when backspacing over a '('
-  (defun override-slime-repl-bindings-with-paredit ()
-    (define-key slime-repl-mode-map
-      (read-kbd-macro paredit-backward-delete-key) nil))
-  (add-hook 'slime-repl-mode-hook 'override-slime-repl-bindings-with-paredit)
-
+;; Stop SLIME's REPL from grabbing DEL,
+;; which is annoying when backspacing over a '('
+(defun override-slime-repl-bindings-with-paredit ()
+  (define-key slime-repl-mode-map
+    (read-kbd-macro paredit-backward-delete-key) nil))
+(add-hook 'slime-repl-mode-hook 'override-slime-repl-bindings-with-paredit)
 #+END_SRC
-
-#+RESULTS:
-| override-slime-repl-bindings-with-paredit | (lambda nil (paredit-mode 1)) | slime-trace-dialog-enable | #[nil \301\300!\210\302\303\304\305\306\302$\207 [parse-sexp-lookup-properties make-local-variable t add-hook after-change-functions slime-after-change-function append] 5] | slime-autodoc--on | slime-repl-add-easy-menu |
 
 ;; (checkdoc)
 ;; (package-buffer-info)
 ;; (byte-compile-file "~/.emacs.d/init.el")
-;; (elint-file "~/.emacs.d/init.el")g
+;; (elint-file "~/.emacs.d/init.el")
 
 *** JS
 
@@ -1641,7 +1635,6 @@ postgres).
   (make-local-variable 'column-number-mode)
   (column-number-mode t)
   (hl-line-mode t)
-  (smartparens-mode 1)
   (add-to-list 'write-file-functions 'delete-trailing-whitespace))
 
 (add-hook  'prog-mode-hook 'my-prog-mode-hook)
