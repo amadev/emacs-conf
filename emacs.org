@@ -443,7 +443,9 @@ Helm история комманд.
 : t
 
 *** Поиск
+
 По умолчанию запускаем поиск regexp.
+
 #+BEGIN_SRC emacs-lisp
 (global-set-key (kbd "C-s") 'isearch-forward-regexp)
 (global-set-key (kbd "C-r") 'isearch-backward-regexp)
@@ -454,6 +456,7 @@ Helm история комманд.
 Для поиска символа под курсором можно воспользоваться
 (isearch-forward-symbol-at-point) M-s .
 либо дополнительной функцией в режиме поиска.
+
 #+BEGIN_SRC emacs-lisp
 (define-key isearch-mode-map (kbd "C-*")
   (lambda ()
@@ -464,10 +467,18 @@ Helm история комманд.
           isearch-message "")
     (isearch-yank-string (word-at-point))))
 #+END_SRC
+
 Полезные сочетания в режиме поиска:
 М-r - переключение regexp,
 M-c - перечлючение case sensitive,
 M-e - редактирование.
+
+Из поска можно переключаться на замену: M-S %. Это удобно, что можно
+подсветить фрагмент поиска и найти, то что нужно интерактивно, а затем
+заменить.
+
+В поиске можно использовать выражения, например:
+:\([0-9]+\) → =\1
 
 *** erc
 
@@ -742,6 +753,7 @@ TODO сделать mapping sh-buffer -> shell process.
   (global-set-key (kbd "<f8>") 'tmp-command)
 #+END_SRC
 
+
 ** orgmode
 
 Установка orgmode и его расширений.
@@ -975,6 +987,7 @@ Skips capture tasks and tasks with subtasks"
 (setq org-export-babel-evaluate nil)
 
 ** Почта
+
 Для работы с почтой используется mu4e (http://www.djcbsoftware.nl/code/mu/mu4e/).
 mu4e идет в составе индексатора mu, который устанавливается, как системный пакет.
 file://~/Dropbox/mu_0.9.15-1_amd64.deb
@@ -1001,6 +1014,7 @@ http://kb.4rt.ru/mail/setup.
 #+END_SRC
 
 *** Общие настройки
+
 Команда для скачивания почты.
 #+BEGIN_SRC emacs-lisp
 (setq mu4e-get-mail-command "offlineimap")
@@ -1059,8 +1073,6 @@ machine smtp.gmail.com login EMAIL port 587 password *******
 #+BEGIN_SRC emacs-lisp
 (setq mu4e-hide-index-messages t)
 #+END_SRC
-
-
 
 *** Настройки для accounts.
 #+BEGIN_SRC emacs-lisp
@@ -1140,7 +1152,8 @@ machine smtp.gmail.com login EMAIL port 587 password *******
 (add-hook 'mu4e-compose-pre-hook 'my-mu4e-set-account)
 #+END_SRC
 
-*** При архивировании переносим в соответствующую папку, в зависимости от текущего maildir.
+*** При архивировании переносим в соответствующую папку, в зависимости от текущего maildir
+
 #+BEGIN_SRC emacs-lisp
 (setq mu4e-refile-folder
       (lambda (msg)
@@ -1151,9 +1164,6 @@ machine smtp.gmail.com login EMAIL port 587 password *******
           (message "maildir: %s, refile-folder: %s" maildir refile)
           refile)))
 #+END_SRC
-
-
-
 
 *** Вложения
 
@@ -1175,9 +1185,7 @@ machine smtp.gmail.com login EMAIL port 587 password *******
 
 (setq gnus-dired-mail-mode 'mu4e-user-agent)
 (add-hook 'dired-mode-hook 'turn-on-gnus-dired-mode)
-
 #+END_SRC
-
 
 *** Требования
 **** Вся почта собирается в одном месте
@@ -1550,6 +1558,7 @@ postgres).
   (put 'downcase-region 'disabled nil)
 
 #+END_SRC
+
 ** Макросы
 
 #+BEGIN_SRC elisp
