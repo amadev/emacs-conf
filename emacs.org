@@ -367,6 +367,7 @@ sentinel (функции, которая срабатывает при любы�
 
 Включение истории для режимов.
 #+BEGIN_SRC emacs-lisp
+(add-hook 'shell-mode-hook 'turn-on-comint-history)
 (add-hook 'inferior-python-mode-hook 'turn-on-comint-history)
 (add-hook 'inferior-emacs-lisp-mode-hook 'turn-on-comint-history)
 #+END_SRC
@@ -390,7 +391,17 @@ sentinel (функции, которая срабатывает при любы�
   (mapc-buffers 'comint-write-input-ring))
 
 (add-hook 'kill-emacs-hook 'comint-write-input-ring-all-buffers)
+#+END_SRC
 
+Helm история комманд.
+
+#+BEGIN_SRC emacs-lisp
+(defun my-shell-mode-hook ()
+  (progn
+    (local-set-key (kbd "M-r") 'helm-comint-input-ring)
+    ))
+
+(add-hook 'shell-mode-hook 'my-shell-mode-hook)
 #+END_SRC
 
 **** Минибуфер
