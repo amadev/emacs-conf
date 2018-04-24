@@ -483,21 +483,18 @@ emacs данные не подхватывались, решилось пере�
 (defun start-ircs ()
   (interactive)
   (erc-tls :server "irc.freenode.net" :port 6697
-    :nick "avolkov" :full-name "Andrey Volkov")
-  (erc-tls :server "miracloud.irc.slack.com" :port 6667
-    :nick "andrey.volkov" :full-name "Andrey Volkov")
-)
+           :nick "avolkov" :full-name "Andrey Volkov"))
 
 (require 'erc-join)
 (erc-autojoin-mode 1)
 
 (setq erc-autojoin-channels-alist
-  '(
-    ("freenode.net" "#openstack-nova")
-  ))
+      '(
+        ("freenode.net" "#openstack-nova" "#openstack-placement")
+        ))
 
 (setq erc-track-exclude-types '("JOIN" "NICK" "PART" "QUIT" "MODE"
-                                    "324" "329" "332" "333" "353" "477"))
+                                "324" "329" "332" "333" "353" "477"))
 
 (setq erc-format-query-as-channel-p t
       erc-track-priority-faces-only 'all
@@ -550,7 +547,6 @@ emacs данные не подхватывались, решилось пере�
     (interactive)
     (setq erc-track-priority-faces-only nil)
     (message "Notifications from all channels are enabled"))
-
 #+END_SRC
 
 ** terminal
