@@ -88,8 +88,13 @@ ido - интерфейс для выбора из списка, добавлен
 (setq dired-listing-switches "-altrh  --group-directories-first")
 #+END_SRC
 
-#+RESULTS:
-: -altrh
+Использовать lisp-версию ls для Mac.
+
+#+BEGIN_SRC emacs-lisp
+(when (eq system-type 'darwin)
+  (require 'ls-lisp)
+  (setq ls-lisp-use-insert-directory-program nil))
+#+END_SRC
 
 ** Утилиты
 *** Общие функции
