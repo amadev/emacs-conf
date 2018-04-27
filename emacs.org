@@ -4,7 +4,8 @@
   :header-args: :tangle /home/amadev/.emacs.d/init.el :results silent
   :END:
 
-** Инициализация emacs
+** Глобальный функции
+*** Запуск и внешний вид
 
 Запускаю emacs из консоли скрина, при этом скрин наследует переменные
 окружения, а именно ssh-agent, чтобы можно было нормально
@@ -44,6 +45,31 @@ marmalade-repo.org - не обновляется.
       initial-scratch-message nil)
 #+END_SRC
 
+#+BEGIN_SRC emacs-lisp
+(setenv "LANG" "en_US.UTF-8")
+(setq system-time-locale "C")
+#+END_SRC
+
+Размер шрифта, тема.
+
+#+BEGIN_SRC emacs-lisp
+(set-face-attribute 'default nil :height 130) ;; 13pt
+(load-theme 'warm-night t)
+(set-cursor-color "#909090")
+#+END_SRC
+
+Разбивать окна вертикально.
+
+#+BEGIN_SRC emacs-lisp
+(setq split-width-threshold 120)
+#+END_SRC
+
+#+BEGIN_SRC emacs-lisp
+(server-start)
+#+END_SRC
+
+*** ido
+
 ido - интерфейс для выбора из списка, добавлен, как встроенный модуль emacs.
 
 Включаем повсеместно, включаем flex-matching, поиск файла под курсом.
@@ -54,263 +80,6 @@ ido - интерфейс для выбора из списка, добавлен
 (require 'ido)
 (ido-mode t)
 (ido-everywhere t)
-#+END_SRC
-
-** Работа с файлами dired
-
-Для просмотра содержимого папки можно C-x C-f C-f,
-либо C-x d, для второго варианта можно указать glob-шаблон,
-чтобы отфильтровать нужное, например *.org.
-
-Сортировка по дате/алфавиту - s.
-Задание переключателей для ls - C-u s, можно указать h, чтобы видеть
-размеры в человекопонятном виде.
-
-Режим wdired позволяет изменять имена файлов, как текст C-x C-q.
-
-Пометка файлов через regexp - % m.
-Выделить все - * s.
-Инвертировать выделение - * t.
-
-Скопировать, переместить, удалить - C, R, D.
-
-Скопировать полный путь до файла C-u 0 w.
-
-Настройки отображения dired по умолчанию.
-Показываем все, сортируем по дате (новые внизу), но сначала директории.
-
-#+BEGIN_SRC emacs-lisp
-(setq dired-listing-switches "-altrh  --group-directories-first")
-#+END_SRC
-
-Использовать lisp-версию ls для Mac.
-
-#+BEGIN_SRC emacs-lisp
-(when (eq system-type 'darwin)
-  (require 'ls-lisp)
-  (setq ls-lisp-use-insert-directory-program nil))
-#+END_SRC
-
-** Утилиты
-*** Общие функции
-
-#+BEGIN_SRC emacs-lisp
-(setenv "LANG" "en_US.UTF-8")
-#+END_SRC
-
-**** Удалениие пробелов вначале и конце строки.
-
-#+BEGIN_SRC emacs-lisp
-(defun chomp (str)
-      "Chomp leading and tailing whitespace from STR."
-      (while (string-match "\\`\n+\\|^\\s-+\\|\\s-+$\\|\n+\\'"
-                           str)
-        (setq str (replace-match "" t t str)))
-      str)
-#+END_SRC
-
-**** Получение пароля происходит через консольную команду
-
-[[file:system.org::*%D0%9F%D0%B0%D1%80%D0%BE%D0%BB%D0%B8][Пароли]]
-
-#+BEGIN_SRC emacs-lisp
-  (defun get-pass (name)
-    (let ((cname (if (symbolp name) (symbol-name name) name)))
-      (chomp (shell-command-to-string (concat "cpp " cname)))))
-#+END_SRC
-
-**** На клавиатуре сломался шифт и очень не хватало скобочек.
-
-#+BEGIN_SRC emacs-lisp :tangle no
-
-(define-key key-translation-map (kbd "9") (kbd "("))
-(define-key key-translation-map (kbd "C-9") (kbd "9"))
-(define-key key-translation-map (kbd "0") (kbd ")"))
-(define-key key-translation-map (kbd "C-0") (kbd "0"))
-(define-key key-translation-map (kbd "6") (kbd ":"))
-(define-key key-translation-map (kbd "C-6") (kbd "6"))
-
-#+END_SRC
-
-#+RESULTS:
-: 6
-
-**** Пути от домашней папки и emacs.d.
-#+BEGIN_SRC emacs-lisp
-  (defun may-be-add-first-slash (path)
-    (concat (if (string-match "^/" path) "" "/") path))
-
-  (defun with-home-dir (path)
-    (concat (expand-file-name "~") (may-be-add-first-slash path)))
-
-  (defun with-emacs-dir (path)
-    (with-home-dir (concat ".emacs.d" (may-be-add-first-slash path))))
-#+END_SRC
-
-**** Копирование имени файла текущего буфера в clipboard.
-#+BEGIN_SRC emacs-lisp
-  (defun copy-file-name-to-clipboard ()
-    "Copy the current buffer file name to the clipboard."
-    (interactive)
-    (let ((filename (if (equal major-mode 'dired-mode)
-                        default-directory
-                      (buffer-file-name))))
-      (when filename
-        (kill-new filename)
-        (message "Copied buffer file name '%s' to the clipboard." filename))))
-
-#+END_SRC
-
-#+RESULTS:
-: copy-file-name-to-clipboard
-: copy-file-name-to-clipboard
-
-**** Устанавливаем альтернативный метод ввода, срабатывает после С+\.
-#+BEGIN_SRC emacs-lisp
-(setq default-input-method "russian-computer")
-#+END_SRC
-
-#+RESULTS:
-: russian-computer
-
-**** Шаблоны
-
-Включаем возможность использования шаблонов везде.
-Личные шаблоны храняться в file:///~/.emacs.d/snippets/.
-Шаблоны могут использоваться как по ключу (key), так и по сочетанию
-клавиш (binding), последнее полезно для оборачивания региона шаблоном.
-yas-wrap-around-region включает такое поведение.
-
-#+BEGIN_SRC emacs-lisp
-(require 'yasnippet)
-(yas-global-mode 1)
-(setq yas-wrap-around-region t)
-#+END_SRC
-
-**** Браузер
-#+BEGIN_SRC emacs-lisp
-(setq browse-url-browser-function 'browse-url-generic
-     browse-url-generic-program "google-chrome")
-
-#+END_SRC
-
-**** Время
-
-#+BEGIN_SRC emacs-lisp
-(setq system-time-locale "C")
-#+END_SRC
-
-#+RESULTS:
-: C
-
-**** Смена сплита буферов вертикальный/горизонтальный
-#+BEGIN_SRC emacs-lisp
-(defun toggle-window-split ()
-  (interactive)
-  (if (= (count-windows) 2)
-      (let* ((this-win-buffer (window-buffer))
-	     (next-win-buffer (window-buffer (next-window)))
-	     (this-win-edges (window-edges (selected-window)))
-	     (next-win-edges (window-edges (next-window)))
-	     (this-win-2nd (not (and (<= (car this-win-edges)
-					 (car next-win-edges))
-				     (<= (cadr this-win-edges)
-					 (cadr next-win-edges)))))
-	     (splitter
-	      (if (= (car this-win-edges)
-		     (car (window-edges (next-window))))
-		  'split-window-horizontally
-		'split-window-vertically)))
-	(delete-other-windows)
-	(let ((first-win (selected-window)))
-	  (funcall splitter)
-	  (if this-win-2nd (other-window 1))
-	  (set-window-buffer (selected-window) this-win-buffer)
-	  (set-window-buffer (next-window) next-win-buffer)
-	  (select-window first-win)
-	  (if this-win-2nd (other-window 1))))))
-
-#+END_SRC
-
-#+RESULTS:
-: toggle-window-split
-
-**** Смена содержимого окон
-#+BEGIN_SRC emacs-lisp
-  (defun swap-windows (arg)
-    "Transpose the buffers shown in two windows."
-    (interactive "p")
-    (let ((selector (if (>= arg 0) 'next-window 'previous-window)))
-      (while (/= arg 0)
-        (let ((this-win (window-buffer))
-              (next-win (window-buffer (funcall selector))))
-          (set-window-buffer (selected-window) next-win)
-          (set-window-buffer (funcall selector) this-win)
-          (select-window (funcall selector)))
-        (setq arg (if (plusp arg) (1- arg) (1+ arg))))))
-
-#+END_SRC
-
-**** Оформление
-
-#+BEGIN_SRC emacs-lisp
-(set-face-attribute 'default nil :height 130) ;; 13pt
-;; (load-theme 'adwaita t)
-;; (set-cursor-color "#ccc")
-(load-theme 'warm-night t)
-(set-cursor-color "#909090")
-;; (set-cursor-color "#474242")
-#+END_SRC
-
-Разбивать окна вертикально.
-
-#+BEGIN_SRC emacs-lisp
-(setq split-width-threshold 120)
-#+END_SRC
-
-#+RESULTS:
-: 80
-
-**** Аккорды
-
-Назначаем сочетания символов на часто используемые функции.
-#+BEGIN_SRC emacs-lisp
-(require 'key-chord)
-(key-chord-mode 1)
-(key-chord-define-global "yy" 'ack)
-(key-chord-define-global "jj" 'ace-jump-mode)
-(key-chord-define-global "hh" 'magit-status)
-#+END_SRC
-
-**** Работа c unicode
-Часто используемые символы удобно смотреть:
-http://xahlee.info/comp/unicode_index.html
-http://www.unexpected-vortices.com/doc-notes/some-common-unicode-characters.html
-Вставка c-x 8 ret.
-
-**** Spell checking
-
-Для проверки можно использовать flyspell-region или ispell-region,
-также можно влючить проверку для mode через mode-hook (flyspell-mode).
-
-http://endlessparentheses.com/ispell-and-org-mode.html
-
-M-$ - исправление первого слова с ошибкой после курсора.
-В сессии исправления можно принять текущее слова (a/A),
-
-добавить в личный словарь (i).
-
-Переключение словаря - ispell-change-dictionary.
-
-**** Keys
-
-#+BEGIN_SRC elisp
-(defun magit-nova ()
-  (interactive)
-  (switch-to-buffer "*magit: nova"))
-
-(global-set-key (kbd "C-; n") 'magit-nova)
-(global-set-key (kbd "C-; j") 'ace-jump-mode)
 #+END_SRC
 
 *** История и бекапы
@@ -476,6 +245,456 @@ M-e - редактирование.
 
 В поиске можно использовать выражения, например:
 :\([0-9]+\) → =\1
+
+*** Удалениие пробелов вначале и конце строки.
+
+#+BEGIN_SRC emacs-lisp
+(defun chomp (str)
+      "Chomp leading and tailing whitespace from STR."
+      (while (string-match "\\`\n+\\|^\\s-+\\|\\s-+$\\|\n+\\'"
+                           str)
+        (setq str (replace-match "" t t str)))
+      str)
+#+END_SRC
+
+*** Получение пароля происходит через консольную команду
+
+[[file:system.org::*%D0%9F%D0%B0%D1%80%D0%BE%D0%BB%D0%B8][Пароли]]
+
+#+BEGIN_SRC emacs-lisp
+  (defun get-pass (name)
+    (let ((cname (if (symbolp name) (symbol-name name) name)))
+      (chomp (shell-command-to-string (concat "cpp " cname)))))
+#+END_SRC
+
+*** На клавиатуре сломался шифт и очень не хватало скобочек.
+
+#+BEGIN_SRC emacs-lisp :tangle no
+
+(define-key key-translation-map (kbd "9") (kbd "("))
+(define-key key-translation-map (kbd "C-9") (kbd "9"))
+(define-key key-translation-map (kbd "0") (kbd ")"))
+(define-key key-translation-map (kbd "C-0") (kbd "0"))
+(define-key key-translation-map (kbd "6") (kbd ":"))
+(define-key key-translation-map (kbd "C-6") (kbd "6"))
+
+#+END_SRC
+
+#+RESULTS:
+: 6
+
+*** Пути от домашней папки и emacs.d.
+#+BEGIN_SRC emacs-lisp
+  (defun may-be-add-first-slash (path)
+    (concat (if (string-match "^/" path) "" "/") path))
+
+  (defun with-home-dir (path)
+    (concat (expand-file-name "~") (may-be-add-first-slash path)))
+
+  (defun with-emacs-dir (path)
+    (with-home-dir (concat ".emacs.d" (may-be-add-first-slash path))))
+#+END_SRC
+
+*** Копирование имени файла текущего буфера в clipboard.
+#+BEGIN_SRC emacs-lisp
+  (defun copy-file-name-to-clipboard ()
+    "Copy the current buffer file name to the clipboard."
+    (interactive)
+    (let ((filename (if (equal major-mode 'dired-mode)
+                        default-directory
+                      (buffer-file-name))))
+      (when filename
+        (kill-new filename)
+        (message "Copied buffer file name '%s' to the clipboard." filename))))
+
+#+END_SRC
+
+#+RESULTS:
+: copy-file-name-to-clipboard
+: copy-file-name-to-clipboard
+
+*** Устанавливаем альтернативный метод ввода, срабатывает после С+\.
+#+BEGIN_SRC emacs-lisp
+(setq default-input-method "russian-computer")
+#+END_SRC
+
+#+RESULTS:
+: russian-computer
+
+*** Шаблоны
+
+Включаем возможность использования шаблонов везде.
+Личные шаблоны храняться в file:///~/.emacs.d/snippets/.
+Шаблоны могут использоваться как по ключу (key), так и по сочетанию
+клавиш (binding), последнее полезно для оборачивания региона шаблоном.
+yas-wrap-around-region включает такое поведение.
+
+#+BEGIN_SRC emacs-lisp
+(require 'yasnippet)
+(yas-global-mode 1)
+(setq yas-wrap-around-region t)
+#+END_SRC
+
+*** Браузер
+#+BEGIN_SRC emacs-lisp
+(setq browse-url-browser-function 'browse-url-generic
+     browse-url-generic-program "google-chrome")
+
+#+END_SRC
+
+*** Смена сплита буферов вертикальный/горизонтальный
+#+BEGIN_SRC emacs-lisp
+(defun toggle-window-split ()
+  (interactive)
+  (if (= (count-windows) 2)
+      (let* ((this-win-buffer (window-buffer))
+	     (next-win-buffer (window-buffer (next-window)))
+	     (this-win-edges (window-edges (selected-window)))
+	     (next-win-edges (window-edges (next-window)))
+	     (this-win-2nd (not (and (<= (car this-win-edges)
+					 (car next-win-edges))
+				     (<= (cadr this-win-edges)
+					 (cadr next-win-edges)))))
+	     (splitter
+	      (if (= (car this-win-edges)
+		     (car (window-edges (next-window))))
+		  'split-window-horizontally
+		'split-window-vertically)))
+	(delete-other-windows)
+	(let ((first-win (selected-window)))
+	  (funcall splitter)
+	  (if this-win-2nd (other-window 1))
+	  (set-window-buffer (selected-window) this-win-buffer)
+	  (set-window-buffer (next-window) next-win-buffer)
+	  (select-window first-win)
+	  (if this-win-2nd (other-window 1))))))
+
+#+END_SRC
+
+#+RESULTS:
+: toggle-window-split
+
+*** Смена содержимого окон
+#+BEGIN_SRC emacs-lisp
+  (defun swap-windows (arg)
+    "Transpose the buffers shown in two windows."
+    (interactive "p")
+    (let ((selector (if (>= arg 0) 'next-window 'previous-window)))
+      (while (/= arg 0)
+        (let ((this-win (window-buffer))
+              (next-win (window-buffer (funcall selector))))
+          (set-window-buffer (selected-window) next-win)
+          (set-window-buffer (funcall selector) this-win)
+          (select-window (funcall selector)))
+        (setq arg (if (plusp arg) (1- arg) (1+ arg))))))
+
+#+END_SRC
+
+*** Аккорды
+
+Назначаем сочетания символов на часто используемые функции.
+#+BEGIN_SRC emacs-lisp
+(require 'key-chord)
+(key-chord-mode 1)
+(key-chord-define-global "yy" 'ack)
+(key-chord-define-global "jj" 'ace-jump-mode)
+(key-chord-define-global "hh" 'magit-status)
+#+END_SRC
+
+*** Работа c unicode
+Часто используемые символы удобно смотреть:
+http://xahlee.info/comp/unicode_index.html
+http://www.unexpected-vortices.com/doc-notes/some-common-unicode-characters.html
+Вставка c-x 8 ret.
+
+*** Spell checking
+
+Для проверки можно использовать flyspell-region или ispell-region,
+также можно влючить проверку для mode через mode-hook (flyspell-mode).
+
+http://endlessparentheses.com/ispell-and-org-mode.html
+
+M-$ - исправление первого слова с ошибкой после курсора.
+В сессии исправления можно принять текущее слова (a/A),
+
+добавить в личный словарь (i).
+
+Переключение словаря - ispell-change-dictionary.
+
+*** Keys
+
+#+BEGIN_SRC elisp
+(defun magit-nova ()
+  (interactive)
+  (switch-to-buffer "*magit: nova"))
+
+(global-set-key (kbd "C-; n") 'magit-nova)
+(global-set-key (kbd "C-; j") 'ace-jump-mode)
+#+END_SRC
+
+*** defaults
+
+#+BEGIN_SRC emacs-lisp
+(require 'smex)
+(smex-initialize)
+(global-set-key (kbd "M-x") 'smex)
+(global-set-key (kbd "M-X") 'smex-major-mode-commands)
+(global-set-key (kbd "C-c C-c M-x") 'execute-extended-command)
+
+(require 'uniquify)
+(setq uniquify-buffer-name-style 'forward)
+
+(require 'saveplace)
+(setq-default save-place t)
+
+(global-set-key (kbd "M-/") 'hippie-expand)
+(global-set-key (kbd "C-x C-b") 'ibuffer)
+(global-set-key [remap other-window] 'ace-window)
+
+(fset 'yes-or-no-p 'y-or-n-p)
+
+(require 'expand-region)
+(global-set-key (kbd "C-=") 'er/expand-region)
+
+(global-set-key (kbd "M-n") 'delete-indentation)
+
+(require 'recentf)
+(recentf-mode 1)
+(setq recentf-max-menu-items 50)
+(global-set-key "\C-x\ \C-r" 'recentf-open-files)
+
+(global-set-key (kbd "C-x f") 'find-file-in-project)
+(show-paren-mode 1)
+
+;; show buffer file path or buffer name
+(setq frame-title-format '(buffer-file-name "emacs %f" ("emacs %b")))
+
+;; NO TABS, spaces only
+(setq-default indent-tabs-mode nil)
+(setq tab-width 4)
+(defvaralias 'c-basic-offset 'tab-width)
+(defvaralias 'cperl-indent-level 'tab-width)
+
+(setq find-program "find")
+
+(setq x-select-enable-clipboard t
+      x-select-enable-primary t
+      save-interprogram-paste-before-kill t
+      apropos-do-all t
+      mouse-yank-at-point t
+      save-place-file (concat user-emacs-directory "places")
+      Info-additional-directory-list '("/usr/share/info/emacs-snapshot/" "/usr/local/share/info"))
+
+(setq tramp-default-method "ssh")
+(setq ack-command "ag -i --nogroup ")
+
+(require 'multiple-cursors)
+(require 'mark-multiple)
+(require 'inline-string-rectangle)
+
+(defun fc-eval-and-replace ()
+  "Replace the preceding sexp with its value."
+  (interactive)
+  (backward-kill-sexp)
+  (condition-case nil
+      (prin1 (eval (read (current-kill 0)))
+             (current-buffer))
+    (error (message "Invalid expression")
+           (insert (current-kill 0)))))
+
+(display-time-mode t)
+
+(add-hook 'before-save-hook 'delete-trailing-whitespace)
+
+(global-set-key "\C-w" 'clipboard-kill-region)
+(global-set-key "\M-w" 'clipboard-kill-ring-save)
+(global-set-key "\C-y" 'clipboard-yank)
+(global-set-key (kbd "C-x r t") 'inline-string-rectangle)
+(global-set-key (kbd "C-<") 'mark-previous-like-this)
+(global-set-key (kbd "C->") 'mark-next-like-this)
+;; like the other two, but takes an argument (negative is previous)
+(global-set-key (kbd "C-M-m") 'mark-more-like-this)
+
+(custom-set-faces
+ '(which-func ((t (:foreground "#b680b1" :weight bold))))
+ '(chess-ics1-black-face ((t (:foreground "dim gray" :weight bold))))
+ '(chess-ics1-white-face ((t (:foreground "chocolate" :weight bold))))
+ '(secondary-selection ((t (:background "pale goldenrod")))))
+
+(put 'narrow-to-region 'disabled nil)
+(put 'downcase-region 'disabled nil)
+
+(setq helm-locate-project-list '("~/m/nova"))
+
+(setq ix-user "amadev"
+      ix-token (get-pass "ix.io"))
+#+END_SRC
+
+*** text
+
+#+BEGIN_SRC elisp
+(global-set-key (kbd "C-c s d") 'duplicate-line-c)
+
+(defun rows2one (start end)
+  (interactive "r")
+  (save-restriction
+    (narrow-to-region start end)
+    (goto-char (point-min))
+    (replace-regexp "^" "'")
+    (goto-char (point-min))
+    (replace-regexp "$" "',")
+    (goto-char (point-min))
+    (while (search-forward "\n" nil t) (replace-match " " nil t))
+    (move-end-of-line)
+    ))
+
+(defun pretty-print-xml-region (begin end)
+  "Pretty format XML markup in region. You need to have nxml-mode
+http://www.emacswiki.org/cgi-bin/wiki/NxmlMode installed to do
+this. The function inserts linebreaks to separate tags that have
+nothing but whitespace between them. It then indents the markup
+by using nxml's indentation rules."
+  (interactive "r")
+  (save-excursion
+    (goto-char begin)
+    (while (search-forward-regexp "\>[ \\t]*\<" nil t)
+      (backward-char) (insert "\n") (setq end (1+ end)))
+    (indent-region begin end))
+  (message "Ah, much better!"))
+
+(defun duplicate-line-c (arg)
+  "Duplicate current line, leaving point in lower line."
+  (interactive "*p")
+
+  ;; save the point for undo
+  (setq buffer-undo-list (cons (point) buffer-undo-list))
+
+  ;; local variables for start and end of line
+  (let ((bol (save-excursion (beginning-of-line) (point)))
+        eol)
+    (save-excursion
+
+      ;; don't use forward-line for this, because you would have
+      ;; to check whether you are at the end of the buffer
+      (end-of-line)
+      (setq eol (point))
+
+      ;; store the line and disable the recording of undo information
+      (let ((line (buffer-substring bol eol))
+            (buffer-undo-list t)
+            (count arg))
+        ;; insert the line arg times
+        (while (> count 0)
+          (newline)         ;; because there is no newline in 'line'
+          (insert line)
+          (setq count (1- count)))
+        )
+
+      ;; create the undo information
+      (setq buffer-undo-list (cons (cons eol (point)) buffer-undo-list)))
+    ) ; end-of-let
+
+  ;; put the point in the lowest line and return
+  (next-line arg))
+
+(defvar current-date-time-format "%Y-%m-%d %H:%M:%S %Z %Y"
+  "Format of date to insert with `insert-current-date-time' func
+See help of `format-time-string' for possible replacements")
+
+(defvar current-time-format "%a %H:%M:%S"
+  "Format of date to insert with `insert-current-time' func.
+Note the weekly scope of the command's precision.")
+
+(defun insert-current-date-time ()
+  "insert the current date and time into current buffer.
+Uses `current-date-time-format' for the formatting the date/time."
+       (interactive)
+       (insert (format-time-string current-date-time-format (current-time))))
+
+(defun insert-current-time ()
+  "insert the current time (1-week scope) into the current buffer."
+       (interactive)
+       (insert (format-time-string current-time-format (current-time))))
+
+(defun sentence-from-func-name-in-string (func-name)
+  (let ((splitted-fn (split-string func-name "_")))
+    (setf (first splitted-fn) (capitalize (first splitted-fn)))
+    (concat (mapconcat 'identity splitted-fn " ") "."))
+  )
+
+(defun sentence-from-func-name (start end)
+  (interactive "r")
+  (let ((result
+         (sentence-from-func-name-in-string
+          (buffer-substring-no-properties start end))))
+    (save-excursion
+      (delete-region start end)
+      (goto-char start)
+      (insert result))))
+#+END_SRC
+
+*** prog
+
+#+BEGIN_SRC elisp
+(defun my-prog-mode-hook ()
+  (setq whitespace-style '(face lines-tail tabs trailing)
+        whitespace-line-column 79)
+  (whitespace-mode t)
+  (which-function-mode -1)
+  (idle-highlight-mode t)
+  (make-local-variable 'column-number-mode)
+  (column-number-mode t)
+  (hl-line-mode t)
+  (add-to-list 'write-file-functions 'delete-trailing-whitespace))
+
+(add-hook  'prog-mode-hook 'my-prog-mode-hook)
+#+END_SRC
+
+*** Макросы
+
+#+BEGIN_SRC elisp
+(fset 'convert_shell_env_to_emacs
+      (lambda (&optional arg)
+        "Keyboard macro."
+        (interactive "p")
+        (kmacro-exec-ring-item
+         (quote ([40 4 115 101 116 101 110 118 32 34 4 19 61 return backspace 34 32 34 4 5 34 41 14 1] 0 "%d")) arg)))
+#+END_SRC
+
+** Работа с файлами dired
+
+Для просмотра содержимого папки можно C-x C-f C-f,
+либо C-x d, для второго варианта можно указать glob-шаблон,
+чтобы отфильтровать нужное, например *.org.
+
+Сортировка по дате/алфавиту - s.
+Задание переключателей для ls - C-u s, можно указать h, чтобы видеть
+размеры в человекопонятном виде.
+
+Режим wdired позволяет изменять имена файлов, как текст C-x C-q.
+
+Пометка файлов через regexp - % m.
+Выделить все - * s.
+Инвертировать выделение - * t.
+
+Скопировать, переместить, удалить - C, R, D.
+
+Скопировать полный путь до файла C-u 0 w.
+
+Настройки отображения dired по умолчанию.
+Показываем все, сортируем по дате (новые внизу), но сначала директории.
+
+#+BEGIN_SRC emacs-lisp
+(setq dired-listing-switches "-altrh  --group-directories-first")
+#+END_SRC
+
+Использовать lisp-версию ls для Mac.
+
+#+BEGIN_SRC emacs-lisp
+(when (eq system-type 'darwin)
+  (require 'ls-lisp)
+  (setq ls-lisp-use-insert-directory-program nil))
+#+END_SRC
 
 ** erc
 
@@ -1331,10 +1550,9 @@ postgres).
 #+RESULTS:
 | my-sql-save-history-hook | sqli-add-hooks |
 
-** Программирование
-*** Python
+** Python
 
-**** Просмотр документации
+*** Просмотр документации
 
 Для поиска документации по используется pylookup,
 который индексирует документацию python, и сохраняет индекс локально.
@@ -1372,7 +1590,7 @@ postgres).
 #+RESULTS:
 | pylookup-keys | wisent-python-default-setup | er/add-python-mode-expansions | jedi:setup | (lambda nil (local-set-key (kbd C-M-i) (quote jedi-complete)) (local-set-key (kbd C-<tab>) (quote jedi-complete)) (local-set-key (kbd C-c C-d C-d) (quote jedi:show-doc)) (local-set-key (kbd C-c C-d h) (quote pylookup-lookup)) (local-set-key (kbd C-c v) (quote pep8)) (local-set-key (kbd C-c l) (quote pylint)) (local-set-key (kbd C-c d) (quote pep257)) (jedi:setup))  |
 
-**** Display current buffer structure
+*** Display current buffer structure
 
 #+BEGIN_SRC emacs-lisp
 (defun occur-python-structure ()
@@ -1380,7 +1598,36 @@ postgres).
   (occur "def\\b\\|class\\b\\|=[ ]?lambda"))
 #+END_SRC
 
-**** Keys
+*** Tools
+
+#+BEGIN_SRC elisp
+(setq pylint-cmd
+    (concat "pylint --rcfile ~/files/settings/linters/pylintrc"
+            " -rn --msg-template='{path}:{line}: [{msg_id}({symbol}), {obj}] {msg}' "))
+
+(defvar pep257-hist nil)
+
+(defun pep257 ()
+  (interactive)
+  (let* ((cmd (read-shell-command
+               "Command: "
+               (concat "~/bin/pep257.py " (file-name-nondirectory (or (buffer-file-name) "")))
+               'pep257-hist))
+         (null-device nil))
+    (grep cmd)))
+
+(setq jedi:tooltip-method '(pos-tip popup))
+(setq jedi:server-args '("--virtual-env" "~/m/nova/.tox/py27"))
+(setq jedi:setup-keys t)                      ; optional
+(setq jedi:complete-on-dot t)                 ; optional
+
+
+(setq
+ python-shell-interpreter "ipython"
+ python-shell-interpreter-args "-i")
+#+END_SRC
+
+*** Keys
 
 #+BEGIN_SRC emacs-lisp
 (defun python-keys ()
@@ -1404,7 +1651,7 @@ postgres).
 (add-hook 'python-mode-hook 'python-keys)
 #+END_SRC
 
-**** Запуск тестов
+*** Запуск тестов
 
 #+BEGIN_SRC elisp
   (defun colorize-test-message (message)
@@ -1458,7 +1705,7 @@ postgres).
 #+RESULTS:
 : what-function
 
-**** virtualenv
+*** virtualenv
 
 Для удобства работы используется virtualevwrapper for emacs,
 порт virtualevwrapper.sh, делает все то же но внутри emacs.
@@ -1475,7 +1722,7 @@ postgres).
 #+RESULTS:
 : ~/.ve
 
-**** Search symbol at point
+*** Search symbol at point
 
 #+BEGIN_SRC elisp
   (defun grep-at-point ()
@@ -1489,7 +1736,7 @@ postgres).
       (ack (concat "ag -i --nogroup " s) (ack-default-directory 4))))
 #+END_SRC
 
-*** Lisp
+** Lisp
 
 #+BEGIN_SRC emacs-lisp
 (setq inferior-lisp-program "sbcl --dynamic-space-size 2048")
@@ -1527,7 +1774,7 @@ postgres).
 ;; (byte-compile-file "~/.emacs.d/init.el")
 ;; (elint-file "~/.emacs.d/init.el")
 
-*** JS
+** JS
 
 Для просмотра json нужна возможность свертывать отдельные блоки,
 есть hs-minor-mode, который позволяет свертывать только {} блоки.
@@ -1547,278 +1794,7 @@ postgres).
 (add-hook 'js-mode-hook 'add-hs-minor-mode)
 #+END_SRC
 
-** Прочее
-*** defaults
-
-#+BEGIN_SRC emacs-lisp
-(require 'smex)
-(smex-initialize)
-(global-set-key (kbd "M-x") 'smex)
-(global-set-key (kbd "M-X") 'smex-major-mode-commands)
-(global-set-key (kbd "C-c C-c M-x") 'execute-extended-command)
-
-(require 'uniquify)
-(setq uniquify-buffer-name-style 'forward)
-
-(require 'saveplace)
-(setq-default save-place t)
-
-(global-set-key (kbd "M-/") 'hippie-expand)
-(global-set-key (kbd "C-x C-b") 'ibuffer)
-(global-set-key [remap other-window] 'ace-window)
-
-(fset 'yes-or-no-p 'y-or-n-p)
-
-(require 'expand-region)
-(global-set-key (kbd "C-=") 'er/expand-region)
-
-(global-set-key (kbd "M-n") 'delete-indentation)
-
-(setq jiralib-url "http://jira.lamoda.ru/")
-(require 'org-jira)
-
-(require 'recentf)
-(recentf-mode 1)
-(setq recentf-max-menu-items 50)
-(global-set-key "\C-x\ \C-r" 'recentf-open-files)
-
-(global-set-key (kbd "C-x f") 'find-file-in-project)
-(show-paren-mode 1)
-
-;; show buffer file path or buffer name
-(setq frame-title-format '(buffer-file-name "emacs %f" ("emacs %b")))
-
-;; NO TABS, spaces only
-(setq-default indent-tabs-mode nil)
-(setq tab-width 4)
-(defvaralias 'c-basic-offset 'tab-width)
-(defvaralias 'cperl-indent-level 'tab-width)
-
-(setq find-program "find")
-
-(setq x-select-enable-clipboard t
-      x-select-enable-primary t
-      save-interprogram-paste-before-kill t
-      apropos-do-all t
-      mouse-yank-at-point t
-      save-place-file (concat user-emacs-directory "places")
-      Info-additional-directory-list '("/usr/share/info/emacs-snapshot/" "/usr/local/share/info"))
-
-(setq tramp-default-method "ssh")
-(setq ack-command "ag -i --nogroup ")
-
-(require 'multiple-cursors)
-(require 'mark-multiple)
-(require 'inline-string-rectangle)
-
-(defun fc-eval-and-replace ()
-  "Replace the preceding sexp with its value."
-  (interactive)
-  (backward-kill-sexp)
-  (condition-case nil
-      (prin1 (eval (read (current-kill 0)))
-             (current-buffer))
-    (error (message "Invalid expression")
-           (insert (current-kill 0)))))
-
-(display-time-mode t)
-
-(add-hook 'before-save-hook 'delete-trailing-whitespace)
-
-(global-set-key "\C-w" 'clipboard-kill-region)
-(global-set-key "\M-w" 'clipboard-kill-ring-save)
-(global-set-key "\C-y" 'clipboard-yank)
-(global-set-key (kbd "C-x r t") 'inline-string-rectangle)
-(global-set-key (kbd "C-<") 'mark-previous-like-this)
-(global-set-key (kbd "C->") 'mark-next-like-this)
-;; like the other two, but takes an argument (negative is previous)
-(global-set-key (kbd "C-M-m") 'mark-more-like-this)
-
-(custom-set-faces
- '(which-func ((t (:foreground "#b680b1" :weight bold))))
- '(chess-ics1-black-face ((t (:foreground "dim gray" :weight bold))))
- '(chess-ics1-white-face ((t (:foreground "chocolate" :weight bold))))
- '(secondary-selection ((t (:background "pale goldenrod")))))
-
-(put 'narrow-to-region 'disabled nil)
-(put 'downcase-region 'disabled nil)
-
-(setq helm-locate-project-list '("~/m/nova"))
-
-(setq ix-user "amadev"
-      ix-token (get-pass "ix.io"))
-#+END_SRC
-
-*** prog
-
-#+BEGIN_SRC elisp
-(defun my-prog-mode-hook ()
-  (setq whitespace-style '(face lines-tail tabs trailing)
-        whitespace-line-column 79)
-  (whitespace-mode t)
-  (which-function-mode -1)
-  (idle-highlight-mode t)
-  (make-local-variable 'column-number-mode)
-  (column-number-mode t)
-  (hl-line-mode t)
-  (add-to-list 'write-file-functions 'delete-trailing-whitespace))
-
-(add-hook  'prog-mode-hook 'my-prog-mode-hook)
-#+END_SRC
-
-*** python
-
-#+BEGIN_SRC elisp
-(setq pylint-cmd
-    (concat "pylint --rcfile ~/files/settings/linters/pylintrc"
-            " -rn --msg-template='{path}:{line}: [{msg_id}({symbol}), {obj}] {msg}' "))
-
-(defvar pep257-hist nil)
-
-(defun pep257 ()
-  (interactive)
-  (let* ((cmd (read-shell-command
-               "Command: "
-               (concat "~/bin/pep257.py " (file-name-nondirectory (or (buffer-file-name) "")))
-               'pep257-hist))
-         (null-device nil))
-    (grep cmd)))
-
-(setq jedi:tooltip-method '(pos-tip popup))
-(setq jedi:server-args '("--virtual-env" "~/m/nova/.tox/py27"))
-(setq jedi:setup-keys t)                      ; optional
-(setq jedi:complete-on-dot t)                 ; optional
-
-
-(setq
- python-shell-interpreter "ipython"
- python-shell-interpreter-args "-i")
-#+END_SRC
-
-*** text
-
-#+BEGIN_SRC elisp
-(global-set-key (kbd "C-c s d") 'duplicate-line-c)
-
-(defun rows2one (start end)
-  (interactive "r")
-  (save-restriction
-    (narrow-to-region start end)
-    (goto-char (point-min))
-    (replace-regexp "^" "'")
-    (goto-char (point-min))
-    (replace-regexp "$" "',")
-    (goto-char (point-min))
-    (while (search-forward "\n" nil t) (replace-match " " nil t))
-    (move-end-of-line)
-    ))
-
-(defun pretty-print-xml-region (begin end)
-  "Pretty format XML markup in region. You need to have nxml-mode
-http://www.emacswiki.org/cgi-bin/wiki/NxmlMode installed to do
-this. The function inserts linebreaks to separate tags that have
-nothing but whitespace between them. It then indents the markup
-by using nxml's indentation rules."
-  (interactive "r")
-  (save-excursion
-    (goto-char begin)
-    (while (search-forward-regexp "\>[ \\t]*\<" nil t)
-      (backward-char) (insert "\n") (setq end (1+ end)))
-    (indent-region begin end))
-  (message "Ah, much better!"))
-
-(defun duplicate-line-c (arg)
-  "Duplicate current line, leaving point in lower line."
-  (interactive "*p")
-
-  ;; save the point for undo
-  (setq buffer-undo-list (cons (point) buffer-undo-list))
-
-  ;; local variables for start and end of line
-  (let ((bol (save-excursion (beginning-of-line) (point)))
-        eol)
-    (save-excursion
-
-      ;; don't use forward-line for this, because you would have
-      ;; to check whether you are at the end of the buffer
-      (end-of-line)
-      (setq eol (point))
-
-      ;; store the line and disable the recording of undo information
-      (let ((line (buffer-substring bol eol))
-            (buffer-undo-list t)
-            (count arg))
-        ;; insert the line arg times
-        (while (> count 0)
-          (newline)         ;; because there is no newline in 'line'
-          (insert line)
-          (setq count (1- count)))
-        )
-
-      ;; create the undo information
-      (setq buffer-undo-list (cons (cons eol (point)) buffer-undo-list)))
-    ) ; end-of-let
-
-  ;; put the point in the lowest line and return
-  (next-line arg))
-
-(defvar current-date-time-format "%Y-%m-%d %H:%M:%S %Z %Y"
-  "Format of date to insert with `insert-current-date-time' func
-See help of `format-time-string' for possible replacements")
-
-(defvar current-time-format "%a %H:%M:%S"
-  "Format of date to insert with `insert-current-time' func.
-Note the weekly scope of the command's precision.")
-
-(defun insert-current-date-time ()
-  "insert the current date and time into current buffer.
-Uses `current-date-time-format' for the formatting the date/time."
-       (interactive)
-       (insert (format-time-string current-date-time-format (current-time))))
-
-(defun insert-current-time ()
-  "insert the current time (1-week scope) into the current buffer."
-       (interactive)
-       (insert (format-time-string current-time-format (current-time))))
-
-(defun sentence-from-func-name-in-string (func-name)
-  (let ((splitted-fn (split-string func-name "_")))
-    (setf (first splitted-fn) (capitalize (first splitted-fn)))
-    (concat (mapconcat 'identity splitted-fn " ") "."))
-  )
-
-(defun sentence-from-func-name (start end)
-  (interactive "r")
-  (let ((result
-         (sentence-from-func-name-in-string
-          (buffer-substring-no-properties start end))))
-    (save-excursion
-      (delete-region start end)
-      (goto-char start)
-      (insert result))))
-#+END_SRC
-
-*** time
-
-#+BEGIN_SRC elisp
-(defun yesterday-time ()
-"Provide the date/time 24 hours before the time now in the format of current-time."
-  (setq
-   now-time (current-time)              ; get the time now
-   hi (car now-time)                    ; save off the high word
-   lo (car (cdr now-time))              ; save off the low word
-   msecs (nth 2 now-time)               ; save off the milliseconds
-   )
-
-  (if (< lo 20864)                      ; if the low word is too small for subtracting
-      (setq hi (- hi 2)  lo (+ lo 44672)) ; take 2 from the high word and add to the low
-    (setq hi (- hi 1) lo (- lo 20864))  ; else, add 86400 seconds (in two parts)
-    )
-  (list hi lo msecs)                    ; regurgitate the new values
-  )
-#+END_SRC
-
-*** calendar
+** calendar
 
 #+BEGIN_SRC elisp
 (require 'calendar)
@@ -1862,15 +1838,22 @@ Uses `current-date-time-format' for the formatting the date/time."
 (define-key calendar-mode-map "c" 'iy/calendar-copy-date)
 #+END_SRC
 
-** Макросы
-
 #+BEGIN_SRC elisp
-(fset 'convert_shell_env_to_emacs
-      (lambda (&optional arg)
-        "Keyboard macro."
-        (interactive "p")
-        (kmacro-exec-ring-item
-         (quote ([40 4 115 101 116 101 110 118 32 34 4 19 61 return backspace 34 32 34 4 5 34 41 14 1] 0 "%d")) arg)))
+(defun yesterday-time ()
+  "Provide the date/time 24 hours before the time now in the format of current-time."
+  (setq
+   now-time (current-time)              ; get the time now
+   hi (car now-time)                    ; save off the high word
+   lo (car (cdr now-time))              ; save off the low word
+   msecs (nth 2 now-time)               ; save off the milliseconds
+   )
+
+  (if (< lo 20864)                      ; if the low word is too small for subtracting
+      (setq hi (- hi 2)  lo (+ lo 44672)) ; take 2 from the high word and add to the low
+    (setq hi (- hi 1) lo (- lo 20864))  ; else, add 86400 seconds (in two parts)
+    )
+  (list hi lo msecs)                    ; regurgitate the new values
+  )
 #+END_SRC
 
 ** Автозапуск
@@ -1879,5 +1862,4 @@ Uses `current-date-time-format' for the formatting the date/time."
 (find-file "~/org/task.org")
 (find-file "~/org/mirantis.org")
 (magit-status-internal "~/m/nova")
-(server-start)
 #+END_SRC
