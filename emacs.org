@@ -1649,6 +1649,9 @@ postgres).
 (put 'downcase-region 'disabled nil)
 
 (setq helm-locate-project-list '("~/m/nova"))
+
+(setq ix-user "amadev"
+      ix-token (get-pass "ix.io"))
 #+END_SRC
 
 *** prog
