@@ -65,19 +65,20 @@ marmalade-repo.org - не обновляется.
 #+BEGIN_SRC emacs-lisp
 (server-start)
 #+END_SRC
+*** helm
 
-*** ido
+http://tuhdo.github.io/helm-intro.html
 
-ido - интерфейс для выбора из списка, добавлен, как встроенный модуль emacs.
-
-Включаем повсеместно, включаем flex-matching, поиск файла под курсом.
-
-#+BEGIN_SRC emacs-lisp
-(setq ido-enable-flex-matching t)
-(setq ido-use-filename-at-point 'guess)
-(require 'ido)
-(ido-mode t)
-(ido-everywhere t)
+#+BEGIN_SRC elisp
+(require 'helm-config)
+(helm-mode 1)
+(global-set-key (kbd "C-x f") 'helm-projectile)
+(global-set-key (kbd "C-x C-f") 'helm-find-files)
+(global-set-key (kbd "C-x b") 'helm-mini)
+(setq helm-split-window-in-side-p t)
+(global-set-key (kbd "M-y") 'helm-show-kill-ring)
+(global-set-key (kbd "M-x") 'helm-M-x)
+(setq helm-M-x-fuzzy-match t)
 #+END_SRC
 
 *** История и бекапы
@@ -456,12 +457,6 @@ M-$ - исправление первого слова с ошибкой пос�
 
 (global-set-key (kbd "M-n") 'delete-indentation)
 
-(require 'recentf)
-(recentf-mode 1)
-(setq recentf-max-menu-items 50)
-(global-set-key "\C-x\ \C-r" 'recentf-open-files)
-
-(global-set-key (kbd "C-x f") 'find-file-in-project)
 (show-paren-mode 1)
 
 ;; show buffer file path or buffer name
