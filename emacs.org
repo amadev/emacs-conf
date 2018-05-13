@@ -79,6 +79,7 @@ http://tuhdo.github.io/helm-intro.html
 (global-set-key (kbd "M-y") 'helm-show-kill-ring)
 (global-set-key (kbd "M-x") 'helm-M-x)
 (setq helm-M-x-fuzzy-match t)
+(global-set-key [remap man] 'helm-man-woman)
 #+END_SRC
 
 *** История и бекапы
