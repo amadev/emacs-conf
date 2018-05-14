@@ -962,12 +962,11 @@ TODO сделать mapping sh-buffer -> shell process.
 
 Файлы с задачами.
 #+BEGIN_SRC emacs-lisp
-  (setq my-org-dir (with-home-dir "org/"))
-  (setq org-agenda-files
-        (mapcar
-         #'(lambda (name) (concat my-org-dir name))
-         '("task.org" "bookmarks.org" "reference.org" "google-calendar.org" "book.org" "film.org")))
-
+(setq my-org-dir (with-home-dir "org/"))
+(setq org-agenda-files
+      (mapcar
+       #'(lambda (name) (concat my-org-dir name))
+       '("task.org" "bookmark.org" "reference.org" "google-calendar.org" "book.org" "film.org")))
 #+END_SRC
 
 #+RESULTS:
@@ -976,8 +975,8 @@ TODO сделать mapping sh-buffer -> shell process.
 Файлы, в которые переносятся задачи.
 #+BEGIN_SRC emacs-lisp
 (defun refile-org-files ()
-(let ((files '("task.org" "office.org" "reference.org" "bookmarks.org")))
-(mapcar #'(lambda (x) (concat my-org-dir x)) files)))
+  (let ((files '("task.org" "office.org" "reference.org" "bookmark.org")))
+    (mapcar #'(lambda (x) (concat my-org-dir x)) files)))
 
 (setq org-refile-targets '((refile-org-files . (:level . 2))))
 #+END_SRC
@@ -1047,14 +1046,26 @@ TODO сделать mapping sh-buffer -> shell process.
 %i - активный регион.
 
 #+BEGIN_SRC emacs-lisp
-  (global-set-key (kbd "C-c c") 'org-capture)
-  (setq org-capture-templates
-        '(("i" "Inbox" entry (file+olp (concat my-org-dir "task.org") "task" "inbox")
-           "* TODO %?\n\nAdded: %U\n  %i\n")
-          ("f" "Inbox with file link" entry (file+olp (concat my-org-dir "task.org") "task" "inbox")
-           "* TODO %?\n\nAdded: %U\n  %i\n%a\n")
-          ("b" "Bookmark" entry (file+olp (concat my-org-dir "bookmarks.org") "Bookmarks" "inbox")
-           "* TODO %c %?\n\nAdded: %U\n  %i\n")))
+(setq my-task-file (concat my-org-dir "task.org"))
+(setq my-bookmark-file (concat my-org-dir "bookmark.org"))
+(setq org-capture-templates
+      '(("i"
+         "Inbox"
+         entry
+         (file+olp my-task-file "task" "inbox")
+         "* TODO %?\n\nAdded: %U\n  %i\n")
+        ("f"
+         "Inbox with file link"
+         entry
+         (file+olp my-task-file "task" "inbox")
+         "* TODO %?\n\nAdded: %U\n  %i\n%\n")
+        ("b"
+         "Bookmark"
+         entry
+         (file+olp my-bookmark-file "Bookmarks" "inbox")
+         "* TODO %c %?\n\nAdded: %U\n  %i\n")))
+
+(global-set-key (kbd "C-c c") 'org-capture)
 #+END_SRC
 
 #+RESULTS:
