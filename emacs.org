@@ -534,8 +534,6 @@ M-$ - исправление первого слова с ошибкой пос�
 *** text
 
 #+BEGIN_SRC elisp
-(global-set-key (kbd "C-c s d") 'duplicate-line-c)
-
 (defun rows2one (start end)
   (interactive "r")
   (save-restriction
@@ -563,7 +561,7 @@ by using nxml's indentation rules."
     (indent-region begin end))
   (message "Ah, much better!"))
 
-(defun duplicate-line-c (arg)
+(defun duplicate-line(arg)
   "Duplicate current line, leaving point in lower line."
   (interactive "*p")
 
@@ -597,6 +595,8 @@ by using nxml's indentation rules."
 
   ;; put the point in the lowest line and return
   (next-line arg))
+
+(global-set-key (kbd "C-c l") 'duplicate-line)
 
 (defvar current-date-time-format "%Y-%m-%d %H:%M:%S %Z %Y"
   "Format of date to insert with `insert-current-date-time' func
