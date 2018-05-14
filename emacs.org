@@ -1875,3 +1875,13 @@ postgres).
 (find-file "~/org/mirantis.org")
 (magit-status-internal "~/m/nova")
 #+END_SRC
+** Links
+
+ML archive
+http://lists.gnu.org/archive/html/emacs-devel/
+
+Emacs commits
+http://git.savannah.gnu.org/cgit/emacs.git/log/
+
+Git repo
+git://git.savannah.gnu.org/emacs.git
