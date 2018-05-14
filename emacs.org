@@ -528,6 +528,14 @@ M-$ - исправление первого слова с ошибкой пос�
 
 (setq ix-user "amadev"
       ix-token (get-pass "ix.io"))
+
+(add-hook 'emacs-startup-hook
+          (lambda ()
+            (message "Emacs ready in %s with %d garbage collections."
+                     (format "%.2f seconds"
+                             (float-time
+                              (time-subtract after-init-time before-init-time)))
+                     gcs-done)))
 (global-set-key (kbd "C-; j") 'ace-jump-mode)
 #+END_SRC
 
