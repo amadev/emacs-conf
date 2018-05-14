@@ -425,15 +425,17 @@ M-$ - исправление первого слова с ошибкой пос�
 
 Переключение словаря - ispell-change-dictionary.
 
-*** Keys
+*** Magit for project
 
 #+BEGIN_SRC elisp
 (defun magit-nova ()
   (interactive)
-  (switch-to-buffer "*magit: nova"))
+  (let ((buffer "magit: nova"))
+    (if (get-buffer buffer)
+        (switch-to-buffer "magit: nova")
+      (magit-status "~/m/nova"))))
 
 (global-set-key (kbd "C-; n") 'magit-nova)
-(global-set-key (kbd "C-; j") 'ace-jump-mode)
 #+END_SRC
 
 *** defaults
@@ -526,6 +528,7 @@ M-$ - исправление первого слова с ошибкой пос�
 
 (setq ix-user "amadev"
       ix-token (get-pass "ix.io"))
+(global-set-key (kbd "C-; j") 'ace-jump-mode)
 #+END_SRC
 
 *** text
