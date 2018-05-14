@@ -1240,6 +1240,38 @@ Skips capture tasks and tasks with subtasks"
       org-src-tab-acts-natively t)
 #+END_SRC
 
+*** github
+
+#+BEGIN_SRC elisp
+(defun org-remove-results-tag ()
+  (interactive)
+  (save-excursion
+    (beginning-of-buffer)
+    (let ((cnt 0))
+      (while (search-forward "#+RESULTS:" nil t)
+        (org-beginning-of-line)
+        (org-kill-line)
+        (org-kill-line)
+        (incf cnt))
+      (message "#+RESULTS: lines removed: %d" cnt))))
+
+(defun org-convert-tables ()
+  (interactive)
+  (save-excursion
+    (beginning-of-buffer)
+    (let ((cnt 0))
+      (while (search-forward "+---" nil t)
+        (org-beginning-of-line)
+        (org-table-convert)
+        (incf cnt))
+      (message "%d tables converted" cnt))))
+
+(defun org-prepare-github ()
+  (interactive)
+  (org-remove-results-tag)
+  (org-convert-tables))
+#+END_SRC
+
 ** Почта
 
 Для работы с почтой используется mu4e (http://www.djcbsoftware.nl/code/mu/mu4e/).
