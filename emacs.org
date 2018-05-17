@@ -125,7 +125,6 @@ sentinel (функции, которая срабатывает при любы�
     (when (buffer-live-p buf)
       (with-current-buffer buf
         (insert (format "\nProcess %s %s" process event))))))
-
 #+END_SRC
 
 #+RESULTS:
@@ -162,12 +161,10 @@ sentinel (функции, которая срабатывает при любы�
 Helm история комманд.
 
 #+BEGIN_SRC emacs-lisp
-(defun my-shell-mode-hook ()
-  (progn
-    (local-set-key (kbd "M-r") 'helm-comint-input-ring)
-    ))
+(defun shell-mode-custom-keys ()
+  (local-set-key (kbd "M-r") 'helm-comint-input-ring))
 
-(add-hook 'shell-mode-hook 'my-shell-mode-hook)
+(add-hook 'shell-mode-hook 'shell-mode-custom-keys)
 #+END_SRC
 
 **** Минибуфер
@@ -799,8 +796,6 @@ emacs данные не подхватывались, решилось пере�
 Часто используемые shell добавляются в shell-alist и вызываются
 через helm (c-; b).
 
-autostart-shells - запускает shell, требующиеся всегда, автоматически.
-
 #+BEGIN_SRC emacs-lisp
 (defun read-shells-config (fname)
   (read (format "(%s)"
@@ -831,19 +826,18 @@ autostart-shells - запускает shell, требующиеся всегда
 
 (defun run-or-get-shell (name)
   (interactive
-   (progn (setq shell-alist (read-shells-config "~/.emacs.d/shells.el"))
-          (helm-comp-read "Select shell: "
-                          (mapcar (lambda (item)
-                                    (list
-                                     (nth 0 item)
-                                     (nth 0 item)))
-                                  shell-alist))))
+   (progn
+     (setq shell-alist (read-shells-config "~/.emacs.d/shells.el"))
+     (helm-comp-read
+      "Select shell: "
+      (mapcar (lambda (item) (list (nth 0 item) (nth 0 item))) shell-alist))))
   (let* ((opts (cadr (assoc name shell-alist)))
          (host (plist-get opts 'host))
          (cmd (or (plist-get opts 'cmd) "cd"))
-         (auto (plist-get opts 'auto))
          (bf (concat "shell-" name)))
     (message "%s is choosen, cmd: %s, host: %s" name cmd host)
+    (if (not (get-buffer-process bf))
+        (kill-buffer bf))
     (if (get-buffer bf)
         (switch-to-buffer bf)
       (if host
@@ -1560,7 +1554,7 @@ postgres).
 
 #+BEGIN_SRC emacs-lisp
 (global-set-key (kbd "C-c s s") 'sql-set-sqli-buffer)
-(global-set-key (kbd "C-c m d") 'sql-connect-with-pass)
+(global-set-key (kbd "C-; d") 'sql-connect-with-pass)
 
 (setq sql-mysql-options
       (list "--default-character-set=utf8" "-A"))
@@ -1915,7 +1909,9 @@ postgres).
 (find-file "~/org/mirantis.org")
 (magit-status-internal "~/m/nova")
 #+END_SRC
-** Links
+** Description
+
+*** Links
 
 ML archive
 http://lists.gnu.org/archive/html/emacs-devel/
@@ -1925,3 +1921,8 @@ http://git.savannah.gnu.org/cgit/emacs.git/log/
 
 Git repo
 git://git.savannah.gnu.org/emacs.git
+
+*** TODOS
+
+- org babel sql session is not supported
+- org babel multiline string with session is not supported
