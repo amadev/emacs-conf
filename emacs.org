@@ -82,6 +82,16 @@ http://tuhdo.github.io/helm-intro.html
 (global-set-key [remap man] 'helm-man-woman)
 #+END_SRC
 
+Fallback to old find-file mode for tramp.
+
+#+BEGIN_SRC elisp
+(defun helm-old-ff (&optional no-op) (interactive)
+       (call-interactively 'find-file))
+(define-key helm-map (kbd "C-f")
+  (lambda () (interactive)
+    (helm-quit-and-execute-action 'helm-old-ff)))
+#+END_SRC
+
 *** История и бекапы
 **** Обработка истории comint-буферов
 
