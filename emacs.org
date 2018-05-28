@@ -1507,7 +1507,7 @@ machine smtp.gmail.com login EMAIL port 587 password *******
 
 *** Требования
 **** Вся почта собирается в одном месте
-**** В inbox попадает, то на что нужно реагировать
+**** В inbox попадает, то на что нужно реагироgвать
 
 ** Работа с БД
 
@@ -1955,4 +1955,4 @@ git://git.savannah.gnu.org/emacs.git
 *** TODOS
 
 - org babel sql session is not supported
-- org babel multiline string with session is not supported
+- org babel shell session with tramp with multiline string is not supported
