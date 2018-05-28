@@ -1289,6 +1289,17 @@ Skips capture tasks and tasks with subtasks"
   (org-convert-tables))
 #+END_SRC
 
+*** Редактирование
+
+#+BEGIN_SRC elisp
+(require 'flyspell)
+(add-hook 'org-mode-hook 'flyspell-mode)
+(add-hook 'org-mode-hook 'auto-fill-mode)
+(add-hook 'text-mode-hook 'flyspell-mode)
+(add-hook 'text-mode-hook 'auto-fill-mode)
+(define-key flyspell-mode-map (kbd "C-;") nil)
+#+END_SRC
+
 ** Почта
 
 Для работы с почтой используется mu4e (http://www.djcbsoftware.nl/code/mu/mu4e/).
