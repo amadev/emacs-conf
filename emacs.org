@@ -834,6 +834,11 @@ emacs данные не подхватывались, решилось пере�
   (if cmd
       (comint-send-string buffer-name (concat cmd "\n"))))
 
+(defun start-shell-buffer (buffer host cmd)
+  (if host
+      (start-ssh bf host cmd)
+    (start-shell bf cmd)))
+
 (defun run-or-get-shell (name)
   (interactive
    (progn
@@ -846,13 +851,13 @@ emacs данные не подхватывались, решилось пере�
          (cmd (or (plist-get opts 'cmd) "cd"))
          (bf (concat "shell-" name)))
     (message "%s is choosen, cmd: %s, host: %s" name cmd host)
-    (if (not (get-buffer-process bf))
-        (kill-buffer bf))
+    (and
+     (get-buffer bf)
+     (not (get-buffer-process bf))
+     (kill-buffer bf))
     (if (get-buffer bf)
         (switch-to-buffer bf)
-      (if host
-          (start-ssh bf host cmd)
-        (start-shell bf cmd)))))
+      (start-shell-buffer bf host cmd))))
 
 (global-set-key (kbd "C-; b") 'run-or-get-shell)
 #+END_SRC
