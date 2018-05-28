@@ -1150,6 +1150,10 @@ TODO сделать mapping sh-buffer -> shell process.
 #+RESULTS:
 : ((:results . scalar) (:session . none) (:exports . code) (:cache . no) (:noweb . no) (:hlines . no) (:tangle . no))
 
+#+BEGIN_SRC elisp
+(require 'ob-async)
+#+END_SRC
+
 *** Время
 
 #+BEGIN_SRC emacs-lisp
