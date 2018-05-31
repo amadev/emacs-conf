@@ -677,6 +677,20 @@ Uses `current-date-time-format' for the formatting the date/time."
          (quote ([40 4 115 101 116 101 110 118 32 34 4 19 61 return backspace 34 32 34 4 5 34 41 14 1] 0 "%d")) arg)))
 #+END_SRC
 
+#+BEGIN_SRC elisp
+(require 'ox-reveal)
+(defun my-export ()
+  (interactive)
+  (save-current-buffer
+    (let ((org-reveal-width 1920)
+          (org-reveal-height 1080))
+     (set-buffer "scheduler.org")
+     (org-reveal-export-to-html)))
+  (shell-command-to-string "scp ~/org/scheduler.html amadev:~/www/docs/")
+  (shell-command-to-string "scp ~/org/custom.css amadev:~/www/docs/reveal.js/css/")
+  (shell-command-to-string "rm ~/org/scheduler.html"))
+#+END_SRC
+
 ** Работа с файлами dired
 
 Для просмотра содержимого папки можно C-x C-f C-f,
