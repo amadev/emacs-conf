@@ -1346,7 +1346,7 @@ lisp-файлы подключаются к emacs.
 
 Почта стягивается со всех аккаунтов в ~/Maildir с помощью offlineimap
 и фильтруется imapfilter (общий конфиг для всех аккаунтов)
-[[file:~/files/settings/.offlineimaprc::%5Bgeneral%5D]]
+[[file:~/dotfiles/.offlineimaprc::%5Bgeneral%5D]]
 Для каждого аккаунта используется конфиг imapfilter.
 [[file:~/files/settings/.imapfilter/wolfanio.lua::timeout%20=%20120][wolfanio]]
 #TODO в перерыве между фильтрацией и скачиванием нежелательные письма просачиваются
