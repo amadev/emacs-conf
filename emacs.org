@@ -1363,7 +1363,7 @@ http://kb.4rt.ru/mail/setup.
 
 Команда для скачивания почты.
 #+BEGIN_SRC emacs-lisp
-(setq mu4e-get-mail-command "offlineimap")
+(setq mu4e-get-mail-command "true")
 (setq mu4e-update-interval nil)
 #+END_SRC
 
