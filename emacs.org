@@ -700,6 +700,7 @@ Uses `current-date-time-format' for the formatting the date/time."
           (org-reveal-height 1080))
      (set-buffer "scheduler.org")
      (org-reveal-export-to-html)))
+  (shell-command-to-string "scp -r ~/org/scheduler amadev:~/www/docs/")
   (shell-command-to-string "scp ~/org/scheduler.html amadev:~/www/docs/")
   (shell-command-to-string "scp ~/org/custom.css amadev:~/www/docs/reveal.js/css/")
   (shell-command-to-string "rm ~/org/scheduler.html"))
