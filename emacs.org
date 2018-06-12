@@ -1394,7 +1394,7 @@ machine smtp.gmail.com login EMAIL port 587 password *******
 '("ViewInBrowser" . mu4e-action-view-in-browser) t)
 
 (add-to-list 'mu4e-bookmarks
-'("maildir:/wolfanio/INBOX or maildir:/mirantis/INBOX"  "Inbox"     ?i))
+'("maildir:/wolfanio/INBOX or maildir:/mirantis/INBOX or maildir:/amadev/INBOX"  "Inbox"     ?i))
 #+END_SRC
 
 Сохранение ссылки на письмо.
@@ -1423,41 +1423,55 @@ machine smtp.gmail.com login EMAIL port 587 password *******
 
 *** Настройки для accounts.
 #+BEGIN_SRC emacs-lisp
-  (defvar my-mu4e-account-alist
-    '(("wolfanio"
-       (mu4e-drafts-folder "/wolfanio/drafts")
-       (mu4e-sent-folder   "/wolfanio/sent")
-       (mu4e-trash-folder  "/wolfanio/trash")
-       (mu4e-refile-folder "/wolfanio/archive")
+(setq my-mu4e-account-alist
+  '(("wolfanio"
+     (mu4e-drafts-folder "/wolfanio/drafts")
+     (mu4e-sent-folder   "/wolfanio/sent")
+     (mu4e-trash-folder  "/wolfanio/trash")
+     (mu4e-refile-folder "/wolfanio/archive")
 
-       (user-mail-address "wolfanio@gmail.com")
-       (user-full-name  "Andrey Volkov")
-       (mu4e-compose-signature
-        (concat
-         "С уважением,\n"
-         "Андрей Волков.\n\n"
-         "mobile: +7(916) 86 88 942\n"
-         "skype:  amadev_alt\n"
-         "site:   http://amadev.ru/\n"))
-       (smtpmail-smtp-server "smtp.gmail.com")
-       (smtpmail-smtp-user "wolfanio@gmail.com")
-       (smtpmail-smtp-service 587))
-      ("mirantis"
-       (mu4e-drafts-folder "/mirantis/drafts")
-       (mu4e-sent-folder   "/mirantis/sent")
-       (mu4e-trash-folder  "/mirantis/trash")
-       (mu4e-refile-folder "/mirantis/archive")
-       (user-mail-address "avolkov@mirantis.com")
-       (user-full-name  "Andrey Volkov")
-       (mu4e-compose-signature
-        (concat
-        "Thanks,\n\n"
-        "Andrey Volkov,\n"
-        "Software Engineer, Mirantis, Inc."))
-       (smtpmail-smtp-server "smtp.gmail.com")
-       (smtpmail-smtp-user "avolkov@mirantis.com")
-       (smtpmail-smtp-service 587))))
-
+     (user-mail-address "wolfanio@gmail.com")
+     (user-full-name  "Andrey Volkov")
+     (mu4e-compose-signature
+      (concat
+       "С уважением,\n"
+       "Андрей Волков.\n\n"
+       "mobile: +7(916) 86 88 942\n"
+       "skype:  amadev_alt\n"
+       "site:   http://amadev.ru/\n"))
+     (smtpmail-smtp-server "smtp.gmail.com")
+     (smtpmail-smtp-user "wolfanio@gmail.com")
+     (smtpmail-smtp-service 587))
+    ("mirantis"
+     (mu4e-drafts-folder "/mirantis/drafts")
+     (mu4e-sent-folder   "/mirantis/sent")
+     (mu4e-trash-folder  "/mirantis/trash")
+     (mu4e-refile-folder "/mirantis/archive")
+     (user-mail-address "avolkov@mirantis.com")
+     (user-full-name  "Andrey Volkov")
+     (mu4e-compose-signature
+      (concat
+       "Thanks,\n\n"
+       "Andrey Volkov,\n"
+       "Software Engineer, Mirantis, Inc."))
+     (smtpmail-smtp-server "smtp.gmail.com")
+     (smtpmail-smtp-user "avolkov@mirantis.com")
+     (smtpmail-smtp-service 587))
+    ("amadev"
+     (mu4e-drafts-folder "/amadev/drafts")
+     (mu4e-sent-folder   "/amadev/sent")
+     (mu4e-trash-folder  "/amadev/trash")
+     (mu4e-refile-folder "/amadev/archive")
+     (user-mail-address "m@amadev.ru")
+     (user-full-name  "Andrey Volkov")
+     (mu4e-compose-signature
+      (concat
+       "Thanks,\n\n"
+       "Andrey Volkov,\n"
+       "Software Engineer, Amadev, Inc."))
+     (smtpmail-smtp-server "amadev.ru")
+     (smtpmail-smtp-user "m")
+     (smtpmail-smtp-service 587))))
 #+END_SRC
 
 #+RESULTS:
