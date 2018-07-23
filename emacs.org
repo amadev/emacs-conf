@@ -1987,9 +1987,10 @@ postgres).
 
 #+BEGIN_SRC emacs-lisp
 (find-file "~/org/task.org")
-(find-file "~/org/mirantis.org")
+(find-file "~/org/log.org")
 (magit-status-internal "~/m/nova")
 #+END_SRC
+
 ** Description
 
 *** Links
