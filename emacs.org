@@ -1853,12 +1853,14 @@ postgres).
   (defun grep-at-point ()
     (interactive)
     (let ((s (thing-at-point 'symbol t)))
-      (ack (concat "ag -i --nogroup " s) (ack-default-directory 4))))
+      (ack (concat "ag -i --nogroup " s " --ignore tests")
+           (ack-default-directory 4))))
 
   (defun grep-function-at-point ()
     (interactive)
     (let ((s (what-function '(0))))
-      (ack (concat "ag -i --nogroup " s) (ack-default-directory 4))))
+      (ack (concat "ag -i --nogroup " s " --ignore tests")
+           (ack-default-directory 4))))
 #+END_SRC
 
 ** Lisp
