@@ -944,33 +944,36 @@ emacs данные не подхватывались, решилось пере�
 
 *** Send region to shell from shell-script buffer
 
-Посыл региона в shell (посылает в первый запущенный shell).
-TODO сделать mapping sh-buffer -> shell process.
+Send buffer string to the shell specified by name in
+target-shell-session. It could be defined as file local variable:
+
+# Local Variables:
+# target-shell-session: shell-default
+# End:
 
 #+BEGIN_SRC emacs-lisp
+(defvar target-shell-session "shell-default"
+  "Name of session buffer for sending comands from sh-mode")
+(make-variable-buffer-local 'target-shell-session)
+
 (defun sh-send-line-or-region (&optional step)
   (interactive ())
-  (let ((proc (get-process "shell"))
-        pbuf min max command)
-    (unless proc
-      (let ((currbuff (current-buffer)))
-        (shell)
-        (switch-to-buffer currbuff)
-        (setq proc (get-process "shell"))
-        ))
-    (setq pbuff (get-buffer "shell_default"))
+
+  (let* ((pbuf (get-buffer target-shell-session))
+        (proc (get-buffer-process pbuf))
+        min max command)
     (if (use-region-p)
         (setq min (region-beginning)
               max (region-end))
       (setq min (point-at-bol)
             max (point-at-eol)))
     (setq command (concat (buffer-substring min max) "\n"))
-    (with-current-buffer pbuff
-      (goto-char (process-mark proc))
-      (insert command)
-      (move-marker (process-mark proc) (point))
-      ) ;;pop-to-buffer does not work with save-current-buffer -- bug?
-    (process-send-string  proc command)
+    ;; (with-current-buffer pbuf
+    ;;   (goto-char (process-mark proc))
+    ;;   (insert command)
+    ;;   (move-marker (process-mark proc) (point))
+    ;;   ) ;;pop-to-buffer does not work with save-current-buffer -- bug?
+    (process-send-string proc command)
     (display-buffer (process-buffer proc) t)
     (when step
       (goto-char max)
@@ -982,7 +985,7 @@ TODO сделать mapping sh-buffer -> shell process.
 
 (defun sh-switch-to-process-buffer ()
   (interactive)
-  (pop-to-buffer (process-buffer (get-process "shell")) t))
+  (pop-to-buffer (get-buffer target-shell-session) t))
 
 (defun my-sh-mode-hook ()
   (progn
