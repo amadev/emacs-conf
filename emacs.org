@@ -674,6 +674,9 @@ Uses `current-date-time-format' for the formatting the date/time."
 
 *** Макросы
 
+kmacro-name-last-macro
+insert-kbd-macro
+
 #+BEGIN_SRC elisp
 (fset 'convert_shell_env_to_emacs
       (lambda (&optional arg)
@@ -681,6 +684,9 @@ Uses `current-date-time-format' for the formatting the date/time."
         (interactive "p")
         (kmacro-exec-ring-item
          (quote ([40 4 115 101 116 101 110 118 32 34 4 19 61 return backspace 34 32 34 4 5 34 41 14 1] 0 "%d")) arg)))
+
+(fset 'pytest-args-from-test-name
+   (lambda (&optional arg) "Keyboard macro." (interactive "p") (kmacro-exec-ring-item '([134217765 46 return 47 return 33 backspace 32 45 107 32 18 47 return 67108896 19 32 23 2 2 2 23 46 112 121 5] 0 "%d") arg)))
 #+END_SRC
 
 *** Replace multiple empty lines with a single one
