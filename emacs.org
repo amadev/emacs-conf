@@ -351,6 +351,9 @@ yas-wrap-around-region включает такое поведение.
 (setq browse-url-browser-function 'browse-url-generic
      browse-url-generic-program "google-chrome")
 
+(when (eq system-type 'darwin)
+  (setq browse-url-generic-program "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"))
+
 #+END_SRC
 
 *** Смена сплита буферов вертикальный/горизонтальный
