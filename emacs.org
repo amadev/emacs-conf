@@ -1016,6 +1016,7 @@ target-shell-session. It could be defined as file local variable:
 ** orgmode
 
 Установка orgmode и его расширений.
+
 #+BEGIN_SRC emacs-lisp
 (add-to-list 'package-archives '("org" . "http://orgmode.org/elpa/") t)
 #+END_SRC
@@ -1029,7 +1030,7 @@ target-shell-session. It could be defined as file local variable:
 (setq org-agenda-files
       (mapcar
        #'(lambda (name) (concat my-org-dir name))
-       '("task.org" "bookmark.org" "reference.org" "google-calendar.org" "book.org" "film.org")))
+       '("task.org" "bookmark.org" "reference.org" "google-calendar.org" "book.org" "film.org" "att-log.org")))
 #+END_SRC
 
 #+RESULTS:
