@@ -107,7 +107,7 @@ sentinel (функции, которая срабатывает при любы�
   (let ((process (get-buffer-process (current-buffer))))
     (when process
       (setq comint-input-ring-file-name
-            (format "/home/amadev/.emacs.d/history.d/%s-buffer-history"
+            (format (with-home-dir ".emacs.d/history.d/%s-buffer-history")
                     (buffer-name (current-buffer))))
       (comint-read-input-ring)
       (set-process-sentinel process
