@@ -4,7 +4,7 @@
   :header-args: :tangle /home/amadev/.emacs.d/init.el :results silent
   :END:
 
-** Глобальный функции
+** Глобальные функции
 *** Запуск и внешний вид
 
 Запускаю emacs из консоли скрина, при этом скрин наследует переменные
@@ -720,6 +720,11 @@ insert-kbd-macro
   (shell-command-to-string "scp ~/org/custom.css amadev:~/www/docs/reveal.js/css/")
   (shell-command-to-string "rm ~/org/scheduler.html"))
 #+END_SRC
+
+*** Delete buffes by name
+
+Using ibuffer it can be done with marking buffers by name with '% n'
+and press 'D' after that.
 
 ** Работа с файлами dired
 
