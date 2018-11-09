@@ -2013,14 +2013,11 @@ postgres).
 
 ** Автозапуск
 
-#+BEGIN_SRC emacs-lisp
-(find-file "~/org/task.org")
-(find-file "~/org/log.org")
-(magit-status-internal "~/m/nova")
+#+BEGIN_SRC elisp
+(find-file "~/org/att-log.org")
 #+END_SRC
 
 ** Description
-
 *** Links
 
 ML archive
