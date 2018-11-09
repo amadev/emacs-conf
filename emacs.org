@@ -2031,5 +2031,6 @@ git://git.savannah.gnu.org/emacs.git
 
 *** TODOS
 
-- org babel sql session is not supported
-- org babel shell session with tramp with multiline string is not supported
+- [ ] multiline shell history
+- [ ] org babel sql session is not supported
+- [ ] org babel shell session with tramp with multiline string is not supported
