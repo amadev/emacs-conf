@@ -19,7 +19,7 @@
 По умолчанию идет список пакетов от gnu http://elpa.gnu.org/packages/.
 melpa.milkbox.net - модерируемый, с автосборками и фильтром.
 marmalade-repo.org - не обновляется.
-#+BEGIN_SRC emacs-lisp
+#+BEGIN_SRC elisp
 (require 'package)
 (add-to-list 'package-archives
              '("melpa" . "https://melpa.org/packages/"))
@@ -29,7 +29,7 @@ marmalade-repo.org - не обновляется.
 дополнительные приложения. В один момент времени выполняю одну функцию.
 Убираем лишние GUI-свистелки.
 
-#+BEGIN_SRC emacs-lisp
+#+BEGIN_SRC elisp
 (tooltip-mode -1)
 (tool-bar-mode -1)
 (menu-bar-mode -1)
@@ -38,19 +38,19 @@ marmalade-repo.org - не обновляется.
 
 Отключаю пригласительный экран и текст в скретч.
 
-#+BEGIN_SRC emacs-lisp
+#+BEGIN_SRC elisp
 (setq inhibit-startup-screen t
       initial-scratch-message nil)
 #+END_SRC
 
-#+BEGIN_SRC emacs-lisp
+#+BEGIN_SRC elisp
 (setenv "LANG" "en_US.UTF-8")
 (setq system-time-locale "C")
 #+END_SRC
 
 Размер шрифта, тема.
 
-#+BEGIN_SRC emacs-lisp
+#+BEGIN_SRC elisp
 (set-face-attribute 'default nil :height 130) ;; 13pt
 (load-theme 'warm-night t)
 (set-cursor-color "#909090")
@@ -58,11 +58,11 @@ marmalade-repo.org - не обновляется.
 
 Разбивать окна вертикально.
 
-#+BEGIN_SRC emacs-lisp
+#+BEGIN_SRC elisp
 (setq split-width-threshold 120)
 #+END_SRC
 
-#+BEGIN_SRC emacs-lisp
+#+BEGIN_SRC elisp
 (server-start)
 #+END_SRC
 *** helm
@@ -101,7 +101,7 @@ comint-input-ring-file-name, а также устанавливает callback �
 sentinel (функции, которая срабатывает при любых изменениях в
 процессе).
 
-#+BEGIN_SRC emacs-lisp
+#+BEGIN_SRC elisp
 (setq comint-input-ring-size 5000)
 (defun turn-on-comint-history ()
   (let ((process (get-buffer-process (current-buffer))))
@@ -127,7 +127,7 @@ sentinel (функции, которая срабатывает при любы�
 В shell работает helm-comint-input-ring, как вариант выбора предыдущей
 истории, в sqli - нет, но проблема с многострочными та же.
 
-#+BEGIN_SRC emacs-lisp
+#+BEGIN_SRC elisp
 
 (defun comint-write-history-on-exit (process event)
   (comint-write-input-ring)
@@ -141,7 +141,7 @@ sentinel (функции, которая срабатывает при любы�
 : comint-write-history-on-exit
 
 Включение истории для режимов.
-#+BEGIN_SRC emacs-lisp
+#+BEGIN_SRC elisp
 (add-hook 'shell-mode-hook 'turn-on-comint-history)
 (add-hook 'inferior-python-mode-hook 'turn-on-comint-history)
 (add-hook 'inferior-emacs-lisp-mode-hook 'turn-on-comint-history)
@@ -152,7 +152,7 @@ sentinel (функции, которая срабатывает при любы�
 
 Для обработки закрытия буфера и выключения emacs используется.
 
-#+BEGIN_SRC emacs-lisp
+#+BEGIN_SRC elisp
 (require 'comint)
 (add-hook 'kill-buffer-hook 'comint-write-input-ring)
 
@@ -170,7 +170,7 @@ sentinel (функции, которая срабатывает при любы�
 
 Helm история комманд.
 
-#+BEGIN_SRC emacs-lisp
+#+BEGIN_SRC elisp
 (defun shell-mode-custom-keys ()
   (local-set-key (kbd "M-r") 'helm-comint-input-ring))
 
@@ -182,7 +182,7 @@ Helm история комманд.
 Работает автоматически, при загрузке emacs подгружается история.
 Для просмотра истории helm-minibuffer-history.
 
-#+BEGIN_SRC emacs-lisp
+#+BEGIN_SRC elisp
 (setq savehist-file "~/.emacs.d/history.d/minibuffer-history")
 (savehist-mode 1)
 (setq history-length t)
@@ -204,7 +204,7 @@ Helm история комманд.
 директории. Используем версии бекапных файлов и делаем бекапы файлов,
 которые под контролем версий (git, svn).
 
-#+BEGIN_SRC emacs-lisp
+#+BEGIN_SRC elisp
 (setq backup-directory-alist '(("." . "~/.emacs.d/backups")))
 (setq auto-save-file-name-transforms '((".*" "~/.emacs.d/auto-save-list/" t)))
 (setq version-control t)
@@ -219,7 +219,7 @@ Helm история комманд.
 
 По умолчанию запускаем поиск regexp.
 
-#+BEGIN_SRC emacs-lisp
+#+BEGIN_SRC elisp
 (global-set-key (kbd "C-s") 'isearch-forward-regexp)
 (global-set-key (kbd "C-r") 'isearch-backward-regexp)
 (global-set-key (kbd "C-M-s") 'isearch-forward)
@@ -230,7 +230,7 @@ Helm история комманд.
 (isearch-forward-symbol-at-point) M-s .
 либо дополнительной функцией в режиме поиска.
 
-#+BEGIN_SRC emacs-lisp
+#+BEGIN_SRC elisp
 (define-key isearch-mode-map (kbd "C-*")
   (lambda ()
     "Reset current isearch to a word-mode search of the word under point."
@@ -259,7 +259,7 @@ M-e - редактирование.
 
 *** Удалениие пробелов вначале и конце строки.
 
-#+BEGIN_SRC emacs-lisp
+#+BEGIN_SRC elisp
 (defun chomp (str)
       "Chomp leading and tailing whitespace from STR."
       (while (string-match "\\`\n+\\|^\\s-+\\|\\s-+$\\|\n+\\'"
@@ -272,7 +272,7 @@ M-e - редактирование.
 
 [[file:system.org::*%D0%9F%D0%B0%D1%80%D0%BE%D0%BB%D0%B8][Пароли]]
 
-#+BEGIN_SRC emacs-lisp
+#+BEGIN_SRC elisp
   (defun get-pass (name)
     (let ((cname (if (symbolp name) (symbol-name name) name)))
       (chomp (shell-command-to-string (concat "cpp " cname)))))
@@ -280,7 +280,7 @@ M-e - редактирование.
 
 *** На клавиатуре сломался шифт и очень не хватало скобочек.
 
-#+BEGIN_SRC emacs-lisp :tangle no
+#+BEGIN_SRC elisp :tangle no
 
 (define-key key-translation-map (kbd "9") (kbd "("))
 (define-key key-translation-map (kbd "C-9") (kbd "9"))
@@ -295,7 +295,7 @@ M-e - редактирование.
 : 6
 
 *** Пути от домашней папки и emacs.d.
-#+BEGIN_SRC emacs-lisp
+#+BEGIN_SRC elisp
   (defun may-be-add-first-slash (path)
     (concat (if (string-match "^/" path) "" "/") path))
 
@@ -307,7 +307,7 @@ M-e - редактирование.
 #+END_SRC
 
 *** Копирование имени файла текущего буфера в clipboard.
-#+BEGIN_SRC emacs-lisp
+#+BEGIN_SRC elisp
   (defun copy-file-name-to-clipboard ()
     "Copy the current buffer file name to the clipboard."
     (interactive)
@@ -325,7 +325,7 @@ M-e - редактирование.
 : copy-file-name-to-clipboard
 
 *** Устанавливаем альтернативный метод ввода, срабатывает после С-\.
-#+BEGIN_SRC emacs-lisp
+#+BEGIN_SRC elisp
 (setq default-input-method "russian-computer")
 #+END_SRC
 
@@ -340,14 +340,14 @@ M-e - редактирование.
 клавиш (binding), последнее полезно для оборачивания региона шаблоном.
 yas-wrap-around-region включает такое поведение.
 
-#+BEGIN_SRC emacs-lisp
+#+BEGIN_SRC elisp
 (require 'yasnippet)
 (yas-global-mode 1)
 (setq yas-wrap-around-region t)
 #+END_SRC
 
 *** Браузер
-#+BEGIN_SRC emacs-lisp
+#+BEGIN_SRC elisp
 (setq browse-url-browser-function 'browse-url-generic
      browse-url-generic-program "google-chrome")
 
@@ -357,7 +357,7 @@ yas-wrap-around-region включает такое поведение.
 #+END_SRC
 
 *** Смена сплита буферов вертикальный/горизонтальный
-#+BEGIN_SRC emacs-lisp
+#+BEGIN_SRC elisp
 (defun toggle-window-split ()
   (interactive)
   (if (= (count-windows) 2)
@@ -389,7 +389,7 @@ yas-wrap-around-region включает такое поведение.
 : toggle-window-split
 
 *** Смена содержимого окон
-#+BEGIN_SRC emacs-lisp
+#+BEGIN_SRC elisp
   (defun swap-windows (arg)
     "Transpose the buffers shown in two windows."
     (interactive "p")
@@ -407,7 +407,7 @@ yas-wrap-around-region включает такое поведение.
 *** Аккорды
 
 Назначаем сочетания символов на часто используемые функции.
-#+BEGIN_SRC emacs-lisp
+#+BEGIN_SRC elisp
 (require 'key-chord)
 (key-chord-mode 1)
 (key-chord-define-global "yy" 'ack)
@@ -450,7 +450,7 @@ M-$ - исправление первого слова с ошибкой пос�
 
 *** defaults
 
-#+BEGIN_SRC emacs-lisp
+#+BEGIN_SRC elisp
 (require 'smex)
 (smex-initialize)
 (global-set-key (kbd "M-x") 'smex)
@@ -749,13 +749,13 @@ and press 'D' after that.
 Настройки отображения dired по умолчанию.
 Показываем все, сортируем по дате (новые внизу), но сначала директории.
 
-#+BEGIN_SRC emacs-lisp
+#+BEGIN_SRC elisp
 (setq dired-listing-switches "-altrh  --group-directories-first")
 #+END_SRC
 
 Использовать lisp-версию ls для Mac.
 
-#+BEGIN_SRC emacs-lisp
+#+BEGIN_SRC elisp
 (when (eq system-type 'darwin)
   (require 'ls-lisp)
   (setq ls-lisp-use-insert-directory-program nil))
@@ -771,7 +771,7 @@ echo "machine miracloud.irc.slack.com login andrey.volkov port 6667 password $(c
 Возможно, файл сильно кешируется, т.к. после обновления файла из запущенного
 emacs данные не подхватывались, решилось перезапуском.
 
-#+BEGIN_SRC emacs-lisp
+#+BEGIN_SRC elisp
 (defun start-ircs ()
   (interactive)
   (erc-tls :server "irc.freenode.net" :port 6697
@@ -855,7 +855,7 @@ emacs данные не подхватывались, решилось пере�
 Часто используемые shell добавляются в shell-alist и вызываются
 через helm (c-; b).
 
-#+BEGIN_SRC emacs-lisp
+#+BEGIN_SRC elisp
 (defun read-shells-config (fname)
   (read (format "(%s)"
                 (with-temp-buffer
@@ -915,7 +915,7 @@ emacs данные не подхватывались, решилось пере�
 
 Запуск текущего файла в compilation mode.
 
-#+BEGIN_SRC emacs-lisp
+#+BEGIN_SRC elisp
 (global-set-key (kbd "<f7>") 'run-current-file)
 
 (defun run-current-file ()
@@ -965,7 +965,7 @@ target-shell-session. It could be defined as file local variable:
 # target-shell-session: shell-default
 # End:
 
-#+BEGIN_SRC emacs-lisp
+#+BEGIN_SRC elisp
 (defvar target-shell-session "shell-default"
   "Name of session buffer for sending comands from sh-mode")
 (make-variable-buffer-local 'target-shell-session)
@@ -1022,7 +1022,7 @@ target-shell-session. It could be defined as file local variable:
 
 Установка orgmode и его расширений.
 
-#+BEGIN_SRC emacs-lisp
+#+BEGIN_SRC elisp
 (add-to-list 'package-archives '("org" . "http://orgmode.org/elpa/") t)
 #+END_SRC
 
@@ -1030,7 +1030,7 @@ target-shell-session. It could be defined as file local variable:
 или удалять файлы elc при ошибках компиляции.
 
 Файлы с задачами.
-#+BEGIN_SRC emacs-lisp
+#+BEGIN_SRC elisp
 (setq my-org-dir (with-home-dir "org/"))
 (setq org-agenda-files
       (mapcar
@@ -1042,7 +1042,7 @@ target-shell-session. It could be defined as file local variable:
 | /home/amadev/org/gtd.org | /home/amadev/org/office.org |
 
 Файлы, в которые переносятся задачи.
-#+BEGIN_SRC emacs-lisp
+#+BEGIN_SRC elisp
 (defun refile-org-files ()
   (let ((files '("task.org" "office.org" "reference.org" "bookmark.org")))
     (mapcar #'(lambda (x) (concat my-org-dir x)) files)))
@@ -1054,7 +1054,7 @@ target-shell-session. It could be defined as file local variable:
 : ((refile-org-files :level . 2))
 
 Сочетание, для открытия агенды.
-#+BEGIN_SRC emacs-lisp
+#+BEGIN_SRC elisp
 (global-set-key (kbd "C-c a") 'org-agenda)
 #+END_SRC
 
@@ -1062,7 +1062,7 @@ target-shell-session. It could be defined as file local variable:
 : org-agenda
 
 Назначаем свойства при переключении todo.
-#+BEGIN_SRC emacs-lisp
+#+BEGIN_SRC elisp
   ;; add properties then trigger todo states
   (setq org-todo-state-tags-triggers
         '(("CANCELLED"
@@ -1114,7 +1114,7 @@ target-shell-session. It could be defined as file local variable:
 %a - указатель на файл, в котором находишься при захвате.
 %i - активный регион.
 
-#+BEGIN_SRC emacs-lisp
+#+BEGIN_SRC elisp
 (setq my-task-file (concat my-org-dir "task.org"))
 (setq my-bookmark-file (concat my-org-dir "bookmark.org"))
 (setq org-capture-templates
@@ -1143,7 +1143,7 @@ target-shell-session. It could be defined as file local variable:
 *** babel
 
 Добавляем языки.
-#+BEGIN_SRC emacs-lisp
+#+BEGIN_SRC elisp
 (org-babel-do-load-languages
  'org-babel-load-languages
  '((lisp . t)
@@ -1164,7 +1164,7 @@ target-shell-session. It could be defined as file local variable:
 
 Отключаем запрос на подтверждение выполнения.
 
-#+BEGIN_SRC emacs-lisp
+#+BEGIN_SRC elisp
 (setq org-confirm-babel-evaluate nil)
 #+END_SRC
 
@@ -1172,7 +1172,7 @@ target-shell-session. It could be defined as file local variable:
 
 Задаем приложение для обработки.
 
-#+BEGIN_SRC emacs-lisp
+#+BEGIN_SRC elisp
   (setq org-plantuml-jar-path
         (expand-file-name "~/bin/plantuml.jar"))
   (setq org-ditaa-jar-path
@@ -1193,7 +1193,7 @@ target-shell-session. It could be defined as file local variable:
 или
 :header-args:SQL:  :cmdline -xxx :engine mysql
 
-#+BEGIN_SRC emacs-lisp
+#+BEGIN_SRC elisp
   (setq org-babel-default-header-args:sh
         (cons '(:results . "scalar replace")
               (assq-delete-all :results org-babel-default-header-args)))
@@ -1208,7 +1208,7 @@ target-shell-session. It could be defined as file local variable:
 
 *** Время
 
-#+BEGIN_SRC emacs-lisp
+#+BEGIN_SRC elisp
 (defun bh/is-project-p-with-open-subtasks ()
   "Any task with a todo keyword subtask"
   (let ((has-subtask)
@@ -1363,9 +1363,8 @@ mu4e идет в составе индексатора mu, который уст
 file://~/Dropbox/mu_0.9.15-1_amd64.deb
 
 lisp-файлы подключаются к emacs.
-#+BEGIN_SRC emacs-lisp
+#+BEGIN_SRC elisp
 (add-to-list 'load-path "/usr/share/emacs/site-lisp/mu4e")
-(require 'mu4e)
 #+END_SRC
 
 Почта стягивается со всех аккаунтов в ~/Maildir с помощью offlineimap
@@ -1381,18 +1380,19 @@ http://kb.4rt.ru/mail/setup.
 Запуск mu4e.
 #+BEGIN_SRC emacs-lisp
 (global-set-key (kbd "C-; m") 'mu4e)
+#+BEGIN_SRC elisp
 #+END_SRC
 
 *** Общие настройки
 
 Команда для скачивания почты.
-#+BEGIN_SRC emacs-lisp
+#+BEGIN_SRC elisp
 (setq mu4e-get-mail-command "true")
 (setq mu4e-update-interval nil)
 #+END_SRC
 
 Преобразование html-писем в текст.
-#+BEGIN_SRC emacs-lisp
+#+BEGIN_SRC elisp
 (setq mu4e-html2text-command "html2text -utf8 -width 72")
 #+END_SRC
 
@@ -1401,7 +1401,7 @@ http://kb.4rt.ru/mail/setup.
 machine smtp.gmail.com login EMAIL port 587 password *******
 
 Отправляем почту через smtp, используя tls, без использования очереди.
-#+BEGIN_SRC emacs-lisp
+#+BEGIN_SRC elisp
   (setq
    message-send-mail-function 'smtpmail-send-it
    smtpmail-stream-type 'starttls
@@ -1427,7 +1427,7 @@ machine smtp.gmail.com login EMAIL port 587 password *******
 
 Всегда отображаем дату и время в заголовках.
 
-#+BEGIN_SRC emacs-lisp
+#+BEGIN_SRC elisp
 (setq mu4e-headers-fields '(
   (:date . 24)
   (:flags . 6)
@@ -1440,12 +1440,12 @@ machine smtp.gmail.com login EMAIL port 587 password *******
 
 Скрываем сообщение об индексации.
 
-#+BEGIN_SRC emacs-lisp
+#+BEGIN_SRC elisp
 (setq mu4e-hide-index-messages t)
 #+END_SRC
 
 *** Настройки для accounts.
-#+BEGIN_SRC emacs-lisp
+#+BEGIN_SRC elisp
 (setq my-mu4e-account-alist
   '(("wolfanio"
      (mu4e-drafts-folder "/wolfanio/drafts")
@@ -1501,14 +1501,14 @@ machine smtp.gmail.com login EMAIL port 587 password *******
 : my-mu4e-account-alist
 
 Короткие ссылки для inbox.
-#+BEGIN_SRC emacs-lisp
+#+BEGIN_SRC elisp
 (setq mu4e-maildir-shortcuts
       '(("/wolfanio/INBOX" . ?w)
         ("/mirantis/INBOX" . ?m)))
 #+END_SRC
 
 *** Интерактивно выбираем account при создании письма.
-#+BEGIN_SRC emacs-lisp
+#+BEGIN_SRC elisp
 (defun my-mu4e-set-account ()
   "Set the account for composing a message."
   (let* ((account
@@ -1538,7 +1538,7 @@ machine smtp.gmail.com login EMAIL port 587 password *******
 
 *** При архивировании переносим в соответствующую папку, в зависимости от текущего maildir
 
-#+BEGIN_SRC emacs-lisp
+#+BEGIN_SRC elisp
 (setq mu4e-refile-folder
       (lambda (msg)
         (let* ((maildir (mu4e-message-field msg :maildir))
@@ -1552,7 +1552,7 @@ machine smtp.gmail.com login EMAIL port 587 password *******
 *** Вложения
 
 Вложения можно добавлять с помощью dired (C-c RET C-a)
-#+BEGIN_SRC emacs-lisp
+#+BEGIN_SRC elisp
 (require 'gnus-dired)
 ;; make the `gnus-dired-mail-buffers' function also work on
 ;; message-mode derived modes, such as mu4e-compose-mode
@@ -1586,7 +1586,7 @@ machine smtp.gmail.com login EMAIL port 587 password *******
 (require 'sql) нужен, т.к. там определяется sql-connection-alist, а
 без определенной переменной add-to-list работать не будет.
 
-#+BEGIN_SRC emacs-lisp
+#+BEGIN_SRC elisp
   (require 'sql)
 
   (add-to-list
@@ -1612,7 +1612,7 @@ machine smtp.gmail.com login EMAIL port 587 password *******
 структуре через get-pass, также пароль копируется в буфер (для
 postgres).
 
-#+BEGIN_SRC emacs-lisp
+#+BEGIN_SRC elisp
 (defun sql-connect-with-pass (connection)
   (interactive
    (helm-comp-read "Select server: " (mapcar (lambda (item)
@@ -1648,7 +1648,7 @@ postgres).
 буфера может не добавиться. Включается обрезка длинных строк, не
 перенос.
 
-#+BEGIN_SRC emacs-lisp
+#+BEGIN_SRC elisp
 (global-set-key (kbd "C-c s s") 'sql-set-sqli-buffer)
 (global-set-key (kbd "C-; d") 'sql-connect-with-pass)
 
@@ -1671,7 +1671,7 @@ postgres).
 Сохранение истории таким способом не работает при закрытии буфера,
 поэтому нужно сначала убить процесс (TODO при закрытии буфера вызывать
 сохранение истории).
-#+BEGIN_SRC emacs-lisp
+#+BEGIN_SRC elisp
 ;; comint-input-ring-size 500
   (defun my-sql-save-history-hook ()
     (let ((lval 'sql-input-ring-file-name)
@@ -1699,7 +1699,7 @@ postgres).
 Для поиска документации по используется pylookup,
 который индексирует документацию python, и сохраняет индекс локально.
 
-#+BEGIN_SRC emacs-lisp
+#+BEGIN_SRC elisp
 ;; add pylookup to your loadpath, ex) "~/.lisp/addons/pylookup"
 (setq pylookup-dir (with-emacs-dir "plugins/pylookup"))
 (add-to-list 'load-path pylookup-dir)
@@ -1721,7 +1721,7 @@ postgres).
 
 Просмотр документации: pylookup-lookup ищет слово под курсором и
 предлагает выбор.
-#+BEGIN_SRC emacs-lisp
+#+BEGIN_SRC elisp
   (defun pylookup-view-doc-index ()
     (interactive)
     (browse-url (concat "file://"
@@ -1734,7 +1734,7 @@ postgres).
 
 *** Display current buffer structure
 
-#+BEGIN_SRC emacs-lisp
+#+BEGIN_SRC elisp
 (defun occur-python-structure ()
   (interactive)
   (occur "def\\b\\|class\\b\\|=[ ]?lambda"))
@@ -1771,7 +1771,7 @@ postgres).
 
 *** Keys
 
-#+BEGIN_SRC emacs-lisp
+#+BEGIN_SRC elisp
 (defun python-keys ()
   (smartparens-mode 1)
   (local-unset-key (kbd "C-c C-d"))
@@ -1854,7 +1854,7 @@ postgres).
 Команды run-python, shell-command, org-evaluate выполняются с учетом
 текущей virtualenv
 
-#+BEGIN_SRC emacs-lisp
+#+BEGIN_SRC elisp
 (require 'virtualenvwrapper)
 (venv-initialize-interactive-shells) ;; if you want interactive shell support
 (venv-initialize-eshell) ;; if you want eshell support
@@ -1882,7 +1882,7 @@ postgres).
 
 ** Lisp
 
-#+BEGIN_SRC emacs-lisp
+#+BEGIN_SRC elisp
 (setq inferior-lisp-program "sbcl --dynamic-space-size 2048")
 (setq slime-net-coding-system 'utf-8-unix)
 (setq slime-contribs '(slime-fancy))
@@ -1890,7 +1890,7 @@ postgres).
 
 Включаем paredit для мест, где вводится lisp.
 
-#+BEGIN_SRC emacs-lisp
+#+BEGIN_SRC elisp
 (add-hook 'emacs-lisp-mode-hook #'enable-paredit-mode)
 (add-hook 'eval-expression-minibuffer-setup-hook #'enable-paredit-mode)
 (add-hook 'ielm-mode-hook #'enable-paredit-mode)
@@ -1899,7 +1899,7 @@ postgres).
 (add-hook 'scheme-mode-hook #'enable-paredit-mode)
 #+END_SRC
 
-#+BEGIN_SRC emacs-lisp
+#+BEGIN_SRC elisp
 (add-hook 'slime-repl-mode-hook (lambda () (paredit-mode +1)))
 ;; SLIME’s REPL has the very annoying habit of grabbing DEL
 ;; which interferes with paredit’s normal operation.
