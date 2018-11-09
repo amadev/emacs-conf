@@ -23,6 +23,11 @@ marmalade-repo.org - не обновляется.
 (require 'package)
 (add-to-list 'package-archives
              '("melpa" . "https://melpa.org/packages/"))
+(setq is-macos (memq window-system '(mac ns)))
+(setq mu4e-enabled t)
+(when is-macos
+  (package-initialize)
+  (setq mu4e-enabled nil))
 #+END_SRC
 
 Для меня удобнее, когда я вижу одно окно, не отвлекаясь на
@@ -65,6 +70,15 @@ marmalade-repo.org - не обновляется.
 #+BEGIN_SRC elisp
 (server-start)
 #+END_SRC
+*** use-package
+
+#+BEGIN_SRC elisp
+;; This is only needed once, near the top of the file
+(eval-when-compile
+  ;; Following line is not needed if use-package.el is in ~/.emacs.d
+  (require 'use-package))
+#+END_SRC
+
 *** helm
 
 http://tuhdo.github.io/helm-intro.html
@@ -1378,9 +1392,17 @@ lisp-файлы подключаются к emacs.
 http://kb.4rt.ru/mail/setup.
 
 Запуск mu4e.
-#+BEGIN_SRC emacs-lisp
-(global-set-key (kbd "C-; m") 'mu4e)
 #+BEGIN_SRC elisp
+(use-package mu4e
+  :config
+    (add-to-list 'mu4e-view-actions
+      '("ViewInBrowser" . mu4e-action-view-in-browser) t)
+    (add-to-list 'mu4e-headers-actions
+      '("ViewInBrowser" . mu4e-action-view-in-browser) t)
+    (add-to-list 'mu4e-bookmarks
+      '("maildir:/wolfanio/INBOX or maildir:/mirantis/INBOX or maildir:/amadev/INBOX"  "Inbox"     ?i))
+  :if mu4e-enabled
+  :bind ("C-; m" . 'mu4e))
 #+END_SRC
 
 *** Общие настройки
@@ -1408,21 +1430,10 @@ machine smtp.gmail.com login EMAIL port 587 password *******
    smtpmail-queue-mail  nil)
 #+END_SRC
 
-Новые actions и bookmarks.
-#+BEGIN_SRC emacs-lisp
-(add-to-list 'mu4e-view-actions
-'("ViewInBrowser" . mu4e-action-view-in-browser) t)
-
-(add-to-list 'mu4e-headers-actions
-'("ViewInBrowser" . mu4e-action-view-in-browser) t)
-
-(add-to-list 'mu4e-bookmarks
-'("maildir:/wolfanio/INBOX or maildir:/mirantis/INBOX or maildir:/amadev/INBOX"  "Inbox"     ?i))
-#+END_SRC
-
 Сохранение ссылки на письмо.
-#+BEGIN_SRC emacs-lisp
-(require 'org-mu4e)
+#+BEGIN_SRC elisp
+(use-package org-mu4e
+  :if mu4e-enabled)
 #+END_SRC
 
 Всегда отображаем дату и время в заголовках.
