@@ -1,7 +1,7 @@
 #+STARTUP: content
 * emacs
   :PROPERTIES:
-  :header-args: :tangle /home/amadev/.emacs.d/init.el :results silent
+  :header-args: :tangle ~/.emacs.d/init.el :results silent
   :END:
 
 ** Глобальные функции
