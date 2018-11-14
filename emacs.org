@@ -84,26 +84,26 @@ marmalade-repo.org - не обновляется.
 http://tuhdo.github.io/helm-intro.html
 
 #+BEGIN_SRC elisp
-(require 'helm-config)
-(helm-mode 1)
-(global-set-key (kbd "C-x f") 'helm-projectile)
-(global-set-key (kbd "C-x C-f") 'helm-find-files)
-(global-set-key (kbd "C-x b") 'switch-to-buffer)
-(setq helm-split-window-in-side-p t)
-(global-set-key (kbd "M-y") 'helm-show-kill-ring)
-(global-set-key (kbd "M-x") 'helm-M-x)
-(setq helm-M-x-fuzzy-match t)
-(global-set-key [remap man] 'helm-man-woman)
-#+END_SRC
+(use-package helm
+  :init
+  (setq helm-split-window-in-side-p t)
+  (setq helm-M-x-fuzzy-match t)
+  (defun helm-old-ff (&optional no-op)
+    (interactive)
+    (call-interactively 'find-file))
 
-Fallback to old find-file mode for tramp.
-
-#+BEGIN_SRC elisp
-(defun helm-old-ff (&optional no-op) (interactive)
-       (call-interactively 'find-file))
-(define-key helm-map (kbd "C-f")
-  (lambda () (interactive)
-    (helm-quit-and-execute-action 'helm-old-ff)))
+  :bind
+  (("C-x f" . helm-projectile)
+   ("C-x C-f" . find-file-at-point)
+   ("C-x C-b" . helm-mini)
+   ("M-y" . helm-show-kill-ring)
+   ("M-x" . helm-M-x)
+   ([remap man] . helm-man-woman)
+   ;; Fallback to old find-file mode for tramp.
+   (:map helm-map
+         ("C-f" . (lambda ()
+                    (interactive)
+                    (helm-quit-and-execute-action 'helm-old-ff))))))
 #+END_SRC
 
 *** История и бекапы
