@@ -2034,3 +2034,25 @@ git://git.savannah.gnu.org/emacs.git
 - [ ] multiline shell history
 - [ ] org babel sql session is not supported
 - [ ] org babel shell session with tramp with multiline string is not supported
+** Yaml
+
+#+BEGIN_SRC elisp
+(use-package yaml-mode
+  :init
+  (defun aj-toggle-fold ()
+    "Toggle fold all lines larger than indentation on current line"
+    (interactive)
+    (let ((col 1))
+      (save-excursion
+        (back-to-indentation)
+        (setq col (+ 1 (current-column)))
+        (set-selective-display
+         (if selective-display nil (or col 1))))))
+  :bind
+  (:map yaml-mode-map
+        ("C-c t" . aj-toggle-fold)))
+
+(use-package highlight-indent-guides
+  :hook
+  ((yaml-mode . highlight-indent-guides-mode)))
+#+END_SRC
