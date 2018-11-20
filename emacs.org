@@ -2039,6 +2039,36 @@ git://git.savannah.gnu.org/emacs.git
 #+BEGIN_SRC elisp
 (use-package yaml-mode
   :init
+
+  (defun copy-visible-only ()
+    (interactive)
+    (cl-flet ((buffer-substring 'buffer-substring-selective-display-only))
+      (if (use-region-p)
+          (progn
+            (kill-new (buffer-substring (region-beginning) (region-end)))
+            (message "Text selection copied."))
+        (progn
+          (kill-new (buffer-substring (point-min) (point-max)))
+          (message "Buffer content copied.")))))
+
+  (defun buffer-substring-selective-display-only (start end)
+    (when (> start end) (setq start (prog1 end (setq end start))))
+    (let* ((filter-buffer-substring-function
+            (lambda (beg end _delete)
+              (let* ((strg (buffer-substring beg end)))
+                (if selective-display
+                    (let ((regexp (format "^[[:space:]]\\{%s,\\}" selective-display)))
+                      (message "Selective display enabled, flushing lines with regexp: %s" regexp)
+                      (setq strg (with-temp-buffer
+                                   (insert strg)
+                                   (goto-char (point-min))
+                                   (flush-lines regexp)
+                                   (buffer-string)))))
+
+                (set-text-properties 0 (length strg) () strg)
+                strg))))
+      (filter-buffer-substring start end)))
+
   (defun aj-toggle-fold ()
     "Toggle fold all lines larger than indentation on current line"
     (interactive)
