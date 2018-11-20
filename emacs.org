@@ -39,6 +39,7 @@ marmalade-repo.org - не обновляется.
 (tool-bar-mode -1)
 (menu-bar-mode -1)
 (scroll-bar-mode -1)
+(setq ring-bell-function 'ignore)
 #+END_SRC
 
 Отключаю пригласительный экран и текст в скретч.
