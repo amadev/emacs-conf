@@ -739,6 +739,16 @@ insert-kbd-macro
 Using ibuffer it can be done with marking buffers by name with '% n'
 and press 'D' after that.
 
+*** Color codes
+
+#+BEGIN_SRC elisp
+(use-package ansi-color
+  :init
+  (defun display-ansi-colors ()
+    (interactive)
+    (ansi-color-apply-on-region (point-min) (point-max))))
+#+END_SRC
+
 ** Работа с файлами dired
 
 Для просмотра содержимого папки можно C-x C-f C-f,
