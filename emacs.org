@@ -749,6 +749,14 @@ and press 'D' after that.
     (ansi-color-apply-on-region (point-min) (point-max))))
 #+END_SRC
 
+*** Script wrappers
+
+#+BEGIN_SRC elisp
+(defun run-mirantis-vpn ()
+  (interactive)
+  (start-process "mirantis-vpn" "mirantis-vpn-buffer" "/home/amadev/bin/run_mirantis_vpn"))
+#+END_SRC
+
 ** Работа с файлами dired
 
 Для просмотра содержимого папки можно C-x C-f C-f,
