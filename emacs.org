@@ -337,13 +337,12 @@ M-e - редактирование.
 : copy-file-name-to-clipboard
 : copy-file-name-to-clipboard
 
-*** Устанавливаем альтернативный метод ввода, срабатывает после С-\.
-#+BEGIN_SRC elisp
-(setq default-input-method "russian-computer")
-#+END_SRC
+*** Русская раскладка С-\
 
-#+RESULTS:
-: russian-computer
+#+BEGIN_SRC elisp
+(load-file "~/.emacs.d/cyrillic-dvorak.el")
+(setq default-input-method "cyrillic-dvorak")
+#+END_SRC
 
 *** Шаблоны
 
@@ -362,7 +361,7 @@ yas-wrap-around-region включает такое поведение.
 *** Браузер
 #+BEGIN_SRC elisp
 (setq browse-url-browser-function 'browse-url-generic
-     browse-url-generic-program "google-chrome")
+     browse-url-generic-program "firefox")
 
 (when (eq system-type 'darwin)
   (setq browse-url-generic-program "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"))
