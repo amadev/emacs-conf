@@ -24,7 +24,7 @@ marmalade-repo.org - не обновляется.
 (add-to-list 'package-archives
              '("melpa" . "https://melpa.org/packages/"))
 (setq is-macos (memq window-system '(mac ns)))
-(setq mu4e-enabled t)
+(setq mu4e-enabled nil)
 (when is-macos
   (package-initialize)
   (setq mu4e-enabled nil))
