@@ -495,8 +495,6 @@ M-$ - исправление первого слова с ошибкой пос�
 ;; NO TABS, spaces only
 (setq-default indent-tabs-mode nil)
 (setq tab-width 4)
-(defvaralias 'c-basic-offset 'tab-width)
-(defvaralias 'cperl-indent-level 'tab-width)
 
 (setq find-program "find")
 
