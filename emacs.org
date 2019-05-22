@@ -2034,7 +2034,12 @@ postgres).
 ** Автозапуск
 
 #+BEGIN_SRC elisp
-(find-file "~/org/att-log.org")
+;; (run-or-get-shell "default")
+
+(find-file "~/emacs-conf/emacs.org")
+(find-file "~/org/task.org")
+(find-file "~/files/cpp/db.gpg")
+(find-file "~/org/log.org")
 #+END_SRC
 
 ** Description
