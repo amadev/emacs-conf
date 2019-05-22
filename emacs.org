@@ -361,7 +361,7 @@ yas-wrap-around-region включает такое поведение.
 *** Браузер
 #+BEGIN_SRC elisp
 (setq browse-url-browser-function 'browse-url-generic
-     browse-url-generic-program "google-chrome")
+     browse-url-generic-program "firefox")
 
 (when (eq system-type 'darwin)
   (setq browse-url-generic-program "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"))
