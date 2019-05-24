@@ -749,6 +749,48 @@ and press 'D' after that.
     (ansi-color-apply-on-region (point-min) (point-max))))
 #+END_SRC
 
+*** git-link
+
+#+BEGIN_SRC elisp
+(use-package git-link
+  :config
+  (defun git-link-mcp (hostname dirname filename branch commit start end)
+    (format "https://gerrit.mcp.mirantis.com/gitweb?p=%s.git;a=blob;f=%s;hb=refs/heads/%s%s"
+	    dirname
+            filename
+            branch
+	    (when start
+              (concat "#"
+                      (if end
+                          (format "l%s-l%s" start end)
+                        (format "l%s" start))))))
+
+  (add-to-list 'git-link-remote-alist '("gerrit.mcp.mirantis.net" git-link-mcp))
+
+  (defun git-link-openstack (hostname dirname filename branch commit start end)
+    (format "https://git.openstack.org/cgit/%s/tree/%s?h=refs/heads/%s%s"
+	    dirname
+            filename
+            branch
+	    (when start
+              (concat "#"
+                      (if end
+                          (format "n%s-n%s" start end)
+                        (format "n%s" start))))))
+
+  (defun git-link-openstack-github (hostname dirname filename branch commit start end)
+    (funcall 'git-link-github "github.com" dirname filename branch commit start end))
+
+  (defun git-link-commit-openstack-github (hostname dirname commit)
+    (funcall 'git-link-commit-github "github.com" dirname commit))
+
+  ;; (add-to-list 'git-link-remote-alist '("review.openstack.org" git-link-openstack))
+  (add-to-list 'git-link-remote-alist '("review.openstack.org" git-link-openstack-github))
+  (add-to-list 'git-link-commit-remote-alist '("review.openstack.org" git-link-commit-openstack-github))
+  )
+#+END_SRC
+
+
 ** Работа с файлами dired
 
 Для просмотра содержимого папки можно C-x C-f C-f,
