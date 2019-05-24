@@ -24,7 +24,7 @@ marmalade-repo.org - не обновляется.
 (add-to-list 'package-archives
              '("melpa" . "https://melpa.org/packages/"))
 (setq is-macos (memq window-system '(mac ns)))
-(setq mu4e-enabled t)
+(setq mu4e-enabled nil)
 (when is-macos
   (package-initialize)
   (setq mu4e-enabled nil))
@@ -495,8 +495,6 @@ M-$ - исправление первого слова с ошибкой пос�
 ;; NO TABS, spaces only
 (setq-default indent-tabs-mode nil)
 (setq tab-width 4)
-(defvaralias 'c-basic-offset 'tab-width)
-(defvaralias 'cperl-indent-level 'tab-width)
 
 (setq find-program "find")
 
@@ -790,6 +788,68 @@ and press 'D' after that.
   )
 #+END_SRC
 
+*** Script wrappers
+
+#+BEGIN_SRC elisp
+(defun run-mirantis-vpn ()
+  (interactive)
+  (start-process "mirantis-vpn" "mirantis-vpn-buffer" "/home/amadev/bin/run_mirantis_vpn"))
+#+END_SRC
+
+*** Send region to comint buffer
+
+Send buffer string to the shell specified by name in
+target-shell-session. It could be defined as file local variable:
+
+# Local Variables:
+# target-shell-session: shell-default
+# End:
+
+#+BEGIN_SRC elisp
+(defvar target-shell-session "shell-default"
+  "Name of session buffer for sending comands from sh-mode")
+(make-variable-buffer-local 'target-shell-session)
+
+(defun sh-send-line-or-region (&optional step)
+  (interactive ())
+
+  (let* ((pbuf (get-buffer target-shell-session))
+        (proc (get-buffer-process pbuf))
+        min max command)
+    (if (use-region-p)
+        (setq min (region-beginning)
+              max (region-end))
+      (setq min (save-excursion (backward-paragraph) (point))
+            max (save-excursion (forward-paragraph) (point))))
+    (setq command (concat (buffer-substring min max) "\n"))
+    (message "sending '%s'  to '%s'" command target-shell-session)
+    (with-current-buffer pbuf
+      (goto-char (process-mark proc))
+      (insert command)
+      (comint-send-input))
+    (process-send-string proc command)
+    (display-buffer (process-buffer proc) t)
+    (when step
+      (goto-char max)
+      (next-line))))
+
+(defun sh-send-line-or-region-and-step ()
+  (interactive)
+  (sh-send-line-or-region t))
+
+(defun sh-switch-to-process-buffer ()
+  (interactive)
+  (pop-to-buffer (get-buffer target-shell-session) t))
+
+(defun my-sh-mode-hook ()
+  (progn
+    (local-set-key (kbd "C-c C-c") 'sh-send-line-or-region)
+    (local-set-key (kbd "C-u C-c C-c") 'sh-send-line-or-region-and-step)
+    (local-set-key (kbd "C-c C-z") 'sh-switch-to-process-buffer)))
+
+(add-hook 'sh-mode-hook 'my-sh-mode-hook)
+(add-hook 'sql-mode-hook 'my-sh-mode-hook)
+#+END_SRC
 
 ** Работа с файлами dired
 
@@ -1019,59 +1079,6 @@ emacs данные не подхватывались, решилось пере�
             ;;(shell-command cmdStr))
             (message "No recognized program file suffix for this file.")
             ))))
-#+END_SRC
-
-*** Send region to shell from shell-script buffer
-
-Send buffer string to the shell specified by name in
-target-shell-session. It could be defined as file local variable:
-
-# Local Variables:
-# target-shell-session: shell-default
-# End:
-
-#+BEGIN_SRC elisp
-(defvar target-shell-session "shell-default"
-  "Name of session buffer for sending comands from sh-mode")
-(make-variable-buffer-local 'target-shell-session)
-
-(defun sh-send-line-or-region (&optional step)
-  (interactive ())
-
-  (let* ((pbuf (get-buffer target-shell-session))
-        (proc (get-buffer-process pbuf))
-        min max command)
-    (if (use-region-p)
-        (setq min (region-beginning)
-              max (region-end))
-      (setq min (point-at-bol)
-            max (point-at-eol)))
-    (setq command (concat (buffer-substring min max) "\n"))
-    (with-current-buffer pbuf
-      (goto-char (process-mark proc))
-      (insert command)
-      (comint-send-input))
-    (process-send-string proc command)
-    (display-buffer (process-buffer proc) t)
-    (when step
-      (goto-char max)
-      (next-line))))
-
-(defun sh-send-line-or-region-and-step ()
-  (interactive)
-  (sh-send-line-or-region t))
-
-(defun sh-switch-to-process-buffer ()
-  (interactive)
-  (pop-to-buffer (get-buffer target-shell-session) t))
-
-(defun my-sh-mode-hook ()
-  (progn
-    (local-set-key (kbd "C-c C-c") 'sh-send-line-or-region)
-    (local-set-key (kbd "C-u C-c C-c") 'sh-send-line-or-region-and-step)
-    (local-set-key (kbd "C-c C-z") 'sh-switch-to-process-buffer)))
-
-(add-hook 'sh-mode-hook 'my-sh-mode-hook)
 #+END_SRC
 
 *** Run tmp command
@@ -2068,7 +2075,12 @@ postgres).
 ** Автозапуск
 
 #+BEGIN_SRC elisp
-(find-file "~/org/att-log.org")
+;; (run-or-get-shell "default")
+
+(find-file "~/emacs-conf/emacs.org")
+(find-file "~/org/task.org")
+(find-file "~/files/cpp/db.gpg")
+(find-file "~/org/log.org")
 #+END_SRC
 
 ** Description
