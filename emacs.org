@@ -55,10 +55,11 @@ marmalade-repo.org - не обновляется.
 #+END_SRC
 
 Размер шрифта, тема.
+Другие темы warm-night, brutalist-dark, blackboard, clues, anti-zenburn.
 
 #+BEGIN_SRC elisp
-(set-face-attribute 'default nil :height 130) ;; 13pt
-(load-theme 'warm-night t)
+(set-face-attribute 'default nil :height 110) ;; 11pt
+(load-theme 'zenburn t)
 (set-cursor-color "#909090")
 #+END_SRC
 
