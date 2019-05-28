@@ -752,6 +752,10 @@ and press 'D' after that.
 (defun run-mirantis-vpn ()
   (interactive)
   (start-process "mirantis-vpn" "mirantis-vpn-buffer" "/home/amadev/bin/run_mirantis_vpn"))
+
+(defun run-forkode-vpn ()
+  (interactive)
+  (start-process "forkode-vpn" "forkode-vpn-buffer" "/home/amadev/bin/run_forkode_vpn"))
 #+END_SRC
 
 *** Send region to comint buffer
