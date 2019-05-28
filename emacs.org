@@ -794,6 +794,10 @@ and press 'D' after that.
 (defun run-mirantis-vpn ()
   (interactive)
   (start-process "mirantis-vpn" "mirantis-vpn-buffer" "/home/amadev/bin/run_mirantis_vpn"))
+
+(defun run-forkode-vpn ()
+  (interactive)
+  (start-process "forkode-vpn" "forkode-vpn-buffer" "/home/amadev/bin/run_forkode_vpn"))
 #+END_SRC
 
 *** Send region to comint buffer
@@ -810,7 +814,7 @@ target-shell-session. It could be defined as file local variable:
   "Name of session buffer for sending comands from sh-mode")
 (make-variable-buffer-local 'target-shell-session)
 
-(defun sh-send-line-or-region (&optional step)
+(defun send-current-paragraph-or-region (&optional step)
   (interactive ())
 
   (let* ((pbuf (get-buffer target-shell-session))
@@ -827,28 +831,27 @@ target-shell-session. It could be defined as file local variable:
       (goto-char (process-mark proc))
       (insert command)
       (comint-send-input))
-    (process-send-string proc command)
     (display-buffer (process-buffer proc) t)
     (when step
       (goto-char max)
       (next-line))))
 
-(defun sh-send-line-or-region-and-step ()
+(defun send-current-paragraph-or-region-and-step ()
   (interactive)
-  (sh-send-line-or-region t))
+  (send-current-paragraph-or-region t))
 
-(defun sh-switch-to-process-buffer ()
+(defun switch-to-process-buffer ()
   (interactive)
   (pop-to-buffer (get-buffer target-shell-session) t))
 
-(defun my-sh-mode-hook ()
+(defun my-send-mode-hook ()
   (progn
-    (local-set-key (kbd "C-c C-c") 'sh-send-line-or-region)
-    (local-set-key (kbd "C-u C-c C-c") 'sh-send-line-or-region-and-step)
-    (local-set-key (kbd "C-c C-z") 'sh-switch-to-process-buffer)))
+    (local-set-key (kbd "C-c C-c") 'send-current-paragraph-or-region)
+    (local-set-key (kbd "C-u C-c C-c") 'send-current-paragraph-or-region-and-step)
+    (local-set-key (kbd "C-c C-z") 'switch-to-process-buffer)))
 
-(add-hook 'sh-mode-hook 'my-sh-mode-hook)
-(add-hook 'sql-mode-hook 'my-sh-mode-hook)
+(add-hook 'sh-mode-hook 'my-send-mode-hook)
+(add-hook 'sql-mode-hook 'my-send-mode-hook)
 #+END_SRC
 
 ** Работа с файлами dired
