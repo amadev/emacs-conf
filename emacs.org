@@ -2171,3 +2171,19 @@ git://git.savannah.gnu.org/emacs.git
   :hook
   ((yaml-mode . highlight-indent-guides-mode)))
 #+END_SRC
+
+** Experiments
+
+#+BEGIN_SRC elisp
+ (autoload 'bash-completion-dynamic-complete
+   "bash-completion"
+   "BASH completion hook")
+ (add-hook 'shell-dynamic-complete-functions
+   'bash-completion-dynamic-complete)
+#+END_SRC
+
+run nova repl
+#+BEGIN_SRC elisp
+(let ((python-shell-buffer-name "ipython-nova"))
+  (run-python "/home/amadev/m/nova/.tox/py27/bin/ipython --profile nova --simple-prompt -i" nil t))
+#+END_SRC
