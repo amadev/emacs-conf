@@ -1835,7 +1835,7 @@ postgres).
     (grep cmd)))
 
 (setq jedi:tooltip-method '(pos-tip popup))
-(setq jedi:server-args '("--virtual-env" "~/m/nova/.tox/py27"))
+(setq jedi:server-args '("--virtual-env" "~/m/nova/.tox/py27" "--log-traceback"))
 (setq jedi:setup-keys t)                      ; optional
 (setq jedi:complete-on-dot t)                 ; optional
 
