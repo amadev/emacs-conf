@@ -1967,6 +1967,8 @@ postgres).
 Включаем paredit для мест, где вводится lisp.
 
 #+BEGIN_SRC elisp
+(add-hook 'clojure-mode-hook #'enable-paredit-mode)
+(add-hook 'cider-mode-hook #'enable-paredit-mode)
 (add-hook 'emacs-lisp-mode-hook #'enable-paredit-mode)
 (add-hook 'eval-expression-minibuffer-setup-hook #'enable-paredit-mode)
 (add-hook 'ielm-mode-hook #'enable-paredit-mode)
@@ -1993,6 +1995,20 @@ postgres).
 ;; (package-buffer-info)
 ;; (byte-compile-file "~/.emacs.d/init.el")
 ;; (elint-file "~/.emacs.d/init.el")
+
+*** Lisp basic keys
+
+mark-defun - C-M-h
+prog-indent-sexp - C-M-q
+paredit-open-<x> - with C-u 1 wraps next sexp (M-( is also available
+  for "("). Wrap can be done with visual mark.
+paredit-raise-sexp - M-r
+paredit-splice-sexp-killing-backward - M-up
+paredit-forward-slurp-sexp - C-right
+paredit-forward-barf-sexp - C-left
+
+https://github.com/Fuco1/.emacs.d/blob/master/files/smartparens.el
+https://ebzzry.io/en/emacs-pairs/#manipulation
 
 ** JS
 
@@ -2155,4 +2171,20 @@ git://git.savannah.gnu.org/emacs.git
 (use-package highlight-indent-guides
   :hook
   ((yaml-mode . highlight-indent-guides-mode)))
+#+END_SRC
+
+** Experiments
+
+#+BEGIN_SRC elisp
+ (autoload 'bash-completion-dynamic-complete
+   "bash-completion"
+   "BASH completion hook")
+ (add-hook 'shell-dynamic-complete-functions
+   'bash-completion-dynamic-complete)
+#+END_SRC
+
+run nova repl
+#+BEGIN_SRC elisp
+(let ((python-shell-buffer-name "ipython-nova"))
+  (run-python "/home/amadev/m/nova/.tox/py27/bin/ipython --profile nova --simple-prompt -i" nil t))
 #+END_SRC
