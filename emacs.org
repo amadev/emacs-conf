@@ -66,7 +66,8 @@ marmalade-repo.org - не обновляется.
 Разбивать окна вертикально.
 
 #+BEGIN_SRC elisp
-(setq split-width-threshold 130)
+;; may split a window horizontally only if it has at least this many columns
+(setq split-width-threshold 270)
 (setq split-height-threshold nil)
 #+END_SRC
 
@@ -853,6 +854,7 @@ target-shell-session. It could be defined as file local variable:
 
 (add-hook 'sh-mode-hook 'my-send-mode-hook)
 (add-hook 'sql-mode-hook 'my-send-mode-hook)
+(add-hook 'clojure-mode-hook 'my-send-mode-hook)
 #+END_SRC
 
 ** Работа с файлами dired
@@ -2185,6 +2187,8 @@ git://git.savannah.gnu.org/emacs.git
 
 run nova repl
 #+BEGIN_SRC elisp
-(let ((python-shell-buffer-name "ipython-nova"))
-  (run-python "/home/amadev/m/nova/.tox/py27/bin/ipython --profile nova --simple-prompt -i" nil t))
+(defun run-nova-python ()
+  (interactive)
+  (let ((python-shell-buffer-name "ipython-nova"))
+    (run-python "/home/amadev/m/nova/.tox/py27/bin/ipython --profile nova --simple-prompt -i" nil t)))
 #+END_SRC
