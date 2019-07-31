@@ -1178,10 +1178,8 @@ emacs данные не подхватывались, решилось пере�
 | TODO      | (STARTED)       | (CANCELLED) | (WAITING)     |
 | DONE      | (STARTED)       | (CANCELLED) | (WAITING)     |
 
-#+BEGIN_SRC elisp
-(setq org-mobile-directory "~/Dropbox/org-mobile")
-(setq org-mobile-files '("~/org/" ))
-#+END_SRC
+Mobile and web accessibility are resolved by https://org-web.org/.
+All org files are synchronized to Dropbox w/o org-mobile.
 
 *** Захват сообщений
 
