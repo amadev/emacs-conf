@@ -1181,6 +1181,37 @@ emacs данные не подхватывались, решилось пере�
 Mobile and web accessibility are resolved by https://org-web.org/.
 All org files are synchronized to Dropbox w/o org-mobile.
 
+*** org-mode latex
+
+# export to latex
+sudo apt-get install texlive-full
+
+C-c C-x C-l runs the command org-preview-latex-fragment (need imagemagick)
+C-c C-c on fomula - reset image
+C-c C-x \ runs the command org-toggle-pretty-entities (display unicode values)
+
+\begin{equation}
+1 + 2 + ... + n = \frac{n*(n+1)}{2}
+\end{equation}
+
+$\alpha$
+
+The mass of the sun is $M_{sun} = 1.989*10^{30} kg$.  The radius of
+the sun is $R_{sun} = 6.96*10^8m$.
+
+\begin{equation}
+x=\sqrt{b}
+\end{equation}
+
+If $a^2=b$ and \( b=2 \), then the solution must be
+either $$ a=+\sqrt{2} $$ or \[ a=-\sqrt{2} \].
+
+Increase font size for latex fragment preview.
+
+#+BEGIN_SRC elisp
+(setq org-format-latex-options (plist-put org-format-latex-options :scale 1.6))
+#+END_SRC
+
 *** Захват сообщений
 
 Шаблоны.
