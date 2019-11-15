@@ -852,9 +852,18 @@ target-shell-session. It could be defined as file local variable:
     (local-set-key (kbd "C-u C-c C-c") 'send-current-paragraph-or-region-and-step)
     (local-set-key (kbd "C-c C-z") 'switch-to-process-buffer)))
 
-(add-hook 'sh-mode-hook 'my-send-mode-hook)
-(add-hook 'sql-mode-hook 'my-send-mode-hook)
-(add-hook 'clojure-mode-hook 'my-send-mode-hook)
+(define-minor-mode sh-send-mode
+  "Send a paragraph or marked string to the shell buffer."
+  :lighter " ss"
+  :keymap (let ((map (make-sparse-keymap)))
+            (define-key map (kbd "C-c C-c") 'send-current-paragraph-or-region)
+            (define-key map (kbd "C-u C-c C-c") 'send-current-paragraph-or-region-and-step)
+            (define-key map (kbd "C-c C-z") 'switch-to-process-buffer)
+            map))
+
+(add-hook 'sh-mode-hook 'sh-send-mode)
+(add-hook 'sql-mode-hook 'sh-send-mode)
+(add-hook 'clojure-mode-hook 'sh-send-mode)
 #+END_SRC
 
 ** Работа с файлами dired
