@@ -1138,7 +1138,7 @@ emacs данные не подхватывались, решилось пере�
 (setq org-agenda-files
       (mapcar
        #'(lambda (name) (concat my-org-dir name))
-       '("task.org" "bookmark.org" "reference.org" "google-calendar.org" "book.org" "film.org" "att-log.org")))
+       '("task.org" "bookmark.org" "reference.org" "work-gcal.org" "book.org" "film.org" "att-log.org")))
 #+END_SRC
 
 #+RESULTS:
@@ -2228,6 +2228,25 @@ git://git.savannah.gnu.org/emacs.git
   :hook
   ((yaml-mode . highlight-indent-guides-mode)))
 #+END_SRC
+
+** gcal
+
+#+BEGIN_SRC elisp
+;; (setq package-check-signature nil)
+
+;; see https://github.com/myuhe/org-gcal.el
+
+(use-package org-gcal
+  :ensure t
+  :config
+  (setq org-gcal-client-id "971118572262-uo129oc9kbkmbm1eoeq5rna4ep2ge5dl.apps.googleusercontent.com"
+        org-gcal-client-secret "5yv7pP68WPU_nvmQy0l4_oR8"
+        org-gcal-file-alist '(("avolkov@mirantis.com" .  "~/org/work-gcal.org"))))
+
+;; (add-hook 'org-agenda-mode-hook (lambda () (org-gcal-sync)))
+;; (add-hook 'org-capture-after-finalize-hook (lambda () (org-gcal-sync)))
+#+END_SRC
+
 
 ** Experiments
 
