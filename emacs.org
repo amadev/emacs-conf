@@ -902,9 +902,6 @@ target-shell-session. It could be defined as file local variable:
 #+END_SRC
 
 #+BEGIN_SRC elisp
-(use-package dired
-  :hook ((dired-mode . dired-hide-details-mode)))
-
 (use-package dired-subtree :ensure t
   :after dired
   :config
