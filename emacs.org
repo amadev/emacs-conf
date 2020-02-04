@@ -118,13 +118,12 @@ sentinel (функции, которая срабатывает при любы�
 процессе).
 
 #+BEGIN_SRC elisp
-(setq comint-input-ring-size 5000)
 (defun turn-on-comint-history ()
   (let ((process (get-buffer-process (current-buffer))))
     (when process
       (setq comint-input-ring-file-name
             (format (with-home-dir ".emacs.d/history.d/%s-buffer-history")
-                    (buffer-name (current-buffer))))
+                    (car (split-string (buffer-name (current-buffer)) "-"))))
       (comint-read-input-ring)
       (set-process-sentinel process
                             #'comint-write-history-on-exit))))
@@ -1063,6 +1062,19 @@ emacs данные не подхватывались, решилось пере�
 
 (global-set-key (kbd "C-; b") 'run-or-get-shell)
 #+END_SRC
+
+#+BEGIN_SRC elisp
+(use-package comint
+  :config
+  (setq
+   comint-input-ring-size 20000
+   comint-scroll-show-maximum-output t
+   comint-input-ignoredups t
+   comint-input-ring-separator "$$$\n"))
+#+END_SRC
+
+To write history manually just issue:
+(comint-write-input-ring)
 
 *** Run current file
 
