@@ -1156,10 +1156,14 @@ To write history manually just issue:
 Файлы, в которые переносятся задачи.
 #+BEGIN_SRC elisp
 (defun refile-org-files ()
-  (let ((files '("task.org" "office.org" "reference.org" "bookmark.org")))
+  (let ((files '("task.org" "reference.org" "bookmark.org" "book.org" "film.org")))
     (mapcar #'(lambda (x) (concat my-org-dir x)) files)))
 
-(setq org-refile-targets '((refile-org-files . (:level . 2))))
+Most recent items should appear on top. It's more natural way to see recent items first. The same setup as in mail.
+Done issuges go to the bottom of the list. Can view it if needed.
+
+(setq org-refile-targets '((refile-org-files . (:level . 2)))
+      org-reverse-note-order t)
 #+END_SRC
 
 #+RESULTS:
