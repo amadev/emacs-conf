@@ -1504,6 +1504,13 @@ Skips capture tasks and tasks with subtasks"
     (define-key flyspell-mode-map (kbd "C-;") nil))
 #+END_SRC
 
+*** org-drill
+
+#+BEGIN_SRC elisp
+(use-package org-drill
+  :ensure t)
+#+END_SRC
+
 ** Почта
 
 Для работы с почтой используется mu4e (http://www.djcbsoftware.nl/code/mu/mu4e/).
