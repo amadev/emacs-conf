@@ -508,7 +508,7 @@ M-$ - исправление первого слова с ошибкой пос�
       Info-additional-directory-list '("/usr/share/info/emacs-snapshot/" "/usr/local/share/info"))
 
 (setq tramp-default-method "ssh")
-(setq ack-command "ag -i --nogroup ")
+(setq ack-command "ag -i --nogroup --nocolor ")
 
 (require 'multiple-cursors)
 (require 'mark-multiple)
@@ -2022,13 +2022,13 @@ postgres).
   (defun grep-at-point ()
     (interactive)
     (let ((s (thing-at-point 'symbol t)))
-      (ack (concat "ag -i --nogroup " s " --ignore tests")
+      (ack (concat "ag -i --nogroup --nocolor " s " --ignore tests")
            (ack-default-directory 4))))
 
   (defun grep-function-at-point ()
     (interactive)
     (let ((s (what-function '(0))))
-      (ack (concat "ag -i --nogroup " s " --ignore tests")
+      (ack (concat "ag -i --nogroup --nocolor " s " --ignore tests")
            (ack-default-directory 4))))
 #+END_SRC
 
