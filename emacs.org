@@ -508,7 +508,8 @@ M-$ - исправление первого слова с ошибкой пос�
       Info-additional-directory-list '("/usr/share/info/emacs-snapshot/" "/usr/local/share/info"))
 
 (setq tramp-default-method "ssh")
-(setq ack-command "ag -i --nogroup --nocolor ")
+
+(grep-apply-setting 'grep-command "ag -i --nogroup --nocolor ")
 
 (require 'multiple-cursors)
 (require 'mark-multiple)
