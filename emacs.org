@@ -873,9 +873,9 @@ Example config: https://github.com/Fuco1/.emacs.d/blob/master/files/smartparens.
 #+BEGIN_SRC elisp
 (use-package smartparens-config
   :ensure smartparens
+  :init (setq sp-base-key-bindings 'paredit)
   :config (progn
-            (show-smartparens-global-mode t)
-            (setq sp-base-key-bindings 'paredit))
+            (show-smartparens-global-mode t))
   :bind
   (:map smartparens-mode-map
         ("C-<right>" . sp-forward-slurp-sexp)
