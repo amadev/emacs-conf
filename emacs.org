@@ -1198,6 +1198,7 @@ Done issues go to the bottom of the list. Can view it if needed.
 Сочетание, для открытия агенды.
 #+BEGIN_SRC elisp
 (global-set-key (kbd "C-c a") 'org-agenda)
+(global-set-key (kbd "C-c i") 'org-store-link)
 #+END_SRC
 
 #+RESULTS:
