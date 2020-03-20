@@ -509,7 +509,12 @@ M-$ - исправление первого слова с ошибкой пос�
 
 (setq tramp-default-method "ssh")
 
-(grep-apply-setting 'grep-command "ag -i --nogroup --nocolor ")
+(use-package ack
+  :ensure t
+  :init (setq ack-command "ag -i --nogroup --nocolor ")
+  :config (defalias 'grep 'ack))
+
+(setq grep-command "ag -i --nogroup --nocolor ")
 
 (require 'multiple-cursors)
 (require 'mark-multiple)
