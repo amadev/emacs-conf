@@ -869,6 +869,7 @@ target-shell-session. It could be defined as file local variable:
 (add-hook 'sh-mode-hook 'sh-send-mode)
 (add-hook 'sql-mode-hook 'sh-send-mode)
 (add-hook 'clojure-mode-hook 'sh-send-mode)
+(add-hook 'org-mode-hook 'sh-send-mode)
 #+END_SRC
 
 *** Smartparens
