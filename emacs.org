@@ -1310,7 +1310,12 @@ Increase font size for latex fragment preview.
          "Bookmark"
          entry
          (file+olp my-bookmark-file "Bookmarks" "inbox")
-         "* TODO %c %?\n\nAdded: %U\n  %i\n")))
+         "* TODO %c %?\n\nAdded: %U\n  %i\n")
+        ("m"
+         "memorize"
+         entry
+         (file+olp "~/org/cards/english.org" "words")
+         "* %i\t\t:drill:\n    Added: %U\n\n** answer\n\n%?\n")))
 
 (global-set-key (kbd "C-c c") 'org-capture)
 #+END_SRC
