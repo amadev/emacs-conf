@@ -895,6 +895,7 @@ Example config: https://github.com/Fuco1/.emacs.d/blob/master/files/smartparens.
 
 (add-hook 'prog-mode-hook 'turn-on-smartparens-strict-mode)
 (add-hook 'markdown-mode-hook 'turn-on-smartparens-strict-mode)
+(add-hook 'cider-repl-mode-hook 'turn-on-smartparens-strict-mode)
 #+END_SRC
 
 ** Работа с файлами dired
