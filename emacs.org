@@ -1057,7 +1057,7 @@ emacs данные не подхватывались, решилось пере�
 
 (add-hook 'comint-mode-hook 'make-comint-directory-tracking-work-remotely)
 
-(defun start-shell(buffer-name &optional cmd)
+(defun start-local (buffer-name &optional cmd)
   (shell buffer-name)
   (if cmd
       (comint-send-string buffer-name (concat cmd "\n"))))
@@ -1071,7 +1071,7 @@ emacs данные не подхватывались, решилось пере�
 (defun start-shell-buffer (buffer host cmd)
   (if host
       (start-ssh bf host cmd)
-    (start-shell bf cmd)))
+    (start-local bf cmd)))
 
 (defun run-or-get-shell (name)
   (interactive
@@ -1082,7 +1082,7 @@ emacs данные не подхватывались, решилось пере�
       (mapcar (lambda (item) (list (nth 0 item) (nth 0 item))) shell-alist))))
   (let* ((opts (cadr (assoc name shell-alist)))
          (host (plist-get opts 'host))
-         (cmd (or (plist-get opts 'cmd) "cd"))
+         (cmd (or (plist-get opts 'cmd) "true"))
          (bf (concat "shell-" name)))
     (message "%s is choosen, cmd: %s, host: %s" name cmd host)
     (and
