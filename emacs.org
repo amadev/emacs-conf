@@ -1262,27 +1262,46 @@ C-c C-x C-l runs the command org-preview-latex-fragment (need imagemagick)
 C-c C-c on fomula - reset image
 C-c C-x \ runs the command org-toggle-pretty-entities (display unicode values)
 
-\begin{equation}
-1 + 2 + ... + n = \frac{n*(n+1)}{2}
-\end{equation}
-
-$\alpha$
-
-The mass of the sun is $M_{sun} = 1.989*10^{30} kg$.  The radius of
-the sun is $R_{sun} = 6.96*10^8m$.
-
-\begin{equation}
-x=\sqrt{b}
-\end{equation}
-
-If $a^2=b$ and \( b=2 \), then the solution must be
-either $$ a=+\sqrt{2} $$ or \[ a=-\sqrt{2} \].
-
 Increase font size for latex fragment preview.
 
 #+BEGIN_SRC elisp
 (setq org-format-latex-options (plist-put org-format-latex-options :scale 1.6))
 #+END_SRC
+
+See [[file:~/org/pdf-export.org]]
+
+#+BEGIN_SRC elisp
+(add-to-list
+ 'org-latex-classes
+ '("nice-pdf-26" "\\documentclass[14pt,a4paper,hidelinks]{scrartcl}
+\\usepackage[T1]{fontenc}
+\\usepackage{fontspec}
+\\usepackage{graphicx}
+\\usepackage{hyperref}
+\\usepackage{geometry}
+\\usepackage{libertine}
+
+\\geometry{a4paper, textwidth=6.5in, textheight=10in,
+            marginparsep=7pt, marginparwidth=.6in}
+\\pagestyle{empty}
+\\title{}
+
+         [NO-DEFAULT-PACKAGES]
+         [PACKAGES]
+         [EXTRA]
+\\setcounter{secnumdepth}{0}
+"
+   ("\\subsection{%s}" . "\\subsection*{%s}")
+   ("\\subsubsection{%s}" . "\\subsubsection*{%s}")
+   ("\\paragraph{%s}" . "\\paragraph*{%s}")
+   ("\\subparagraph{%s}" . "\\subparagraph*{%s}")))
+
+(setq org-latex-pdf-process
+      '("xelatex -interaction nonstopmode %f"
+        "xelatex -interaction nonstopmode %f"))
+#+END_SRC
+
+http://emacs-fu.blogspot.com/2011/04/nice-looking-pdfs-with-org-mode-and.html
 
 *** Захват сообщений
 
