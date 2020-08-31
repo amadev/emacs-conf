@@ -2337,6 +2337,23 @@ git://git.savannah.gnu.org/emacs.git
 ;; (add-hook 'org-capture-after-finalize-hook (lambda () (org-gcal-sync)))
 #+END_SRC
 
+** functions
+
+#+BEGIN_SRC elisp
+(defun run-nova-python ()
+  (interactive)
+  (let ((python-shell-buffer-name "ipython-nova"))
+    (run-python "/home/amadev/m/nova/.tox/py27/bin/ipython --profile nova --simple-prompt -i" nil t)))
+
+(defun start-openstack-controller ()
+  (interactive)
+  (start-local "controller" "
+cd ~/m/openstack-controller
+export KUBECONFIG=~/avolkov-22
+kubectl get nodes
+ export export OSCTL_METRICS_PORT=8088
+tox -e dev"))
+#+END_SRC
 
 ** Experiments
 
@@ -2350,11 +2367,6 @@ git://git.savannah.gnu.org/emacs.git
 
 run nova repl
 #+BEGIN_SRC elisp
-(defun run-nova-python ()
-  (interactive)
-  (let ((python-shell-buffer-name "ipython-nova"))
-    (run-python "/home/amadev/m/nova/.tox/py27/bin/ipython --profile nova --simple-prompt -i" nil t)))
-
 (prefer-coding-system 'utf-8)
 (set-default-coding-systems 'utf-8)
 (set-terminal-coding-system 'utf-8)
