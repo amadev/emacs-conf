@@ -680,7 +680,7 @@ Uses `current-date-time-format' for the formatting the date/time."
 
 #+BEGIN_SRC elisp
 (defun my-prog-mode-hook ()
-  (setq whitespace-style '(face lines-tail tabs trailing)
+  (setq whitespace-style '(face lines-tail trailing)
         whitespace-line-column 79)
   (whitespace-mode t)
   (which-function-mode -1)
