@@ -821,7 +821,7 @@ target-shell-session. It could be defined as file local variable:
  (defvar target-shell-session "shell-default"
    "Name of session buffer for sending comands from sh-send-mode"))
 
-(defun send-current-paragraph-or-region (&optional step)
+(defun send-current-paragraph-or-region (&optional step cmd)
   (interactive ())
 
   (let* ((pbuf (get-buffer target-shell-session))
@@ -832,7 +832,9 @@ target-shell-session. It could be defined as file local variable:
               max (region-end))
       (setq min (save-excursion (backward-paragraph) (point))
             max (save-excursion (forward-paragraph) (point))))
-    (setq command (concat (buffer-substring min max) "\n"))
+    (setq command (if cmd
+                      cmd
+                    (concat (buffer-substring min max) "\n")))
     (message "sending '%s'  to '%s'" command target-shell-session)
     (with-current-buffer pbuf
       (goto-char (process-mark proc))
@@ -850,6 +852,10 @@ target-shell-session. It could be defined as file local variable:
 (defun switch-to-process-buffer ()
   (interactive)
   (pop-to-buffer (get-buffer target-shell-session) t))
+
+(defun sh-set-to-current-dir ()
+  (interactive)
+  (send-current-paragraph-or-region nil (concat "cd " default-directory)))
 
 (defun my-send-mode-hook ()
   (progn
