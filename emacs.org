@@ -2329,8 +2329,8 @@ git://git.savannah.gnu.org/emacs.git
 (use-package org-gcal
   :ensure t
   :config
-  (setq org-gcal-client-id "971118572262-uo129oc9kbkmbm1eoeq5rna4ep2ge5dl.apps.googleusercontent.com"
-        org-gcal-client-secret "5yv7pP68WPU_nvmQy0l4_oR8"
+  (setq org-gcal-client-id "12159727526-7s5315gp2k8hkaadmr13psq1mhsvtjq0.apps.googleusercontent.com"
+        org-gcal-client-secret (get-pass "gcal-secret")
         org-gcal-file-alist '(("avolkov@mirantis.com" .  "~/org/work-gcal.org"))))
 
 ;; (add-hook 'org-agenda-mode-hook (lambda () (org-gcal-sync)))
