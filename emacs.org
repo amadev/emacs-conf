@@ -1985,7 +1985,7 @@ postgres).
  python-shell-interpreter-args "-i")
 #+END_SRC
 
-*** Keys
+*** Hooks
 
 #+BEGIN_SRC elisp
 (defun python-keys ()
@@ -2006,6 +2006,8 @@ postgres).
   (jedi:setup))
 
 (add-hook 'python-mode-hook 'python-keys)
+
+(add-hook 'python-mode-hook 'which-function-mode)
 #+END_SRC
 
 *** Запуск тестов
