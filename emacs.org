@@ -475,7 +475,10 @@ M-$ - исправление первого слова с ошибкой пос�
 
 (global-set-key (kbd "M-/") 'hippie-expand)
 (global-set-key (kbd "C-x C-b") 'ibuffer)
-(global-set-key [remap other-window] 'ace-window)
+
+(use-package ace-window
+  :ensure t
+  :init (global-set-key [remap other-window] 'ace-window))
 
 (fset 'yes-or-no-p 'y-or-n-p)
 
