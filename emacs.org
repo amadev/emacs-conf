@@ -71,10 +71,6 @@ marmalade-repo.org - не обновляется.
 (setq split-height-threshold nil)
 #+END_SRC
 
-#+BEGIN_SRC elisp
-(server-start)
-#+END_SRC
-
 *** use-package
 
 #+BEGIN_SRC elisp
