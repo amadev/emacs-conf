@@ -1369,13 +1369,6 @@ http://emacs-fu.blogspot.com/2011/04/nice-looking-pdfs-with-org-mode-and.html
               (assq-delete-all :results org-babel-default-header-args)))
 #+END_SRC
 
-#+RESULTS:
-: ((:results . scalar) (:session . none) (:exports . code) (:cache . no) (:noweb . no) (:hlines . no) (:tangle . no))
-
-#+BEGIN_SRC elisp
-(require 'ob-async)
-#+END_SRC
-
 *** Время
 
 #+BEGIN_SRC elisp
