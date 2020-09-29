@@ -1217,45 +1217,6 @@ Done issues go to the bottom of the list. Can view it if needed.
 #+RESULTS:
 : org-agenda
 
-Назначаем свойства при переключении todo.
-#+BEGIN_SRC elisp
-  ;; add properties then trigger todo states
-  (setq org-todo-state-tags-triggers
-        '(("CANCELLED"
-           ("CANCELLED" . t)
-           ("STARTED")
-           ("WAITING"))
-          ("WAITING"
-           ("CANCELLED")
-           ("STARTED")
-           ("WAITING" . t))
-          ("SOMEDAY"
-           ("STARTED")
-           ("CANCELLED")
-           ("WAITING" . t))
-          ("STARTED"
-           ("STARTED" . t)
-           ("CANCELLED")
-           ("WAITING"))
-          ("TODO"
-           ("STARTED")
-           ("CANCELLED")
-           ("WAITING"))
-          ("DONE"
-           ("STARTED")
-           ("CANCELLED")
-           ("WAITING"))
-          ))
-#+END_SRC
-
-#+RESULTS:
-| CANCELLED | (CANCELLED . t) | (STARTED)   | (WAITING)     |
-| WAITING   | (CANCELLED)     | (STARTED)   | (WAITING . t) |
-| SOMEDAY   | (STARTED)       | (CANCELLED) | (WAITING . t) |
-| STARTED   | (STARTED . t)   | (CANCELLED) | (WAITING)     |
-| TODO      | (STARTED)       | (CANCELLED) | (WAITING)     |
-| DONE      | (STARTED)       | (CANCELLED) | (WAITING)     |
-
 Mobile and web accessibility are resolved by https://org-web.org/.
 All org files are synchronized to Dropbox w/o org-mobile.
 
