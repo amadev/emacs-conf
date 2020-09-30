@@ -95,7 +95,6 @@ http://tuhdo.github.io/helm-intro.html
    ("C-x C-f" . find-file-at-point)
    ("C-x C-b" . helm-mini)
    ("M-y" . helm-show-kill-ring)
-   ("M-x" . helm-M-x)
    ("C-h SPC". helm-all-mark-rings)
    ([remap man] . helm-man-woman)
    ;; Fallback to old find-file mode for tramp.
