@@ -510,7 +510,9 @@ M-$ - исправление первого слова с ошибкой пос�
 
 (use-package ack
   :ensure t
-  :init (setq ack-command "ag -i --nogroup --nocolor ")
+  :init (setq
+         ack-defaults-function 'ack-legacy-defaults
+         ack-command "ag -i --nogroup --nocolor ")
   :config (defalias 'grep 'ack))
 
 (setq grep-command "ag -i --nogroup --nocolor ")
