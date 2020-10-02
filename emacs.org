@@ -1080,13 +1080,17 @@ emacs данные не подхватывались, решилось пере�
       (start-ssh bf host cmd)
     (start-local bf cmd)))
 
+(setq shelm-history nil)
+
 (defun run-or-get-shell (name)
   (interactive
    (progn
      (setq shell-alist (read-shells-config "~/.emacs.d/shells.el"))
-     (helm-comp-read
-      "Select shell: "
-      (mapcar (lambda (item) (list (nth 0 item) (nth 0 item))) shell-alist))))
+     (let ((name (helm-comp-read
+                  "Select shell: "
+                  (mapcar (lambda (item) (list (nth 0 item) (nth 0 item))) shell-alist)
+                  :history 'shelm-history)))
+       (if (listp name) name (list name)))))
   (let* ((opts (cadr (assoc name shell-alist)))
          (host (plist-get opts 'host))
          (cmd (or (plist-get opts 'cmd) "true"))
