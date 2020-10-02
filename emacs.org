@@ -1516,8 +1516,7 @@ Skips capture tasks and tasks with subtasks"
   :if (not is-macos)
   :hook
     ((org-mode . flyspell-mode)
-     (text-mode . flyspell-mode)
-     (text-mode . auto-fill-mode))
+     (text-mode . flyspell-mode))
   :config
     (define-key flyspell-mode-map (kbd "C-;") nil))
 #+END_SRC
