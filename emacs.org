@@ -1048,6 +1048,9 @@ emacs данные не подхватывались, решилось пере�
 через helm (c-; b).
 
 #+BEGIN_SRC elisp
+(add-to-list 'tramp-connection-properties
+             (list nil "session-timeout" nil))
+
 (defun read-shells-config (fname)
   (read (format "(%s)"
                 (with-temp-buffer
