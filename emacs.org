@@ -709,6 +709,9 @@ insert-kbd-macro
 
 (fset 'pytest-args-from-test-name
    (lambda (&optional arg) "Keyboard macro." (interactive "p") (kmacro-exec-ring-item '([134217765 46 return 47 return 33 backspace 32 45 107 32 18 47 return 67108896 19 32 23 2 2 2 23 46 112 121 5] 0 "%d") arg)))
+
+(fset 'create-a-drill
+   (kmacro-lambda-form [?* ?* ?* ?* backspace ?  ?\C-s ?  ?- ?  return backspace backspace backspace return backspace backspace backspace backspace ?* ?* ?* ?* ?  ?a ?n ?s ?w ?e ?r ?  backspace return backspace backspace backspace backspace backspace ?\C-p ?\C-p ?\C-c ?\C-q ?d ?r ?i ?l ?l return ?\C-e return backspace backspace backspace backspace ?t ?r ?a ?n ?s ?l ?a ?t ?e ?\C-n ?\C-n ?\C-n ?\C-a] 0 "%d"))
 #+END_SRC
 
 *** Replace multiple empty lines with a single one
