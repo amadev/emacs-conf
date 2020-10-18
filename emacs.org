@@ -2217,6 +2217,8 @@ https://ebzzry.io/en/emacs-pairs/#manipulation
 (find-file "~/org/task.org")
 (find-file "~/files/cpp/db.gpg")
 (find-file "~/org/log.org")
+(find-file "~/org/reference.org")
+(find-file "~/.emacs.d/shells.el")
 #+END_SRC
 
 ** Description
