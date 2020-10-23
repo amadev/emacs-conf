@@ -1202,7 +1202,7 @@ To write history manually just issue:
 (setq org-agenda-files
       (mapcar
        #'(lambda (name) (concat my-org-dir name))
-       '("task.org" "bookmark.org" "reference.org" "work-gcal.org" "book.org" "film.org" "att-log.org")))
+       '("task.org" "org-linkz/Linkz.org" "reference.org" "work-gcal.org" "book.org" "film.org" "att-log.org")))
 #+END_SRC
 
 #+RESULTS:
@@ -1214,7 +1214,7 @@ Done issues go to the bottom of the list. Can view it if needed.
 
 #+BEGIN_SRC elisp
 (defun refile-org-files ()
-  (let ((files '("task.org" "reference.org" "bookmark.org" "book.org" "film.org")))
+  (let ((files '("task.org" "reference.org" "book.org" "film.org")))
     (mapcar #'(lambda (x) (concat my-org-dir x)) files)))
 
 (setq org-refile-targets '((refile-org-files . (:level . 2)))
@@ -1554,7 +1554,6 @@ Skips capture tasks and tasks with subtasks"
   :init (setq org-html-validation-link nil
               org-protocol-default-template-key "o"))
 #+END_SRC
-
 
 ** Почта
 
