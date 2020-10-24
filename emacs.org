@@ -2231,6 +2231,8 @@ https://ebzzry.io/en/emacs-pairs/#manipulation
 (find-file "~/org/log.org")
 (find-file "~/org/reference.org")
 (find-file "~/.emacs.d/shells.el")
+(run-mirantis-vpn)
+(run-proxy)
 #+END_SRC
 
 ** Description
