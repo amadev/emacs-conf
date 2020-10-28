@@ -1553,7 +1553,19 @@ Skips capture tasks and tasks with subtasks"
 (use-package org-protocol
   :init (setq org-html-validation-link nil
               org-protocol-default-template-key "o"))
+
+(defun export-linkz-after-saved-file ()
+  (if (string-match "Linkz.org" (buffer-file-name))
+      (org-html-export-to-html)))
+
+(add-hook 'after-save-hook 'export-linkz-after-saved-file)
 #+END_SRC
+
+Alternative via local vars
+
+# Local variables:
+# eval: (add-hook 'after-save-hook (lambda () (org-html-export-to-html)) t t)
+# end:
 
 ** Почта
 
@@ -2233,6 +2245,7 @@ https://ebzzry.io/en/emacs-pairs/#manipulation
 (find-file "~/.emacs.d/shells.el")
 (run-mirantis-vpn)
 (run-proxy)
+(server-start)
 #+END_SRC
 
 ** Description
