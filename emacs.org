@@ -1498,7 +1498,8 @@ Skips capture tasks and tasks with subtasks"
       org-src-window-setup 'current-window
       org-src-strip-leading-and-trailing-blank-lines t
       org-src-preserve-indentation t
-      org-src-tab-acts-natively t)
+      org-src-tab-acts-natively t
+      org-adapt-indentation nil)
 #+END_SRC
 
 *** github
