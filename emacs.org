@@ -265,7 +265,9 @@ M-e - редактирование.
 :\([0-9]+\) → =\1
 
 #+BEGIN_SRC elisp
-(global-anzu-mode +1)
+(use-package anzu
+   :ensure t
+   :init (global-anzu-mode +1))
 #+END_SRC
 
 *** Удалениие пробелов вначале и конце строки.
