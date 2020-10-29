@@ -553,7 +553,7 @@ M-$ - исправление первого слова с ошибкой пос�
  '(which-func ((t (:foreground "#b680b1" :weight bold))))
  '(chess-ics1-black-face ((t (:foreground "dim gray" :weight bold))))
  '(chess-ics1-white-face ((t (:foreground "chocolate" :weight bold))))
- '(secondary-selection ((t (:background "pale goldenrod")))))
+ '(secondary-selection ((t (:background "olive drab")))))
 
 (put 'narrow-to-region 'disabled nil)
 (put 'downcase-region 'disabled nil)
