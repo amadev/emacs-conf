@@ -450,11 +450,14 @@ M-$ - исправление первого слова с ошибкой пос�
 *** Magit for project
 
 #+BEGIN_SRC elisp
+(use-package magit
+  :ensure t)
+
 (defun magit-nova ()
   (interactive)
   (let ((buffer "magit: nova"))
     (if (get-buffer buffer)
-        (switch-to-buffer "magit: nova")
+	(switch-to-buffer "magit: nova")
       (magit-status "~/m/nova"))))
 
 (global-set-key (kbd "C-; n") 'magit-nova)
