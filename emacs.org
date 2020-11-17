@@ -866,12 +866,6 @@ target-shell-session. It could be defined as file local variable:
   (interactive)
   (send-current-paragraph-or-region nil (concat "cd " default-directory)))
 
-(defun my-send-mode-hook ()
-  (progn
-    (local-set-key (kbd "C-c C-c") 'send-current-paragraph-or-region)
-    (local-set-key (kbd "C-u C-c C-c") 'send-current-paragraph-or-region-and-step)
-    (local-set-key (kbd "C-c C-z") 'switch-to-process-buffer)))
-
 (define-minor-mode sh-send-mode
   "Send a paragraph or marked string to the shell buffer."
   :lighter " ss"
