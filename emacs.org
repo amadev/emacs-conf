@@ -826,6 +826,8 @@ target-shell-session. It could be defined as file local variable:
 # End:
 
 #+BEGIN_SRC elisp
+(require 'subr-x)
+
 (make-variable-buffer-local
  (defvar target-shell-session "shell-default"
    "Name of session buffer for sending comands from sh-send-mode"))
@@ -840,11 +842,11 @@ target-shell-session. It could be defined as file local variable:
         (setq min (region-beginning)
               max (region-end))
       (setq min (save-excursion (backward-paragraph) (point))
-            max (save-excursion (forward-paragraph) (point))))
+            max (save-excursion (re-search-forward "\n[\t\n ]*\n+" nil "NOERROR") (point))))
     (setq command (if cmd
                       cmd
-                    (concat (buffer-substring min max) "\n")))
-    (message "sending '%s'  to '%s'" command target-shell-session)
+                    (concat (string-trim (buffer-substring min max)) "\n")))
+    ;; (message "sending '%s'  to '%s'" command target-shell-session)
     (with-current-buffer pbuf
       (goto-char (process-mark proc))
       (insert command)
@@ -870,8 +872,7 @@ target-shell-session. It could be defined as file local variable:
   "Send a paragraph or marked string to the shell buffer."
   :lighter " ss"
   :keymap (let ((map (make-sparse-keymap)))
-            (define-key map (kbd "C-c C-c") 'send-current-paragraph-or-region)
-            (define-key map (kbd "C-u C-c C-c") 'send-current-paragraph-or-region-and-step)
+            (define-key map (kbd "C-c C-c") 'send-current-paragraph-or-region-and-step)
             (define-key map (kbd "C-c C-z") 'switch-to-process-buffer)
             map))
 
