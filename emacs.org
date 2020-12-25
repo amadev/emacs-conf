@@ -571,6 +571,8 @@ M-$ - исправление первого слова с ошибкой пос�
                               (time-subtract after-init-time before-init-time)))
                      gcs-done)))
 (setq fill-column 80)
+
+(setq create-lockfiles nil)
 #+END_SRC
 
 *** text
