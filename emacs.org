@@ -1075,9 +1075,14 @@ emacs данные не подхватывались, решилось пере�
 
 (add-hook 'comint-mode-hook 'make-comint-directory-tracking-work-remotely)
 
+(defun shell-cd (cmd)
+  (when (string-match "cd \\([^\n]+\\)" cmd)
+    (cd (match-string 1 cmd))))
+
 (defun start-local (buffer-name &optional cmd)
   (shell buffer-name)
-  (if cmd
+  (when cmd
+      (shell-cd cmd)
       (comint-send-string buffer-name (concat cmd "\n"))))
 
 (defun start-ssh (buffer-name host &optional cmd)
