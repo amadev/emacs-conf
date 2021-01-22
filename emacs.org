@@ -838,8 +838,8 @@ target-shell-session. It could be defined as file local variable:
   (interactive ())
 
   (let* ((pbuf (get-buffer target-shell-session))
-        (proc (get-buffer-process pbuf))
-        min max command)
+         (proc (get-buffer-process pbuf))
+         min max command)
     (if (use-region-p)
         (setq min (region-beginning)
               max (region-end))
@@ -849,14 +849,16 @@ target-shell-session. It could be defined as file local variable:
                       cmd
                     (concat (string-trim (buffer-substring min max)) "\n")))
     ;; (message "sending '%s'  to '%s'" command target-shell-session)
-    (with-current-buffer pbuf
-      (goto-char (process-mark proc))
-      (insert command)
-      (comint-send-input))
-    (display-buffer (process-buffer proc) t)
-    (when step
-      (goto-char max)
-      (next-line))))
+    (if (and (derived-mode-p 'org-mode) (string-prefix-p "- [" (thing-at-point 'line t)))
+        (org-ctrl-c-ctrl-c)
+        (progn (with-current-buffer pbuf
+           (goto-char (process-mark proc))
+           (insert command)
+           (comint-send-input))
+         (display-buffer (process-buffer proc) t)
+         (when step
+           (goto-char max)
+           (next-line))))))
 
 (defun send-current-paragraph-or-region-and-step ()
   (interactive)
