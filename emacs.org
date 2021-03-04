@@ -2426,4 +2426,6 @@ run nova repl
 
 (use-package bash-completion
   :ensure t)
+
+(setq js-indent-level 2)
 #+END_SRC
