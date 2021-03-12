@@ -121,12 +121,17 @@ sentinel (функции, которая срабатывает при любы�
             (format (with-home-dir ".emacs.d/history.d/%s-buffer-history")
                     (car (split-string (buffer-name (current-buffer)) "-"))))
       (comint-read-input-ring)
-      (set-process-sentinel process
-                            #'comint-write-history-on-exit))))
+      (set-process-sentinel process #'comint-write-history-on-exit))))
 #+END_SRC
 
-#+RESULTS:
-: turn-on-comint-history
+#+BEGIN_SRC elisp
+(defun comint-write-input-ring-before-output (str)
+  (if str (comint-write-input-ring))
+  str)
+
+(add-hook 'comint-preoutput-filter-functions
+          'comint-write-input-ring-before-output)
+#+END_SRC
 
 Записываем переменную из истории.
 Сохранение истории происходит для команд введенных в интерактивном режиме
@@ -222,9 +227,6 @@ Helm история комманд.
 (setq vc-make-backup-files t)
 (setq delete-old-versions -1)
 #+END_SRC
-
-#+RESULTS:
-: t
 
 *** Поиск
 
