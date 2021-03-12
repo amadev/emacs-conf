@@ -104,15 +104,23 @@ http://tuhdo.github.io/helm-intro.html
                     (helm-quit-and-execute-action 'helm-old-ff))))))
 #+END_SRC
 
-*** История и бекапы
-**** Обработка истории comint-буферов
+*** History and backups
+**** Comint history
 
-Взято из https://oleksandrmanzyuk.wordpress.com/2011/10/23/a-persistent-command-history-in-emacs/.
-При старте буфера с comint вешаем хук, который устанавливает
-comint-input-ring-file-name, а также устанавливает callback для
-sentinel (функции, которая срабатывает при любых изменениях в
-процессе).
+#+BEGIN_SRC elisp
+(use-package comint
+  :config
+  (setq
+   comint-input-ring-size 20000
+   comint-scroll-show-maximum-output t
+   comint-input-ignoredups t
+   comint-input-ring-separator "$$$\n"))
+#+END_SRC
 
+To write history manually just issue:
+(comint-write-input-ring)
+
+See https://oleksandrmanzyuk.wordpress.com/2011/10/23/a-persistent-command-history-in-emacs/.
 #+BEGIN_SRC elisp
 (defun turn-on-comint-history ()
   (let ((process (get-buffer-process (current-buffer))))
@@ -133,18 +141,7 @@ sentinel (функции, которая срабатывает при любы�
           'comint-write-input-ring-before-output)
 #+END_SRC
 
-Записываем переменную из истории.
-Сохранение истории происходит для команд введенных в интерактивном режиме
-в ~/.emacs.d/comint-history/.
-Просмотр истории comint-dynamic-list-input-ring или напрямую в файле,
-что удобней. История подгружается при запуске буфера и сохраняется при
-остановке процесса. Поиск назад по многострочному запросу не работает.
-
-В shell работает helm-comint-input-ring, как вариант выбора предыдущей
-истории, в sqli - нет, но проблема с многострочными та же.
-
 #+BEGIN_SRC elisp
-
 (defun comint-write-history-on-exit (process event)
   (comint-write-input-ring)
   (let ((buf (process-buffer process)))
@@ -153,20 +150,15 @@ sentinel (функции, которая срабатывает при любы�
         (insert (format "\nProcess %s %s" process event))))))
 #+END_SRC
 
-#+RESULTS:
-: comint-write-history-on-exit
+Enable comint history for the specific modes.
 
-Включение истории для режимов.
 #+BEGIN_SRC elisp
 (add-hook 'shell-mode-hook 'turn-on-comint-history)
 (add-hook 'inferior-python-mode-hook 'turn-on-comint-history)
 (add-hook 'inferior-emacs-lisp-mode-hook 'turn-on-comint-history)
 #+END_SRC
 
-#+RESULTS:
-| turn-on-comint-history | my-sql-save-history-hook | sqli-add-hooks |
-
-Для обработки закрытия буфера и выключения emacs используется.
+Save history for comint buffers history on kill or Emacs closing.
 
 #+BEGIN_SRC elisp
 (require 'comint)
@@ -184,7 +176,7 @@ sentinel (функции, которая срабатывает при любы�
 (add-hook 'kill-emacs-hook 'comint-write-input-ring-all-buffers)
 #+END_SRC
 
-Helm история комманд.
+Helm comint history.
 
 #+BEGIN_SRC elisp
 (defun shell-mode-custom-keys ()
@@ -1159,19 +1151,6 @@ emacs данные не подхватывались, решилось пере�
 
 (global-set-key (kbd "C-; b") 'run-or-get-shell)
 #+END_SRC
-
-#+BEGIN_SRC elisp
-(use-package comint
-  :config
-  (setq
-   comint-input-ring-size 20000
-   comint-scroll-show-maximum-output t
-   comint-input-ignoredups t
-   comint-input-ring-separator "$$$\n"))
-#+END_SRC
-
-To write history manually just issue:
-(comint-write-input-ring)
 
 *** Run current file
 
