@@ -1116,6 +1116,8 @@ emacs данные не подхватывались, решилось пере�
   (shell buffer-name)
   (when cmd
       (shell-cd cmd)
+      (with-current-buffer buffer-name
+        (shell-procfs-dirtrack-mode))
       (comint-send-string buffer-name (concat cmd "\n"))))
 
 (defun start-ssh (buffer-name host &optional cmd)
