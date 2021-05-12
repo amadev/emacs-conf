@@ -261,7 +261,7 @@ M-e - редактирование.
 #+BEGIN_SRC elisp
 (use-package anzu
    :ensure t
-   :init (global-anzu-mode +1))
+   :init (global-anzu-mode -1))
 #+END_SRC
 
 *** Удалениие пробелов вначале и конце строки.
