@@ -1566,6 +1566,7 @@ Skips capture tasks and tasks with subtasks"
 
 #+BEGIN_SRC elisp
 (use-package org-drill
+  :if nil
   :ensure t)
 #+END_SRC
 
