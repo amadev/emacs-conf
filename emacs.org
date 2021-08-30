@@ -111,7 +111,7 @@ http://tuhdo.github.io/helm-intro.html
 (use-package comint
   :config
   (setq
-   comint-input-ring-size 20000
+   comint-input-ring-size 200000
    comint-scroll-show-maximum-output t
    comint-input-ignoredups t
    comint-input-ring-separator "$$$\n"))
@@ -119,6 +119,7 @@ http://tuhdo.github.io/helm-intro.html
 
 To write history manually just issue:
 (comint-write-input-ring)
+(comint-read-input-ring)
 
 See https://oleksandrmanzyuk.wordpress.com/2011/10/23/a-persistent-command-history-in-emacs/.
 #+BEGIN_SRC elisp
