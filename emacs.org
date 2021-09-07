@@ -2287,11 +2287,6 @@ http://git.savannah.gnu.org/cgit/emacs.git/log/
 Git repo
 git://git.savannah.gnu.org/emacs.git
 
-*** TODOS
-
-- [ ] multiline shell history
-- [ ] org babel sql session is not supported
-- [ ] org babel shell session with tramp with multiline string is not supported
 ** Yaml
 
 #+BEGIN_SRC elisp
