@@ -1064,7 +1064,7 @@ emacs данные не подхватывались, решилось пере�
     (message "Notifications from all channels are enabled"))
 #+END_SRC
 
-** terminal
+** shell
 *** Tramp
 
 #+BEGIN_SRC elisp
@@ -1205,6 +1205,18 @@ emacs данные не подхватывались, решилось пере�
     (interactive)
     (comint-send-string "shell_placement" "~/m/python-openstackclient/.tox/py27/bin/pytest -vxlk TestSetInventory\n"))
   (global-set-key (kbd "<f8>") 'tmp-command)
+#+END_SRC
+
+*** Eshell
+
+#+BEGIN_SRC elisp
+;; for GNU Emacs 26.3
+(defun eshell-mode-custom-keys ()
+  (local-set-key (kbd "<f9>") 'helm-eshell-history)
+  (local-set-key (kbd "M-r") 'helm-eshell-history))
+(add-hook 'eshell-mode-hook 'eshell-mode-custom-keys)
+;; for GNU Emacs 28.0.50
+(define-key eshell-hist-mode-map (kbd "M-r") 'helm-eshell-history)
 #+END_SRC
 
 ** orgmode
