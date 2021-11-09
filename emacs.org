@@ -1216,6 +1216,9 @@ emacs данные не подхватывались, решилось пере�
   (local-set-key (kbd "M-r") 'helm-eshell-history))
 (add-hook 'eshell-mode-hook 'eshell-mode-custom-keys)
 ;; for GNU Emacs 28.0.50
+(require 'em-hist)
+
+(setq helm-show-completion-display-function #'helm-show-completion-default-display-function)
 (define-key eshell-hist-mode-map (kbd "M-r") 'helm-eshell-history)
 #+END_SRC
 
