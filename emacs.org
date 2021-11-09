@@ -1180,6 +1180,7 @@ emacs данные не подхватывались, решилось пере�
                 ("ml" . "ocaml")
                 ("vbs" . "cscript")
                 ("java" . "javac")
+                ("go" . "go run")
                 )
               )
         (setq fname (buffer-file-name))
@@ -2202,11 +2203,53 @@ https://ebzzry.io/en/emacs-pairs/#manipulation
 (add-hook 'js-mode-hook 'add-hs-minor-mode)
 #+END_SRC
 
-** Go
+** Golang
 
 #+BEGIN_SRC elisp
 (use-package go-mode
   :ensure t)
+
+
+(use-package company
+  :ensure t)
+
+
+(use-package lsp-mode
+  :ensure t)
+
+(add-hook 'go-mode-hook (lambda ()
+    (setq tab-width 4)
+    (flycheck-mode 1)
+    (lsp)
+    (add-hook 'before-save-hook 'gofmt-before-save nil 'local)
+    (lambda ()
+      (push '("error" . ?∇) prettify-symbols-alist)
+      (push '("err" . ?⊙) prettify-symbols-alist)
+      (push '("exists" . ?∃) prettify-symbols-alist)
+      (push '(":= range" . ?∈) prettify-symbols-alist)
+      (push '("ok" . ?✓) prettify-symbols-alist)
+      (push '("==" . ?≡) prettify-symbols-alist)
+      (push '(":=" . ?≔) prettify-symbols-alist)
+      (push '(">=" . ?≥) prettify-symbols-alist)
+      (push '("<=" . ?≤) prettify-symbols-alist)
+      (push '("<-" . ?←) prettify-symbols-alist)
+      (push '("!=" . ?≠) prettify-symbols-alist)
+      (push '("..." . ?…) prettify-symbols-alist)
+      (push '("nil" . ?∅) prettify-symbols-alist)
+      (push '("make" . ?&) prettify-symbols-alist)
+      (push '("new" . ?&) prettify-symbols-alist)
+      (push '("context.Context" . ?◇) prettify-symbols-alist)
+      (push '("ctx" . ?⋄) prettify-symbols-alist)
+      (push '("mu" . ?❢) prettify-symbols-alist)
+      (push '("&&" . ?∧) prettify-symbols-alist)
+      (push '("||" . ?∨) prettify-symbols-alist)
+      (push '("!" . ?¬) prettify-symbols-alist)
+      (push '("interface{}" . ?⋆) prettify-symbols-alist)
+      (push '("struct{}" . ?ε) prettify-symbols-alist)
+      )
+    ))
+
+(global-prettify-symbols-mode +1)
 #+END_SRC
 
 ** Calendar
