@@ -686,7 +686,7 @@ Uses `current-date-time-format' for the formatting the date/time."
   (setq whitespace-style '(face lines-tail trailing)
         whitespace-line-column 79)
   (whitespace-mode t)
-  (which-function-mode -1)
+  (which-function-mode t)
   (idle-highlight-mode t)
   (make-local-variable 'column-number-mode)
   (column-number-mode t)
