@@ -2466,4 +2466,7 @@ run nova repl
   :ensure t)
 
 (setq js-indent-level 2)
+
+(use-package markdown-toc
+  :ensure t)
 #+END_SRC
