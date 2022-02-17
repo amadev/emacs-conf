@@ -2206,6 +2206,11 @@ https://ebzzry.io/en/emacs-pairs/#manipulation
 ** Golang
 
 #+BEGIN_SRC elisp
+(defun occur-go-structure ()
+  (interactive)
+  (occur "func \\|type \\|interface "))
+
+
 (use-package go-mode
   :ensure t)
 
@@ -2218,6 +2223,10 @@ https://ebzzry.io/en/emacs-pairs/#manipulation
   :ensure t)
 
 (add-hook 'go-mode-hook (lambda ()
+    (local-set-key (kbd "C-; s s") 'occur-go-structure)
+    (local-set-key (kbd "C-; s c") 'grep-at-point)
+    (local-set-key (kbd "C-; s f") 'grep-function-at-point)
+    (local-set-key (kbd "C-; s w") 'what-function-full)
     (setq tab-width 4)
     (flycheck-mode 1)
     (lsp)
