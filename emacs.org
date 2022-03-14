@@ -128,7 +128,7 @@ See https://oleksandrmanzyuk.wordpress.com/2011/10/23/a-persistent-command-histo
     (when process
       (setq comint-input-ring-file-name
             (format (with-home-dir ".emacs.d/history.d/%s-buffer-history")
-                    (car (split-string (buffer-name (current-buffer)) "-"))))
+                    (buffer-name (current-buffer))))
       (comint-read-input-ring)
       (set-process-sentinel process #'comint-write-history-on-exit))))
 #+END_SRC
@@ -1172,7 +1172,7 @@ emacs данные не подхватывались, решилось пере�
               '(
                 ("php" . "php")
                 ("pl" . "perl")
-                ("py" . "python")
+                ("py" . "~/.ve/mc/bin/python3")
                 ("rb" . "ruby")
                 ("js" . "js")
                 ("sh" . "bash")
@@ -2478,4 +2478,22 @@ run nova repl
 
 (use-package markdown-toc
   :ensure t)
+
+(use-package string-inflection
+  :ensure t)
+
+(fset 'mm-json-to-grpc
+   (kmacro-lambda-form [tab escape ?  backspace tab ?s ?t ?r ?i ?n ?g ?  ?\C-d ?\C-s ?: backspace ?\" return backspace ?\C-k ?  ?= ?  ?\M-x ?m ?a ?c ?r ?o ?- ?i ?n backspace backspace backspace backspace backspace backspace backspace backspace ?k ?m ?a ?c ?r ?o ?- ?i ?n ?s ?e ?r ?t ?- ?c ?o ?u ?n ?t ?e ?r return ?\; ?\C-n ?\C-a] 11 "%d"))
+
+(fset 'mm-add-json-name
+   (kmacro-lambda-form [?\C-s ?  ?\C-s ?\C-s ?\C-s ?\C-s return ?\C-  ?\C-s ?  return ?\C-b ?\M-w ?\C-e ?\C-b ?  ?\[ ?j ?s ?o ?n ?_ ?n ?a ?m ?e ?  ?= ?  ?\" ?\C-y ?\" ?\] ?\C-n ?\C-a] 0 "%d"))
+
+(fset 'mm-upcase
+   (kmacro-lambda-form [?\C-s ?_ return backspace ?\M-x ?u ?p ?c ?a ?s ?e ?- ?c ?h ?a ?r return ?\C-n ?\C-a] 0 "%d"))
+
+(fset 'mm-json-to-golang
+   (kmacro-lambda-form [tab ?\C-d ?\C-d ?\C-d ?\C-d ?\C-d ?\C-d ?\C-d ?\C-d ?\C-f ?\M-r ?\M-x ?s ?t ?r ?i ?n ?g ?- ?i ?f ?l ?e ?c ?t ?i ?o ?n ?- ?l ?o backspace backspace ?c ?a backspace backspace backspace backspace backspace backspace backspace backspace backspace backspace backspace ?n ?f ?l ?e ?c ?t ?i ?o ?n ?- ?c ?a ?m ?e return ?\C-n ?\C-a] 0 "%d"))
+
+(fset 'mm-json-to-grpc2
+   (kmacro-lambda-form [?  ?  ?  ?  ?\C-d ?s ?t ?r ?i ?n ?g ?  ?\C-s ?\" return backspace ?\C-  ?\C-r ?  ?\C-f ?\M-w ?\M-x ?s ?t ?r ?i ?n ?g ?- ?i ?n ?f ?l ?e ?c ?t ?i ?o ?n ?- ?c ?a ?m ?e ?l ?c ?a ?s ?e return ?  ?= ?  ?\M-x ?k ?m ?a ?c ?r ?o ?- ?i ?n ?s return ?  ?\[ ?j ?s ?o ?n ?_ ?n ?a ?m ?e ?  ?= ?  ?\" ?\C-y ?\" ?\C-k ?\] ?s backspace ?\; ?\C-n ?\C-a] 26 "%d"))
 #+END_SRC
