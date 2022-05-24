@@ -1228,7 +1228,9 @@ emacs данные не подхватывались, решилось пере�
 Установка orgmode и его расширений.
 
 #+BEGIN_SRC elisp
-(add-to-list 'package-archives '("org" . "http://orgmode.org/elpa/") t)
+(use-package org :pin gnu :ensure t)
+
+(use-package org-contrib :pin nongnu :ensure t)
 #+END_SRC
 
 Устанавливаем org-plus-contrib, нужно обновлять в чистом emacs
@@ -1386,7 +1388,6 @@ http://emacs-fu.blogspot.com/2011/04/nice-looking-pdfs-with-org-mode-and.html
    (dot . t)
    (C . t)
    (sqlite . t)
-   (ledger . t)
    (gnuplot . t)))
 #+END_SRC
 
@@ -2007,7 +2008,8 @@ postgres).
     (grep cmd)))
 
 (setq jedi:tooltip-method '(pos-tip popup))
-(setq jedi:server-args '("--virtual-env" "~/m/nova/.tox/py27" "--log-traceback"))
+;; (setq jedi:server-args '("--virtual-env" "~/m/nova/.tox/py27" "--log-traceback"))
+(setq jedi:server-args '())
 (setq jedi:setup-keys t)                      ; optional
 (setq jedi:complete-on-dot t)                 ; optional
 
