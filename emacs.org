@@ -348,9 +348,33 @@ M-e - редактирование.
 yas-wrap-around-region включает такое поведение.
 
 #+BEGIN_SRC elisp
-(require 'yasnippet)
-(yas-global-mode 1)
-(setq yas-wrap-around-region t)
+(use-package yasnippet
+  :ensure t
+  :config
+  (defun yas/org-very-safe-expand ()
+    (let ((yas/fallback-behavior 'return-nil)) (yas/expand)))
+
+  (add-hook 'org-mode-hook
+            (lambda ()
+              (make-variable-buffer-local 'yas/trigger-key)
+              (setq yas/trigger-key [tab])
+              (add-to-list 'org-tab-first-hook 'yas/org-very-safe-expand)
+              (define-key yas/keymap [tab] 'yas/next-field)))
+
+  (setq
+   yas-verbosity 1
+   yas-wrap-around-region t
+   )
+
+  (with-eval-after-load 'yasnippet
+    (setq yas-snippet-dirs '(yasnippet-snippets-dir)))
+
+  (yas-reload-all)
+  (yas-global-mode)
+  )
+
+(use-package yasnippet-snippets         ; Collection of snippets
+  :ensure t)
 #+END_SRC
 
 *** Браузер
