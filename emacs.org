@@ -74,7 +74,7 @@ marmalade-repo.org - не обновляется.
 *** use-package
 
 #+BEGIN_SRC elisp
-(setq use-package-compute-statistics t)
+;; (setq use-package-compute-statistics nil)
 #+END_SRC
 
 *** helm
@@ -193,7 +193,7 @@ Helm comint history.
 
 #+BEGIN_SRC elisp
 (setq savehist-file "~/.emacs.d/history.d/minibuffer-history")
-(savehist-mode 1)
+(savehist-mode nil)
 (setq history-length t)
 (setq history-delete-duplicates t)
 (setq savehist-save-minibuffer-history 1)
@@ -364,6 +364,8 @@ yas-wrap-around-region включает такое поведение.
   (setq
    yas-verbosity 1
    yas-wrap-around-region t
+   yas-snippet-dirs (append yas-snippet-dirs
+                               '("/home/amadev/.emacs.d/snippets"))
    )
 
   (with-eval-after-load 'yasnippet
