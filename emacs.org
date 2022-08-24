@@ -368,9 +368,6 @@ yas-wrap-around-region включает такое поведение.
                                '("/home/amadev/.emacs.d/snippets"))
    )
 
-  (with-eval-after-load 'yasnippet
-    (setq yas-snippet-dirs '(yasnippet-snippets-dir)))
-
   (yas-reload-all)
   (yas-global-mode)
   )
