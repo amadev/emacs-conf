@@ -369,7 +369,7 @@ yas-wrap-around-region включает такое поведение.
    )
 
   (yas-reload-all)
-  (yas-global-mode)
+  ;; (yas-global-mode)
   )
 
 (use-package yasnippet-snippets         ; Collection of snippets
@@ -2529,4 +2529,36 @@ run nova repl
 
 (fset 'mm-json-to-grpc2
    (kmacro-lambda-form [?  ?  ?  ?  ?\C-d ?s ?t ?r ?i ?n ?g ?  ?\C-s ?\" return backspace ?\C-  ?\C-r ?  ?\C-f ?\M-w ?\M-x ?s ?t ?r ?i ?n ?g ?- ?i ?n ?f ?l ?e ?c ?t ?i ?o ?n ?- ?c ?a ?m ?e ?l ?c ?a ?s ?e return ?  ?= ?  ?\M-x ?k ?m ?a ?c ?r ?o ?- ?i ?n ?s return ?  ?\[ ?j ?s ?o ?n ?_ ?n ?a ?m ?e ?  ?= ?  ?\" ?\C-y ?\" ?\C-k ?\] ?s backspace ?\; ?\C-n ?\C-a] 26 "%d"))
+
+
+(push
+ (cons
+  "docker"
+  '((tramp-login-program "sudo docker")
+    (tramp-login-args (("exec" "-it") ("%h") ("/bin/bash")))
+    (tramp-remote-shell "/bin/sh")
+    (tramp-remote-shell-args ("-i") ("-c"))))
+ tramp-methods)
+
+(defadvice tramp-completion-handle-file-name-all-completions
+  (around dotemacs-completion-docker activate)
+  "(tramp-completion-handle-file-name-all-completions \"\" \"/docker:\" returns
+    a list of active Docker container names, followed by colons."
+  (if (equal (ad-get-arg 1) "/docker:")
+      (let* ((dockernames-raw (shell-command-to-string "sudo docker ps | perl -we 'use strict; $_ = <>; m/^(.*)NAMES/ or die; my $offset = length($1); while(<>) {substr($_, 0, $offset, q()); chomp; for(split m/\\W+/) {print qq($_:\n)} }'"))
+             (dockernames (cl-remove-if-not
+                           #'(lambda (dockerline) (string-match ":$" dockerline))
+                           (split-string dockernames-raw "\n"))))
+        (setq ad-return-value dockernames))
+    ad-do-it))
+
+(defun my-term-mode-hook ()
+  (define-key term-raw-map (kbd "C-y") 'term-paste)
+  (define-key term-raw-map (kbd "C-k")
+    (lambda ()
+      (interactive)
+      (term-send-raw-string "\C-k")
+      (kill-line))))
+(add-hook 'term-mode-hook 'my-term-mode-hook)
+
 #+END_SRC
