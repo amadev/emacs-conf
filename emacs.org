@@ -4,6 +4,19 @@
   :header-args: :tangle ~/.emacs.d/init.el :results silent
   :END:
 
+** Installation
+
+sudo apt get install emacs
+
+current version on ubuntu 22.04 - 27.1
+
+emacs-bin-common/jammy,now 1:27.1+1-3ubuntu5 amd64 [installed,automatic]
+emacs-common/jammy,jammy,now 1:27.1+1-3ubuntu5 all [installed,automatic]
+emacs-el/jammy,jammy,now 1:27.1+1-3ubuntu5 all [installed,automatic]
+emacs-gtk/jammy,now 1:27.1+1-3ubuntu5 amd64 [installed,automatic]
+emacs/jammy,jammy,now 1:27.1+1-3ubuntu5 all [installed]
+emacsen-common/jammy,jammy,now 3.0.4 all [installed,automatic]
+
 ** Глобальные функции
 *** Запуск и внешний вид
 
@@ -714,7 +727,9 @@ Uses `current-date-time-format' for the formatting the date/time."
   (make-local-variable 'column-number-mode)
   (column-number-mode t)
   (hl-line-mode t)
-  (add-to-list 'write-file-functions 'delete-trailing-whitespace))
+  (add-to-list 'write-file-functions 'delete-trailing-whitespace)
+  (yas-minor-mode)
+  )
 
 (add-hook  'prog-mode-hook 'my-prog-mode-hook)
 #+END_SRC
@@ -827,9 +842,9 @@ and press 'D' after that.
 *** Script wrappers
 
 #+BEGIN_SRC elisp
-(defun run-mirantis-vpn ()
+(defun run-vpn ()
   (interactive)
-  (start-process "mirantis-vpn" "mirantis-vpn-buffer" "/home/amadev/bin/run_mirantis_vpn"))
+  (start-process "vpn" "vpn-buffer" "/home/amadev/bin/run_forcode_vpn"))
 
 (defun run-proxy ()
   (interactive)
@@ -1249,7 +1264,7 @@ emacs данные не подхватывались, решилось пере�
 (require 'em-hist)
 
 (setq helm-show-completion-display-function #'helm-show-completion-default-display-function)
-(define-key eshell-hist-mode-map (kbd "M-r") 'helm-eshell-history)
+;; (define-key eshell-hist-mode-map (kbd "M-r") 'helm-eshell-history)
 #+END_SRC
 
 ** orgmode
@@ -1257,9 +1272,9 @@ emacs данные не подхватывались, решилось пере�
 Установка orgmode и его расширений.
 
 #+BEGIN_SRC elisp
-(use-package org :pin gnu :ensure t)
+(use-package org :ensure t)
 
-(use-package org-contrib :pin nongnu :ensure t)
+(use-package org-contrib :ensure t)
 #+END_SRC
 
 Устанавливаем org-plus-contrib, нужно обновлять в чистом emacs
@@ -2560,5 +2575,4 @@ run nova repl
       (term-send-raw-string "\C-k")
       (kill-line))))
 (add-hook 'term-mode-hook 'my-term-mode-hook)
-
 #+END_SRC
