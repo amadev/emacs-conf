@@ -732,6 +732,13 @@ Uses `current-date-time-format' for the formatting the date/time."
   )
 
 (add-hook  'prog-mode-hook 'my-prog-mode-hook)
+
+(defun shell-yasnippet ()
+  (yas-minor-mode)
+  )
+
+(add-hook  'shell-mode-hook 'shell-yasnippet)
+
 #+END_SRC
 
 *** Макросы
@@ -842,9 +849,16 @@ and press 'D' after that.
 *** Script wrappers
 
 #+BEGIN_SRC elisp
+(defun kill-vpn ()
+  (interactive)
+  (shell-command-to-string "ps -eF | grep openvpn | grep -v grep | head -n1 | awk '{print $2}' | sudo xargs kill")
+  )
+
 (defun run-vpn ()
   (interactive)
-  (start-process "vpn" "vpn-buffer" "/home/amadev/bin/run_forcode_vpn"))
+  (kill-vpn)
+  (start-process "vpn" "vpn-buffer" "/home/amadev/bin/run_forcode_vpn")
+  )
 
 (defun run-proxy ()
   (interactive)
@@ -2385,8 +2399,6 @@ https://ebzzry.io/en/emacs-pairs/#manipulation
 (end-of-buffer)
 (switch-to-buffer-other-window "task.org")
 (ace-window 0)
-(run-mirantis-vpn)
-(run-proxy)
 (server-start)
 #+END_SRC
 
