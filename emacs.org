@@ -1206,7 +1206,9 @@ emacs данные не подхватывались, решилось пере�
      (kill-buffer bf))
     (if (get-buffer bf)
         (switch-to-buffer bf)
-      (start-shell-buffer bf host cmd))))
+      (save-excursion
+        (set-buffer "*scratch*")
+        (start-shell-buffer bf host cmd)))))
 
 (global-set-key (kbd "C-; b") 'run-or-get-shell)
 #+END_SRC
