@@ -205,19 +205,16 @@ Helm comint history.
 Для просмотра истории helm-minibuffer-history.
 
 #+BEGIN_SRC elisp
-(setq savehist-file "~/.emacs.d/history.d/minibuffer-history")
-(savehist-mode nil)
-(setq history-length t)
-(setq history-delete-duplicates t)
-(setq savehist-save-minibuffer-history 1)
-(setq savehist-additional-variables
-      '(kill-ring
-        search-ring
-        regexp-search-ring))
+;; (setq savehist-file "~/.emacs.d/history.d/minibuffer-history")
+;; (savehist-mode nil)
+;; (setq history-length t)
+;; (setq history-delete-duplicates t)
+;; (setq savehist-save-minibuffer-history 1)
+;; (setq savehist-additional-variables
+;;       '(kill-ring
+;;         search-ring
+;;         regexp-search-ring))
 #+END_SRC
-
-#+RESULTS:
-| kill-ring | search-ring | regexp-search-ring |
 
 **** Бекапы
 Бекап создается при первом сохранении буфера.
