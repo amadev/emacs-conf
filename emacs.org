@@ -2595,4 +2595,17 @@ run nova repl
       (term-send-raw-string "\C-k")
       (kill-line))))
 (add-hook 'term-mode-hook 'my-term-mode-hook)
+
+
+(defun snippet (start end)
+  (interactive
+   (if mark-active
+       (list (region-beginning) (region-end))
+     (list (point-min) (point-max))))
+  (let ((selection (buffer-substring-no-properties start end)))
+    (message "posting...")
+    (let ((r (shell-command-to-string (format "echo '%s' | snippet.py" selection))))
+      (message r)
+      (kill-new r))))
+
 #+END_SRC
