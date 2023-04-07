@@ -1142,6 +1142,12 @@ emacs данные не подхватывались, решилось пере�
 через helm (c-; b).
 
 #+BEGIN_SRC elisp
+(defmacro measure-time (&rest body)
+  "Measure the time it takes to evaluate BODY."
+  `(let ((time (current-time)))
+     ,@body
+     (message "time %.06f" (float-time (time-since time)))))
+
 (defun read-shells-config (fname)
   (read (format "(%s)"
                 (with-temp-buffer
@@ -1171,10 +1177,13 @@ emacs данные не подхватывались, решилось пере�
       (comint-send-string buffer-name (concat cmd "\n"))))
 
 (defun start-ssh (buffer-name host &optional cmd)
-  (find-file (format "/ssh:%s:" host))
-  (shell buffer-name)
-  (if cmd
-      (comint-send-string buffer-name (concat cmd "\n"))))
+  (message (format "starting ssh %s" host))
+  (measure-time
+   ;; (find-file (format "/ssh:%s:" host))
+   (let ((default-directory (format "/ssh:%s:" host)))
+     (shell buffer-name))
+   (if cmd
+       (comint-send-string buffer-name (concat cmd "\n")))))
 
 (defun start-shell-buffer (buffer host cmd)
   (if host
@@ -1196,7 +1205,7 @@ emacs данные не подхватывались, решилось пере�
          (host (plist-get opts 'host))
          (cmd (or (plist-get opts 'cmd) "true"))
          (bf (concat "shell-" name)))
-    (message "%s is choosen, cmd: %s, host: %s" name cmd host)
+    (message "%s is choosen, host: %s" name host)
     (and
      (get-buffer bf)
      (not (get-buffer-process bf))
