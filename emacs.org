@@ -846,6 +846,8 @@ and press 'D' after that.
 *** Script wrappers
 
 #+BEGIN_SRC elisp
+(setq vpn-name "forcode")
+
 (defun kill-vpn ()
   (interactive)
   (shell-command-to-string "ps -eF | grep openvpn | grep -v grep | head -n1 | awk '{print $2}' | sudo xargs kill")
@@ -854,12 +856,13 @@ and press 'D' after that.
 (defun run-vpn ()
   (interactive)
   (kill-vpn)
-  (start-process "vpn" "vpn-buffer" "/home/amadev/bin/run_forcode_vpn")
+  (start-process "vpn" "vpn-buffer" (format "/home/amadev/bin/run_%s_vpn" vpn-name))
   )
 
-(defun run-proxy ()
+(defun myip ()
   (interactive)
-  (start-process "proxy" "proxy-buffer" "/home/amadev/bin/run_proxy"))
+  (message (shell-command-to-string "ip=$(curl -s ifconfig.me); echo $ip \\($(curl -s ipinfo.io/$ip| jq -r .country)\\)"))
+  )
 #+END_SRC
 
 *** Send region to comint buffer
