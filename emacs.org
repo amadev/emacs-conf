@@ -1198,7 +1198,7 @@ emacs данные не подхватывались, решилось пере�
 (defun run-or-get-shell (name)
   (interactive
    (progn
-     (setq shell-alist (read-shells-config "~/.emacs.d/shells.el"))
+     (setq shell-alist (read-shells-config "~/.emacs.d/shm/shells.el"))
      (let ((name (helm-comp-read
                   "Select shell: "
                   (mapcar (lambda (item) (list (nth 0 item) (nth 0 item))) shell-alist)
@@ -2405,7 +2405,7 @@ https://ebzzry.io/en/emacs-pairs/#manipulation
 (find-file "~/org/task.org")
 (find-file "~/files/cpp/db.gpg")
 (find-file "~/org/reference.org")
-(find-file "~/.emacs.d/shells.el")
+(find-file "~/.emacs.d/shm/shells.el")
 (find-file "~/org/log.org")
 (end-of-buffer)
 (switch-to-buffer-other-window "task.org")
