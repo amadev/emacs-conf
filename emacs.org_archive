@@ -1,0 +1,484 @@
+#    -*- mode: org -*-
+
+
+Archived entries from file /home/amadev/emacs-conf/emacs.org
+
+
+* erc
+:PROPERTIES:
+:ARCHIVE_TIME: 2023-07-09 Sun 13:40
+:ARCHIVE_FILE: ~/emacs-conf/emacs.org
+:ARCHIVE_OLPATH: emacs
+:ARCHIVE_CATEGORY: emacs
+:END:
+
+echo "machine irc.freenode.net login avolkov port 6697 password $(cpp.sh irc.freenode.net)" >> \
+   ~/.authinfo
+echo "machine miracloud.irc.slack.com login andrey.volkov port 6667 password $(cpp.sh mirantis_irc)" >> \
+   ~/.authinfo
+
+Возможно, файл сильно кешируется, т.к. после обновления файла из запущенного
+emacs данные не подхватывались, решилось перезапуском.
+
+#+BEGIN_SRC elisp :tangle ~/.emacs.d/init.el
+(defun start-ircs ()
+  (interactive)
+  (erc-tls :server "irc.freenode.net" :port 6697
+           :nick "avolkov" :full-name "Andrey Volkov"))
+
+(require 'erc-join)
+(erc-autojoin-mode 1)
+
+(setq erc-autojoin-channels-alist
+      '(
+        ("freenode.net" "#openstack-nova" "#openstack-placement")
+        ))
+
+(setq erc-track-exclude-types '("JOIN" "NICK" "PART" "QUIT" "MODE"
+                                "324" "329" "332" "333" "353" "477"))
+
+(setq erc-format-query-as-channel-p t
+      erc-track-priority-faces-only 'all
+      erc-track-faces-priority-list '(erc-error-face
+                                      erc-current-nick-face
+                                      erc-keyword-face
+                                      erc-nick-msg-face
+                                      erc-direct-msg-face
+                                      erc-dangerous-host-face
+                                      erc-notice-face
+                                      erc-prompt-face))
+
+(require 'erc-log)
+(setq erc-log-channels-directory "~/.emacs.d/erc/logs/")
+(erc-log-enable)
+
+(setq erc-save-buffer-on-part nil
+      erc-save-queries-on-quit nil
+      erc-log-write-after-send t
+      erc-log-write-after-insert t)
+#+END_SRC
+
+#+BEGIN_SRC elisp :tangle ~/.emacs.d/init.el
+  (setq erc-important-channels
+        '("#quotas" "#emacs" "#mos-ere" "#mos-nova" "#mos-nova-flood-ru"))
+
+  (defun list-erc-joined-channels ()
+    "Return all the channels you're in as a list. This does not include queries."
+    (save-excursion
+      ;; need to get out of ERC mode so we can have *all* channels returned
+      (set-buffer "*scratch*")
+      (mapcar #'(lambda (chanbuf)
+                  (with-current-buffer chanbuf (erc-default-target)))
+              (erc-channel-list erc-process))))
+
+  (defun list-erc-tracked-channels (excluded)
+    (remove-if #'(lambda (row) (member row excluded)) (list-erc-joined-channels)))
+
+  (defun enable-erc-notification-for-important-channels-only ()
+    (interactive)
+    (setq erc-track-priority-faces-only (list-erc-tracked-channels erc-important-channels))
+    (message "Enable notifications for channels %s" erc-important-channels))
+
+  (defun disable-non-priority-notification ()
+    (interactive)
+    (setq erc-track-priority-faces-only 'all)
+    (message "Notifications from all channels are disabled"))
+
+  (defun enable-all-notifications ()
+    (interactive)
+    (setq erc-track-priority-faces-only nil)
+    (message "Notifications from all channels are enabled"))
+#+END_SRC
+
+* Почта
+:PROPERTIES:
+:ARCHIVE_TIME: 2023-07-09 Sun 13:41
+:ARCHIVE_FILE: ~/emacs-conf/emacs.org
+:ARCHIVE_OLPATH: emacs
+:ARCHIVE_CATEGORY: emacs
+:END:
+
+Для работы с почтой используется mu4e (http://www.djcbsoftware.nl/code/mu/mu4e/).
+mu4e идет в составе индексатора mu, который устанавливается, как системный пакет.
+file://~/Dropbox/mu_0.9.15-1_amd64.deb
+
+lisp-файлы подключаются к emacs.
+#+BEGIN_SRC elisp :tangle ~/.emacs.d/init.el
+(add-to-list 'load-path "/usr/share/emacs/site-lisp/mu4e")
+#+END_SRC
+
+Почта стягивается со всех аккаунтов в ~/Maildir с помощью offlineimap
+и фильтруется imapfilter (общий конфиг для всех аккаунтов)
+[[file:~/dotfiles/.offlineimaprc::%5Bgeneral%5D]]
+Для каждого аккаунта используется конфиг imapfilter.
+[[file:~/files/settings/.imapfilter/wolfanio.lua::timeout%20=%20120][wolfanio]]
+#TODO в перерыве между фильтрацией и скачиванием нежелательные письма просачиваются
+
+Возможно, для ускорения следует попробовать серверную обработку
+http://kb.4rt.ru/mail/setup.
+
+Запуск mu4e.
+#+BEGIN_SRC elisp :tangle ~/.emacs.d/init.el
+(use-package mu4e
+  :config
+    (add-to-list 'mu4e-view-actions
+      '("ViewInBrowser" . mu4e-action-view-in-browser) t)
+    (add-to-list 'mu4e-headers-actions
+      '("ViewInBrowser" . mu4e-action-view-in-browser) t)
+    (add-to-list 'mu4e-bookmarks
+      '("maildir:/wolfanio/INBOX or maildir:/mirantis/INBOX or maildir:/amadev/INBOX"  "Inbox"     ?i))
+  :if mu4e-enabled
+  :bind ("C-; m" . 'mu4e))
+#+END_SRC
+
+** Общие настройки
+
+Команда для скачивания почты.
+#+BEGIN_SRC elisp :tangle ~/.emacs.d/init.el
+(setq mu4e-get-mail-command "true")
+(setq mu4e-update-interval nil)
+#+END_SRC
+
+Преобразование html-писем в текст.
+#+BEGIN_SRC elisp :tangle ~/.emacs.d/init.el
+(setq mu4e-html2text-command "html2text -utf8 -width 72")
+#+END_SRC
+
+Пароли для отправки почты храняться локально в require ~/.authinfo.
+Формат:
+machine smtp.gmail.com login EMAIL port 587 password *******
+
+Отправляем почту через smtp, используя tls, без использования очереди.
+#+BEGIN_SRC elisp :tangle ~/.emacs.d/init.el
+  (setq
+   message-send-mail-function 'smtpmail-send-it
+   smtpmail-stream-type 'starttls
+   smtpmail-queue-mail  nil)
+#+END_SRC
+
+Сохранение ссылки на письмо.
+#+BEGIN_SRC elisp :tangle ~/.emacs.d/init.el
+(use-package org-mu4e
+  :if mu4e-enabled)
+#+END_SRC
+
+Всегда отображаем дату и время в заголовках.
+
+#+BEGIN_SRC elisp :tangle ~/.emacs.d/init.el
+(setq mu4e-headers-fields '(
+  (:date . 24)
+  (:flags . 6)
+  (:mailing-list . 10)
+  (:from . 22)
+  (:subject)))
+
+(setq mu4e-headers-date-format "%x %T")
+#+END_SRC
+
+Скрываем сообщение об индексации.
+
+#+BEGIN_SRC elisp :tangle ~/.emacs.d/init.el
+(setq mu4e-hide-index-messages t)
+#+END_SRC
+
+** Настройки для accounts.
+#+BEGIN_SRC elisp :tangle ~/.emacs.d/init.el
+(setq my-mu4e-account-alist
+  '(("wolfanio"
+     (mu4e-drafts-folder "/wolfanio/drafts")
+     (mu4e-sent-folder   "/wolfanio/sent")
+     (mu4e-trash-folder  "/wolfanio/trash")
+     (mu4e-refile-folder "/wolfanio/archive")
+
+     (user-mail-address "wolfanio@gmail.com")
+     (user-full-name  "Andrey Volkov")
+     (mu4e-compose-signature
+      (concat
+       "С уважением,\n"
+       "Андрей Волков.\n\n"
+       "mobile: +7(916) 86 88 942\n"
+       "skype:  amadev_alt\n"
+       "site:   http://amadev.ru/\n"))
+     (smtpmail-smtp-server "smtp.gmail.com")
+     (smtpmail-smtp-user "wolfanio@gmail.com")
+     (smtpmail-smtp-service 587))
+    ("mirantis"
+     (mu4e-drafts-folder "/mirantis/drafts")
+     (mu4e-sent-folder   "/mirantis/sent")
+     (mu4e-trash-folder  "/mirantis/trash")
+     (mu4e-refile-folder "/mirantis/archive")
+     (user-mail-address "avolkov@mirantis.com")
+     (user-full-name  "Andrey Volkov")
+     (mu4e-compose-signature
+      (concat
+       "Thanks,\n\n"
+       "Andrey Volkov,\n"
+       "Software Engineer, Mirantis, Inc."))
+     (smtpmail-smtp-server "smtp.gmail.com")
+     (smtpmail-smtp-user "avolkov@mirantis.com")
+     (smtpmail-smtp-service 587))
+    ("amadev"
+     (mu4e-drafts-folder "/amadev/drafts")
+     (mu4e-sent-folder   "/amadev/sent")
+     (mu4e-trash-folder  "/amadev/trash")
+     (mu4e-refile-folder "/amadev/archive")
+     (user-mail-address "m@amadev.ru")
+     (user-full-name  "Andrey Volkov")
+     (mu4e-compose-signature
+      (concat
+       "Thanks,\n\n"
+       "Andrey Volkov,\n"
+       "Software Engineer, Amadev, Inc."))
+     (smtpmail-smtp-server "amadev.ru")
+     (smtpmail-smtp-user "m")
+     (smtpmail-smtp-service 587))))
+#+END_SRC
+
+#+RESULTS:
+: my-mu4e-account-alist
+
+Короткие ссылки для inbox.
+#+BEGIN_SRC elisp :tangle ~/.emacs.d/init.el
+(setq mu4e-maildir-shortcuts
+      '(("/wolfanio/INBOX" . ?w)
+        ("/mirantis/INBOX" . ?m)))
+#+END_SRC
+
+** Интерактивно выбираем account при создании письма.
+#+BEGIN_SRC elisp :tangle ~/.emacs.d/init.el
+(defun my-mu4e-set-account ()
+  "Set the account for composing a message."
+  (let* ((account
+          (if mu4e-compose-parent-message
+              (let ((maildir (mu4e-message-field mu4e-compose-parent-message :maildir)))
+                (string-match "/\\(.*?\\)/" maildir)
+                (match-string 1 maildir))
+            (completing-read (format "Compose with account: (%s) "
+                                     (mapconcat #'(lambda (var) (car var))
+                                                my-mu4e-account-alist "/"))
+                             (mapcar #'(lambda (var) (car var)) my-mu4e-account-alist)
+                             nil t nil nil (caar my-mu4e-account-alist))))
+         (account-vars (cdr (assoc account my-mu4e-account-alist))))
+    (message "account: %s, account-vars: %s" account account-vars)
+    (if account-vars
+        (mapc #'(lambda (var)
+                  (set (car var) (cadr var)))
+              account-vars)
+      (error "No email account found"))))
+
+(setq mu4e-user-mail-address-list
+      (mapcar (lambda (account) (cadr (assq 'user-mail-address account)))
+              my-mu4e-account-alist))
+
+(add-hook 'mu4e-compose-pre-hook 'my-mu4e-set-account)
+#+END_SRC
+
+** При архивировании переносим в соответствующую папку, в зависимости от текущего maildir
+
+#+BEGIN_SRC elisp :tangle ~/.emacs.d/init.el
+(setq mu4e-refile-folder
+      (lambda (msg)
+        (let* ((maildir (mu4e-message-field msg :maildir))
+               (account (progn (string-match "/\\(.*?\\)/" maildir)
+                               (match-string 1 maildir)))
+               (refile (cadr (assoc 'mu4e-refile-folder (assoc account my-mu4e-account-alist)))))
+          (message "maildir: %s, refile-folder: %s" maildir refile)
+          refile)))
+#+END_SRC
+
+** Вложения
+
+Вложения можно добавлять с помощью dired (C-c RET C-a)
+#+BEGIN_SRC elisp :tangle ~/.emacs.d/init.el
+(require 'gnus-dired)
+;; make the `gnus-dired-mail-buffers' function also work on
+;; message-mode derived modes, such as mu4e-compose-mode
+(defun gnus-dired-mail-buffers ()
+  "Return a list of active message buffers."
+  (let (buffers)
+    (save-current-buffer
+      (dolist (buffer (buffer-list t))
+        (set-buffer buffer)
+        (when (and (derived-mode-p 'message-mode)
+                (null message-sent-message-via))
+          (push (buffer-name buffer) buffers))))
+    (nreverse buffers)))
+
+(setq gnus-dired-mail-mode 'mu4e-user-agent)
+(add-hook 'dired-mode-hook 'turn-on-gnus-dired-mode)
+#+END_SRC
+
+** Требования
+*** Вся почта собирается в одном месте
+*** В inbox попадает, то на что нужно реагироgвать
+
+* Работа с БД
+:PROPERTIES:
+:ARCHIVE_TIME: 2023-07-09 Sun 13:42
+:ARCHIVE_FILE: ~/emacs-conf/emacs.org
+:ARCHIVE_OLPATH: emacs
+:ARCHIVE_CATEGORY: emacs
+:END:
+
+Соединения описываются в sql-connection-alist.
+Имя формируется, как название сервиса, тип (P - бой, l - прочее),
+есть ли запись (ro, rw - default) опционально.
+Пароль хранится в keepassx под тем же именем.
+
+Для единоразовых подключений можно использовать sql-mysql, sql-postgres.
+(require 'sql) нужен, т.к. там определяется sql-connection-alist, а
+без определенной переменной add-to-list работать не будет.
+
+#+BEGIN_SRC elisp :tangle ~/.emacs.d/init.el
+  (require 'sql)
+
+  (add-to-list
+   'sql-connection-alist
+   '("postgres-l"
+     (sql-product 'postgres)
+     (sql-server "localhost")
+     (sql-user "site")
+     (sql-database "site")
+     (sql-port 5432)))
+
+  (add-to-list
+   'sql-connection-alist
+   '("devstack-l"
+     (sql-product 'mysql)
+     (sql-server "james")
+     (sql-user "root")
+     (sql-database "nova")
+     (sql-port 3306)))
+#+END_SRC
+
+Интерактивно выбираем подключение, обновляем пароль в выбранной
+структуре через get-pass, также пароль копируется в буфер (для
+postgres).
+
+#+BEGIN_SRC elisp :tangle ~/.emacs.d/init.el
+(defun sql-connect-with-pass (connection)
+  (interactive
+   (helm-comp-read "Select server: " (mapcar (lambda (item)
+                                               (list
+                                                (nth 0 item)
+                                                (nth 0 item)))
+                                             sql-connection-alist)))
+  ;; get the sql connection info and product from the sql-connection-alist
+  (let* ((connection-info (assoc connection sql-connection-alist))
+         (connection-product (nth 1 (nth 1 (assoc 'sql-product connection-info))))
+         (sql-password (get-pass connection)))
+    (kill-new sql-password)
+    ;; delete the connection info from the sql-connection-alist
+    (setq sql-connection-alist (assq-delete-all connection sql-connection-alist))
+    ;; delete the old password from the connection-info
+    (setq connection-info (assq-delete-all 'sql-password connection-info))
+    ;; add the password to the connection-info
+    (nconc connection-info `((sql-password ,sql-password)))
+    ;; add back the connection info to the beginning of sql-connection-alist
+    ;; (last used server will appear first for the next prompt)
+    (add-to-list 'sql-connection-alist connection-info)
+    ;; override the sql-product by the product of this connection
+    (setq sql-product connection-product)
+    ;; connect
+    (sql-connect connection connection)
+    ;; (if current-prefix-arg
+    ;;         (sql-connect connection connection)
+    ;;       (sql-connect connection))
+    ))
+#+END_SRC
+
+Добавляем перенос строки после ответа, т.к. при запросе из отдельного
+буфера может не добавиться. Включается обрезка длинных строк, не
+перенос.
+
+#+BEGIN_SRC elisp :tangle ~/.emacs.d/init.el
+(global-set-key (kbd "C-c s s") 'sql-set-sqli-buffer)
+(global-set-key (kbd "C-; d") 'sql-connect-with-pass)
+
+(setq sql-mysql-options
+      (list "--default-character-set=utf8" "-A"))
+
+(defun sql-add-newline-first (output)
+  "Add newline to beginning of OUTPUT for `comint-preoutput-filter-functions'"
+  (concat "\n" output))
+
+(defun sqli-add-hooks ()
+  "Add hooks to `sql-interactive-mode-hook'."
+  (add-hook 'comint-preoutput-filter-functions
+            'sql-add-newline-first)
+  (toggle-truncate-lines t))
+
+(add-hook 'sql-interactive-mode-hook 'sqli-add-hooks)
+#+END_SRC
+
+Сохранение истории таким способом не работает при закрытии буфера,
+поэтому нужно сначала убить процесс (TODO при закрытии буфера вызывать
+сохранение истории).
+#+BEGIN_SRC elisp :tangle ~/.emacs.d/init.el
+;; comint-input-ring-size 500
+  (defun my-sql-save-history-hook ()
+    (let ((lval 'sql-input-ring-file-name)
+          (rval 'sql-product))
+      (if (symbol-value rval)
+          (let ((filename
+                 (concat "~/.emacs.d/history.d/"
+                         (symbol-name (symbol-value rval))
+                         "-history.sql")))
+            (set (make-local-variable lval) filename))
+        (error
+         (format "SQL history will not be saved because %s is nil"
+                 (symbol-name rval))))))
+
+  (add-hook 'sql-interactive-mode-hook 'my-sql-save-history-hook)
+#+END_SRC
+
+#+RESULTS:
+| my-sql-save-history-hook | sqli-add-hooks |
+
+* functions
+:PROPERTIES:
+:ARCHIVE_TIME: 2023-07-09 Sun 13:42
+:ARCHIVE_FILE: ~/emacs-conf/emacs.org
+:ARCHIVE_OLPATH: emacs
+:ARCHIVE_CATEGORY: emacs
+:END:
+
+#+BEGIN_SRC elisp :tangle ~/.emacs.d/init.el
+(defun run-nova-python ()
+  (interactive)
+  (let ((python-shell-buffer-name "ipython-nova"))
+    (run-python "/home/amadev/m/nova/.tox/py27/bin/ipython --profile nova --simple-prompt -i" nil t)))
+
+(defun start-openstack-controller ()
+  (interactive)
+  (start-local "controller" "
+cd ~/m/openstack-controller
+export KUBECONFIG=~/avolkov-22
+kubectl get nodes
+ export export OSCTL_METRICS_PORT=8088
+tox -e dev"))
+#+END_SRC
+
+* gcal
+:PROPERTIES:
+:ARCHIVE_TIME: 2023-07-09 Sun 13:43
+:ARCHIVE_FILE: ~/emacs-conf/emacs.org
+:ARCHIVE_OLPATH: emacs
+:ARCHIVE_CATEGORY: emacs
+:END:
+
+#+BEGIN_SRC elisp :tangle ~/.emacs.d/init.el
+;; (setq package-check-signature nil)
+
+;; see https://github.com/myuhe/org-gcal.el
+
+(use-package org-gcal
+  :ensure t
+  :config
+  (setq org-gcal-client-id "12159727526-7s5315gp2k8hkaadmr13psq1mhsvtjq0.apps.googleusercontent.com"
+        org-gcal-client-secret (get-pass "gcal-secret")
+        org-gcal-file-alist '(("avolkov@mirantis.com" .  "~/org/work-gcal.org"))))
+
+;; (add-hook 'org-agenda-mode-hook (lambda () (org-gcal-sync)))
+;; (add-hook 'org-capture-after-finalize-hook (lambda () (org-gcal-sync)))
+#+END_SRC

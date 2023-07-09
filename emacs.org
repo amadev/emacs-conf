@@ -6,48 +6,70 @@
 
 ** Installation
 
-sudo apt get install emacs
+Build emacs example on Ubuntu 22.04.
 
-current version on ubuntu 22.04 - 27.1
+sudo cp /etc/apt/sources.list /etc/apt/sources.list~
 
-emacs-bin-common/jammy,now 1:27.1+1-3ubuntu5 amd64 [installed,automatic]
-emacs-common/jammy,jammy,now 1:27.1+1-3ubuntu5 all [installed,automatic]
-emacs-el/jammy,jammy,now 1:27.1+1-3ubuntu5 all [installed,automatic]
-emacs-gtk/jammy,now 1:27.1+1-3ubuntu5 amd64 [installed,automatic]
-emacs/jammy,jammy,now 1:27.1+1-3ubuntu5 all [installed]
-emacsen-common/jammy,jammy,now 3.0.4 all [installed,automatic]
+sudo sed -Ei 's/^# deb-src /deb-src /' /etc/apt/sources.list
 
-** Глобальные функции
-*** Запуск и внешний вид
+sudo apt-get update
 
-Запускаю emacs из консоли скрина, при этом скрин наследует переменные
-окружения, а именно ssh-agent, чтобы можно было нормально
-пользоваться magit без ввода паролей для ssh.
+sudo apt-get build-dep emacs
+
+gcc --version
+
+sudo apt-get install libgccjit0 libgccjit-11-dev
+
+cd ~/s/
+
+wget https://ftpmirror.gnu.org/emacs/emacs-28.2.tar.xz
+
+ls -lh emacs-28.2.tar.xz
+
+tar -xvf emacs-28.2.tar.xz
+
+rm emacs-28.2.tar.xz
+
+mv emacs-28.2 emacs
+
+du -sh emacs
+
+cd emacs
+
+(compile "(cd /home/amadev/s/emacs/; ./autogen.sh)")
+
+(compile "(cd /home/amadev/s/emacs/; ./configure --with-native-compilation)")
+
+(compile "(cd /home/amadev/s/emacs/; make)")
+
+/home/amadev/s/emacs/src/emacs --batch --eval '(native-comp-available-p)'
+
+** Запуск и внешний вид
+
+Запускаю emacs из консоли, при этом скрин наследует переменные
+окружения, а именно ssh-agent.
 
 Конфигурация создается через tangle всех исходников описанных ниже.
-Часть конфигурации представлена монолитным куском, который я буду
-обрабатывать и постепенно описывать.
-Для создания файла org-babel-tangle c-c c-v c-t.
+Для создания файла org-babel-tangle c-c c-v t.
 
-По умолчанию идет список пакетов от gnu http://elpa.gnu.org/packages/.
-melpa.milkbox.net - модерируемый, с автосборками и фильтром.
-marmalade-repo.org - не обновляется.
-#+BEGIN_SRC elisp
+#+BEGIN_SRC elisp :tangle ~/.emacs.d/init.el
 (require 'package)
 (add-to-list 'package-archives
              '("melpa" . "https://melpa.org/packages/"))
-(setq is-macos (memq window-system '(mac ns)))
+
+(setq not-linux (memq window-system '(mac ns)))
 (setq mu4e-enabled nil)
-(when is-macos
+(when not-linux
   (package-initialize)
   (setq mu4e-enabled nil))
+
 #+END_SRC
 
 Для меня удобнее, когда я вижу одно окно, не отвлекаясь на
 дополнительные приложения. В один момент времени выполняю одну функцию.
 Убираем лишние GUI-свистелки.
 
-#+BEGIN_SRC elisp
+#+BEGIN_SRC elisp :tangle ~/.emacs.d/init.el
 (tooltip-mode -1)
 (tool-bar-mode -1)
 (menu-bar-mode -1)
@@ -57,12 +79,12 @@ marmalade-repo.org - не обновляется.
 
 Отключаю пригласительный экран и текст в скретч.
 
-#+BEGIN_SRC elisp
+#+BEGIN_SRC elisp :tangle ~/.emacs.d/init.el
 (setq inhibit-startup-screen t
       initial-scratch-message nil)
 #+END_SRC
 
-#+BEGIN_SRC elisp
+#+BEGIN_SRC elisp :tangle ~/.emacs.d/init.el
 (setenv "LANG" "en_US.UTF-8")
 (setq system-time-locale "C")
 #+END_SRC
@@ -70,7 +92,7 @@ marmalade-repo.org - не обновляется.
 Размер шрифта, тема.
 Другие темы warm-night, brutalist-dark, blackboard, clues, anti-zenburn.
 
-#+BEGIN_SRC elisp
+#+BEGIN_SRC elisp :tangle ~/.emacs.d/init.el
 (set-face-attribute 'default nil :height 130)
 (load-theme 'zenburn t)
 (set-cursor-color "#909090")
@@ -78,23 +100,53 @@ marmalade-repo.org - не обновляется.
 
 Разбивать окна вертикально.
 
-#+BEGIN_SRC elisp
+#+BEGIN_SRC elisp :tangle ~/.emacs.d/init.el
 ;; may split a window horizontally only if it has at least this many columns
-(setq split-width-threshold 270)
+(setq split-width-threshold 100)
 (setq split-height-threshold nil)
 #+END_SRC
 
-*** use-package
+Disable version control to speed up TRAMP opening.
 
-#+BEGIN_SRC elisp
-;; (setq use-package-compute-statistics nil)
+#+BEGIN_SRC elisp :tangle ~/.emacs.d/init.el
+(setq vc-handled-backends ())
 #+END_SRC
 
-*** helm
+** Performance
+
+Show startup time.
+
+#+BEGIN_SRC elisp :tangle ~/.emacs.d/init.el
+(add-hook 'emacs-startup-hook
+          (lambda ()
+            (message "Emacs ready in %s with %d garbage collections."
+                     (format "%.2f seconds"
+                             (float-time
+                              (time-subtract after-init-time before-init-time)))
+                     gcs-done)))
+#+END_SRC
+
+Measure some code running time.
+
+#+BEGIN_SRC elisp :tangle ~/.emacs.d/init.el
+(defmacro measure-time (label &rest body)
+  "Measure the time it takes to evaluate BODY."
+  `(let ((time (current-time)))
+     ,@body
+     (message "%s time %.06f" ,label (float-time (time-since time)))))
+#+END_SRC
+
+GC
+
+#+BEGIN_SRC elisp :tangle ~/.emacs.d/init.el
+(setq gc-cons-threshold 100000000)
+#+END_SRC
+
+** helm
 
 http://tuhdo.github.io/helm-intro.html
 
-#+BEGIN_SRC elisp
+#+BEGIN_SRC elisp :tangle ~/.emacs.d/init.el
 (use-package helm
   :init
   (setq helm-split-window-in-side-p t)
@@ -108,6 +160,7 @@ http://tuhdo.github.io/helm-intro.html
    ("C-x C-f" . find-file-at-point)
    ("C-x C-b" . helm-mini)
    ("M-y" . helm-show-kill-ring)
+   ("M-x" . helm-M-x)
    ("C-h SPC". helm-all-mark-rings)
    ([remap man] . helm-man-woman)
    ;; Fallback to old find-file mode for tramp.
@@ -117,10 +170,20 @@ http://tuhdo.github.io/helm-intro.html
                     (helm-quit-and-execute-action 'helm-old-ff))))))
 #+END_SRC
 
+** prog
+
+Add magit.
+
+#+BEGIN_SRC elisp :tangle ~/.emacs.d/init.el
+(use-package magit)
+#+END_SRC
+
+** Глобальные функции
+
 *** History and backups
 **** Comint history
 
-#+BEGIN_SRC elisp
+#+BEGIN_SRC elisp :tangle ~/.emacs.d/init.el
 (use-package comint
   :config
   (setq
@@ -135,7 +198,7 @@ To write history manually just issue:
 (comint-read-input-ring)
 
 See https://oleksandrmanzyuk.wordpress.com/2011/10/23/a-persistent-command-history-in-emacs/.
-#+BEGIN_SRC elisp
+#+BEGIN_SRC elisp :tangle ~/.emacs.d/init.el
 (defun turn-on-comint-history ()
   (let ((process (get-buffer-process (current-buffer))))
     (when process
@@ -146,7 +209,7 @@ See https://oleksandrmanzyuk.wordpress.com/2011/10/23/a-persistent-command-histo
       (set-process-sentinel process #'comint-write-history-on-exit))))
 #+END_SRC
 
-#+BEGIN_SRC elisp
+#+BEGIN_SRC elisp :tangle ~/.emacs.d/init.el
 (defun comint-write-input-ring-before-output (str)
   (if str (comint-write-input-ring))
   str)
@@ -155,7 +218,7 @@ See https://oleksandrmanzyuk.wordpress.com/2011/10/23/a-persistent-command-histo
           'comint-write-input-ring-before-output)
 #+END_SRC
 
-#+BEGIN_SRC elisp
+#+BEGIN_SRC elisp :tangle ~/.emacs.d/init.el
 (defun comint-write-history-on-exit (process event)
   (comint-write-input-ring)
   (let ((buf (process-buffer process)))
@@ -166,7 +229,7 @@ See https://oleksandrmanzyuk.wordpress.com/2011/10/23/a-persistent-command-histo
 
 Enable comint history for the specific modes.
 
-#+BEGIN_SRC elisp
+#+BEGIN_SRC elisp :tangle ~/.emacs.d/init.el
 (add-hook 'shell-mode-hook 'turn-on-comint-history)
 (add-hook 'inferior-python-mode-hook 'turn-on-comint-history)
 (add-hook 'inferior-emacs-lisp-mode-hook 'turn-on-comint-history)
@@ -174,7 +237,7 @@ Enable comint history for the specific modes.
 
 Save history for comint buffers history on kill or Emacs closing.
 
-#+BEGIN_SRC elisp
+#+BEGIN_SRC elisp :tangle ~/.emacs.d/init.el
 (require 'comint)
 (add-hook 'kill-buffer-hook 'comint-write-input-ring)
 
@@ -192,7 +255,7 @@ Save history for comint buffers history on kill or Emacs closing.
 
 Helm comint history.
 
-#+BEGIN_SRC elisp
+#+BEGIN_SRC elisp :tangle ~/.emacs.d/init.el
 (defun shell-mode-custom-keys ()
   (local-set-key (kbd "M-r") 'helm-comint-input-ring))
 
@@ -204,7 +267,7 @@ Helm comint history.
 Работает автоматически, при загрузке emacs подгружается история.
 Для просмотра истории helm-minibuffer-history.
 
-#+BEGIN_SRC elisp
+#+BEGIN_SRC elisp :tangle ~/.emacs.d/init.el
 ;; (setq savehist-file "~/.emacs.d/history.d/minibuffer-history")
 ;; (savehist-mode nil)
 ;; (setq history-length t)
@@ -223,7 +286,7 @@ Helm comint history.
 директории. Используем версии бекапных файлов и делаем бекапы файлов,
 которые под контролем версий (git, svn).
 
-#+BEGIN_SRC elisp
+#+BEGIN_SRC elisp :tangle ~/.emacs.d/init.el
 (setq backup-directory-alist '(("." . "~/.emacs.d/backups")))
 (setq auto-save-file-name-transforms '((".*" "~/.emacs.d/auto-save-list/" t)))
 (setq version-control t)
@@ -235,7 +298,7 @@ Helm comint history.
 
 По умолчанию запускаем поиск regexp.
 
-#+BEGIN_SRC elisp
+#+BEGIN_SRC elisp :tangle ~/.emacs.d/init.el
 (global-set-key (kbd "C-s") 'isearch-forward-regexp)
 (global-set-key (kbd "C-r") 'isearch-backward-regexp)
 (global-set-key (kbd "C-M-s") 'isearch-forward)
@@ -246,7 +309,7 @@ Helm comint history.
 (isearch-forward-symbol-at-point) M-s .
 либо дополнительной функцией в режиме поиска.
 
-#+BEGIN_SRC elisp
+#+BEGIN_SRC elisp :tangle ~/.emacs.d/init.el
 (define-key isearch-mode-map (kbd "C-*")
   (lambda ()
     "Reset current isearch to a word-mode search of the word under point."
@@ -269,7 +332,7 @@ M-e - редактирование.
 В поиске можно использовать выражения, например:
 :\([0-9]+\) → =\1
 
-#+BEGIN_SRC elisp
+#+BEGIN_SRC elisp :tangle ~/.emacs.d/init.el
 (use-package anzu
    :ensure t
    :init (global-anzu-mode -1))
@@ -277,7 +340,7 @@ M-e - редактирование.
 
 *** Удалениие пробелов вначале и конце строки.
 
-#+BEGIN_SRC elisp
+#+BEGIN_SRC elisp :tangle ~/.emacs.d/init.el
 (defun chomp (str)
       "Chomp leading and tailing whitespace from STR."
       (while (string-match "\\`\n+\\|^\\s-+\\|\\s-+$\\|\n+\\'"
@@ -290,30 +353,14 @@ M-e - редактирование.
 
 [[file:system.org::*%D0%9F%D0%B0%D1%80%D0%BE%D0%BB%D0%B8][Пароли]]
 
-#+BEGIN_SRC elisp
+#+BEGIN_SRC elisp :tangle ~/.emacs.d/init.el
   (defun get-pass (name)
     (let ((cname (if (symbolp name) (symbol-name name) name)))
       (chomp (shell-command-to-string (concat "cpp " cname)))))
 #+END_SRC
 
-*** На клавиатуре сломался шифт и очень не хватало скобочек.
-
-#+BEGIN_SRC elisp :tangle no
-
-(define-key key-translation-map (kbd "9") (kbd "("))
-(define-key key-translation-map (kbd "C-9") (kbd "9"))
-(define-key key-translation-map (kbd "0") (kbd ")"))
-(define-key key-translation-map (kbd "C-0") (kbd "0"))
-(define-key key-translation-map (kbd "6") (kbd ":"))
-(define-key key-translation-map (kbd "C-6") (kbd "6"))
-
-#+END_SRC
-
-#+RESULTS:
-: 6
-
 *** Пути от домашней папки и emacs.d.
-#+BEGIN_SRC elisp
+#+BEGIN_SRC elisp :tangle ~/.emacs.d/init.el
   (defun may-be-add-first-slash (path)
     (concat (if (string-match "^/" path) "" "/") path))
 
@@ -325,7 +372,7 @@ M-e - редактирование.
 #+END_SRC
 
 *** Копирование имени файла текущего буфера в clipboard.
-#+BEGIN_SRC elisp
+#+BEGIN_SRC elisp :tangle ~/.emacs.d/init.el
   (defun copy-file-name-to-clipboard ()
     "Copy the current buffer file name to the clipboard."
     (interactive)
@@ -344,7 +391,7 @@ M-e - редактирование.
 
 *** Русская раскладка С-\
 
-#+BEGIN_SRC elisp
+#+BEGIN_SRC elisp :tangle ~/.emacs.d/init.el
 (load-file "~/.emacs.d/cyrillic-dvorak.el")
 (setq default-input-method "cyrillic-dvorak")
 #+END_SRC
@@ -357,7 +404,7 @@ M-e - редактирование.
 клавиш (binding), последнее полезно для оборачивания региона шаблоном.
 yas-wrap-around-region включает такое поведение.
 
-#+BEGIN_SRC elisp
+#+BEGIN_SRC elisp :tangle ~/.emacs.d/init.el
 (use-package yasnippet
   :ensure t
   :config
@@ -387,7 +434,7 @@ yas-wrap-around-region включает такое поведение.
 #+END_SRC
 
 *** Браузер
-#+BEGIN_SRC elisp
+#+BEGIN_SRC elisp :tangle ~/.emacs.d/init.el
 (setq browse-url-browser-function 'browse-url-generic
      browse-url-generic-program "firefox")
 
@@ -397,7 +444,7 @@ yas-wrap-around-region включает такое поведение.
 #+END_SRC
 
 *** Смена сплита буферов вертикальный/горизонтальный
-#+BEGIN_SRC elisp
+#+BEGIN_SRC elisp :tangle ~/.emacs.d/init.el
 (defun toggle-window-split ()
   (interactive)
   (if (= (count-windows) 2)
@@ -429,7 +476,7 @@ yas-wrap-around-region включает такое поведение.
 : toggle-window-split
 
 *** Смена содержимого окон
-#+BEGIN_SRC elisp
+#+BEGIN_SRC elisp :tangle ~/.emacs.d/init.el
   (defun swap-windows (arg)
     "Transpose the buffers shown in two windows."
     (interactive "p")
@@ -447,7 +494,7 @@ yas-wrap-around-region включает такое поведение.
 *** Аккорды
 
 Назначаем сочетания символов на часто используемые функции.
-#+BEGIN_SRC elisp
+#+BEGIN_SRC elisp :tangle ~/.emacs.d/init.el
 (require 'key-chord)
 (key-chord-mode 1)
 (key-chord-define-global "yy" 'ack)
@@ -477,7 +524,7 @@ M-$ - исправление первого слова с ошибкой пос�
 
 *** Magit for project
 
-#+BEGIN_SRC elisp
+#+BEGIN_SRC elisp :tangle ~/.emacs.d/init.el
 (use-package magit
   :ensure t)
 
@@ -493,12 +540,12 @@ M-$ - исправление первого слова с ошибкой пос�
 
 *** defaults
 
-#+BEGIN_SRC elisp
-(require 'smex)
-(smex-initialize)
-(global-set-key (kbd "M-x") 'smex)
-(global-set-key (kbd "M-X") 'smex-major-mode-commands)
-(global-set-key (kbd "C-c C-c M-x") 'execute-extended-command)
+#+BEGIN_SRC elisp :tangle ~/.emacs.d/init.el
+;; (require 'smex)
+;; (smex-initialize)
+;; (global-set-key (kbd "M-x") 'smex)
+;; (global-set-key (kbd "M-X") 'smex-major-mode-commands)
+;; (global-set-key (kbd "C-c C-c M-x") 'execute-extended-command)
 
 (require 'uniquify)
 (setq uniquify-buffer-name-style 'forward)
@@ -591,13 +638,6 @@ M-$ - исправление первого слова с ошибкой пос�
 (setq ix-user "amadev"
       ix-token (get-pass "ix.io"))
 
-(add-hook 'emacs-startup-hook
-          (lambda ()
-            (message "Emacs ready in %s with %d garbage collections."
-                     (format "%.2f seconds"
-                             (float-time
-                              (time-subtract after-init-time before-init-time)))
-                     gcs-done)))
 (setq fill-column 80)
 
 (setq create-lockfiles nil)
@@ -605,7 +645,7 @@ M-$ - исправление первого слова с ошибкой пос�
 
 *** text
 
-#+BEGIN_SRC elisp
+#+BEGIN_SRC elisp :tangle ~/.emacs.d/init.el
 (defun rows2one (start end)
   (interactive "r")
   (save-restriction
@@ -714,7 +754,7 @@ Uses `current-date-time-format' for the formatting the date/time."
 
 *** prog
 
-#+BEGIN_SRC elisp
+#+BEGIN_SRC elisp :tangle ~/.emacs.d/init.el
 (defun my-prog-mode-hook ()
   (setq whitespace-style '(face lines-tail trailing)
         whitespace-line-column 79)
@@ -743,7 +783,7 @@ Uses `current-date-time-format' for the formatting the date/time."
 kmacro-name-last-macro
 insert-kbd-macro
 
-#+BEGIN_SRC elisp
+#+BEGIN_SRC elisp :tangle ~/.emacs.d/init.el
 (fset 'convert_shell_env_to_emacs
       (lambda (&optional arg)
         "Keyboard macro."
@@ -760,7 +800,7 @@ insert-kbd-macro
 
 *** Replace multiple empty lines with a single one
 
-#+BEGIN_SRC elisp
+#+BEGIN_SRC elisp :tangle ~/.emacs.d/init.el
 (defun single-lines-only ()
   "replace multiple blank lines with a single one"
   (interactive)
@@ -772,7 +812,7 @@ insert-kbd-macro
 
 *** Export presentations to site
 
-#+BEGIN_SRC elisp
+#+BEGIN_SRC elisp :tangle ~/.emacs.d/init.el
 (require 'ox-reveal)
 (defun my-export ()
   (interactive)
@@ -794,7 +834,7 @@ and press 'D' after that.
 
 *** Color codes
 
-#+BEGIN_SRC elisp
+#+BEGIN_SRC elisp :tangle ~/.emacs.d/init.el
 (use-package ansi-color
   :init
   (defun display-ansi-colors ()
@@ -804,7 +844,7 @@ and press 'D' after that.
 
 *** git-link
 
-#+BEGIN_SRC elisp
+#+BEGIN_SRC elisp :tangle ~/.emacs.d/init.el
 (use-package git-link
   :config
   (defun git-link-mcp (hostname dirname filename branch commit start end)
@@ -845,7 +885,7 @@ and press 'D' after that.
 
 *** Script wrappers
 
-#+BEGIN_SRC elisp
+#+BEGIN_SRC elisp :tangle ~/.emacs.d/init.el
 (setq vpn-name "forcode")
 
 (defun kill-vpn ()
@@ -874,7 +914,7 @@ target-shell-session. It could be defined as file local variable:
 # target-shell-session: shell-default
 # End:
 
-#+BEGIN_SRC elisp
+#+BEGIN_SRC elisp :tangle ~/.emacs.d/init.el
 (require 'subr-x)
 
 (make-variable-buffer-local
@@ -937,7 +977,7 @@ target-shell-session. It could be defined as file local variable:
 
 Example config: https://github.com/Fuco1/.emacs.d/blob/master/files/smartparens.el
 
-#+BEGIN_SRC elisp
+#+BEGIN_SRC elisp :tangle ~/.emacs.d/init.el
 (use-package smartparens-config
   :ensure smartparens
   :init (setq sp-base-key-bindings 'paredit)
@@ -961,7 +1001,7 @@ Example config: https://github.com/Fuco1/.emacs.d/blob/master/files/smartparens.
 
 *** Shell track current dir
 
-#+BEGIN_SRC elisp
+#+BEGIN_SRC elisp :tangle ~/.emacs.d/init.el
   (defun shell-procfs-dirtrack (str)
     (prog1 str
       (when (string-match comint-prompt-regexp str)
@@ -990,7 +1030,7 @@ Example config: https://github.com/Fuco1/.emacs.d/blob/master/files/smartparens.
 
 *** Docker
 
-#+BEGIN_SRC elisp
+#+BEGIN_SRC elisp :tangle ~/.emacs.d/init.el
 (use-package dockerfile-mode :ensure t)
 #+END_SRC
 
@@ -1017,19 +1057,19 @@ Example config: https://github.com/Fuco1/.emacs.d/blob/master/files/smartparens.
 Настройки отображения dired по умолчанию.
 Показываем все, сортируем по дате (новые внизу), но сначала директории.
 
-#+BEGIN_SRC elisp
+#+BEGIN_SRC elisp :tangle ~/.emacs.d/init.el
 (setq dired-listing-switches "-altrh  --group-directories-first")
 #+END_SRC
 
 Использовать lisp-версию ls для Mac.
 
-#+BEGIN_SRC elisp
+#+BEGIN_SRC elisp :tangle ~/.emacs.d/init.el
 (when (eq system-type 'darwin)
   (require 'ls-lisp)
   (setq ls-lisp-use-insert-directory-program nil))
 #+END_SRC
 
-#+BEGIN_SRC elisp
+#+BEGIN_SRC elisp :tangle ~/.emacs.d/init.el
 (use-package dired-subtree :ensure t
   :after dired
   :config
@@ -1042,90 +1082,10 @@ Example config: https://github.com/Fuco1/.emacs.d/blob/master/files/smartparens.
                 (")" . dired-git-info-mode)))
 #+END_SRC
 
-** erc
-
-echo "machine irc.freenode.net login avolkov port 6697 password $(cpp.sh irc.freenode.net)" >> \
-   ~/.authinfo
-echo "machine miracloud.irc.slack.com login andrey.volkov port 6667 password $(cpp.sh mirantis_irc)" >> \
-   ~/.authinfo
-
-Возможно, файл сильно кешируется, т.к. после обновления файла из запущенного
-emacs данные не подхватывались, решилось перезапуском.
-
-#+BEGIN_SRC elisp
-(defun start-ircs ()
-  (interactive)
-  (erc-tls :server "irc.freenode.net" :port 6697
-           :nick "avolkov" :full-name "Andrey Volkov"))
-
-(require 'erc-join)
-(erc-autojoin-mode 1)
-
-(setq erc-autojoin-channels-alist
-      '(
-        ("freenode.net" "#openstack-nova" "#openstack-placement")
-        ))
-
-(setq erc-track-exclude-types '("JOIN" "NICK" "PART" "QUIT" "MODE"
-                                "324" "329" "332" "333" "353" "477"))
-
-(setq erc-format-query-as-channel-p t
-      erc-track-priority-faces-only 'all
-      erc-track-faces-priority-list '(erc-error-face
-                                      erc-current-nick-face
-                                      erc-keyword-face
-                                      erc-nick-msg-face
-                                      erc-direct-msg-face
-                                      erc-dangerous-host-face
-                                      erc-notice-face
-                                      erc-prompt-face))
-
-(require 'erc-log)
-(setq erc-log-channels-directory "~/.emacs.d/erc/logs/")
-(erc-log-enable)
-
-(setq erc-save-buffer-on-part nil
-      erc-save-queries-on-quit nil
-      erc-log-write-after-send t
-      erc-log-write-after-insert t)
-#+END_SRC
-
-#+BEGIN_SRC elisp
-  (setq erc-important-channels
-        '("#quotas" "#emacs" "#mos-ere" "#mos-nova" "#mos-nova-flood-ru"))
-
-  (defun list-erc-joined-channels ()
-    "Return all the channels you're in as a list. This does not include queries."
-    (save-excursion
-      ;; need to get out of ERC mode so we can have *all* channels returned
-      (set-buffer "*scratch*")
-      (mapcar #'(lambda (chanbuf)
-                  (with-current-buffer chanbuf (erc-default-target)))
-              (erc-channel-list erc-process))))
-
-  (defun list-erc-tracked-channels (excluded)
-    (remove-if #'(lambda (row) (member row excluded)) (list-erc-joined-channels)))
-
-  (defun enable-erc-notification-for-important-channels-only ()
-    (interactive)
-    (setq erc-track-priority-faces-only (list-erc-tracked-channels erc-important-channels))
-    (message "Enable notifications for channels %s" erc-important-channels))
-
-  (defun disable-non-priority-notification ()
-    (interactive)
-    (setq erc-track-priority-faces-only 'all)
-    (message "Notifications from all channels are disabled"))
-
-  (defun enable-all-notifications ()
-    (interactive)
-    (setq erc-track-priority-faces-only nil)
-    (message "Notifications from all channels are enabled"))
-#+END_SRC
-
 ** shell
 *** Tramp
 
-#+BEGIN_SRC elisp
+#+BEGIN_SRC elisp :tangle ~/.emacs.d/init.el
 (use-package tramp
   :config (add-to-list 'tramp-connection-properties
                        (list nil "session-timeout" nil)))
@@ -1144,13 +1104,7 @@ emacs данные не подхватывались, решилось пере�
 Часто используемые shell добавляются в shell-alist и вызываются
 через helm (c-; b).
 
-#+BEGIN_SRC elisp
-(defmacro measure-time (&rest body)
-  "Measure the time it takes to evaluate BODY."
-  `(let ((time (current-time)))
-     ,@body
-     (message "time %.06f" (float-time (time-since time)))))
-
+#+BEGIN_SRC elisp :tangle ~/.emacs.d/init.el
 (defun read-shells-config (fname)
   (read (format "(%s)"
                 (with-temp-buffer
@@ -1182,7 +1136,7 @@ emacs данные не подхватывались, решилось пере�
 (defun start-ssh (buffer-name host &optional cmd)
   (message (format "starting ssh %s" host))
   (measure-time
-   ;; (find-file (format "/ssh:%s:" host))
+   "start-ssh"
    (let ((default-directory (format "/ssh:%s:" host)))
      (shell buffer-name))
    (if cmd
@@ -1226,7 +1180,7 @@ emacs данные не подхватывались, решилось пере�
 
 Запуск текущего файла в compilation mode.
 
-#+BEGIN_SRC elisp
+#+BEGIN_SRC elisp :tangle ~/.emacs.d/init.el
 (global-set-key (kbd "<f7>") 'run-current-file)
 
 (defun run-current-file ()
@@ -1270,7 +1224,7 @@ emacs данные не подхватывались, решилось пере�
 
 *** Run tmp command
 
-#+BEGIN_SRC elisp
+#+BEGIN_SRC elisp :tangle ~/.emacs.d/init.el
   (defun tmp-command()
     (interactive)
     (comint-send-string "shell_placement" "~/m/python-openstackclient/.tox/py27/bin/pytest -vxlk TestSetInventory\n"))
@@ -1279,7 +1233,7 @@ emacs данные не подхватывались, решилось пере�
 
 *** Eshell
 
-#+BEGIN_SRC elisp
+#+BEGIN_SRC elisp :tangle ~/.emacs.d/init.el
 ;; for GNU Emacs 26.3
 (defun eshell-mode-custom-keys ()
   (local-set-key (kbd "<f9>") 'helm-eshell-history)
@@ -1296,7 +1250,7 @@ emacs данные не подхватывались, решилось пере�
 
 Установка orgmode и его расширений.
 
-#+BEGIN_SRC elisp
+#+BEGIN_SRC elisp :tangle ~/.emacs.d/init.el
 (use-package org :ensure t)
 
 (use-package org-contrib :ensure t)
@@ -1306,7 +1260,7 @@ emacs данные не подхватывались, решилось пере�
 или удалять файлы elc при ошибках компиляции.
 
 Файлы с задачами.
-#+BEGIN_SRC elisp
+#+BEGIN_SRC elisp :tangle ~/.emacs.d/init.el
 (setq my-org-dir (with-home-dir "org/"))
 (setq org-agenda-files
       (mapcar
@@ -1321,7 +1275,7 @@ Refile targets where items from any list can be moved.
 Most recent items should appear on top. It's more natural way to see recent items first. The same setup as in mail.
 Done issues go to the bottom of the list. Can view it if needed.
 
-#+BEGIN_SRC elisp
+#+BEGIN_SRC elisp :tangle ~/.emacs.d/init.el
 (defun refile-org-files ()
   (let ((files '("task.org" "reference.org" "book.org" "film.org")))
     (mapcar #'(lambda (x) (concat my-org-dir x)) files)))
@@ -1334,7 +1288,7 @@ Done issues go to the bottom of the list. Can view it if needed.
 : ((refile-org-files :level . 2))
 
 Сочетание, для открытия агенды.
-#+BEGIN_SRC elisp
+#+BEGIN_SRC elisp :tangle ~/.emacs.d/init.el
 (global-set-key (kbd "C-c a") 'org-agenda)
 (global-set-key (kbd "C-c i") 'org-store-link)
 #+END_SRC
@@ -1356,13 +1310,13 @@ C-c C-x \ runs the command org-toggle-pretty-entities (display unicode values)
 
 Increase font size for latex fragment preview.
 
-#+BEGIN_SRC elisp
+#+BEGIN_SRC elisp :tangle ~/.emacs.d/init.el
 (setq org-format-latex-options (plist-put org-format-latex-options :scale 1.6))
 #+END_SRC
 
 See [[file:~/org/pdf-export.org]]
 
-#+BEGIN_SRC elisp
+#+BEGIN_SRC elisp :tangle ~/.emacs.d/init.el
 (add-to-list
  'org-latex-classes
  '("nice-pdf-26" "\\documentclass[14pt,a4paper,hidelinks]{scrartcl}
@@ -1404,7 +1358,7 @@ http://emacs-fu.blogspot.com/2011/04/nice-looking-pdfs-with-org-mode-and.html
 %a - указатель на файл, в котором находишься при захвате.
 %i - активный регион.
 
-#+BEGIN_SRC elisp
+#+BEGIN_SRC elisp :tangle ~/.emacs.d/init.el
 (setq my-task-file (concat my-org-dir "task.org"))
 (setq my-bookmark-file (concat my-org-dir "bookmark.org"))
 (setq org-capture-templates
@@ -1442,7 +1396,7 @@ http://emacs-fu.blogspot.com/2011/04/nice-looking-pdfs-with-org-mode-and.html
 *** babel
 
 Добавляем языки.
-#+BEGIN_SRC elisp
+#+BEGIN_SRC elisp :tangle ~/.emacs.d/init.el
 (org-babel-do-load-languages
  'org-babel-load-languages
  '((lisp . t)
@@ -1462,7 +1416,7 @@ http://emacs-fu.blogspot.com/2011/04/nice-looking-pdfs-with-org-mode-and.html
 
 Отключаем запрос на подтверждение выполнения.
 
-#+BEGIN_SRC elisp
+#+BEGIN_SRC elisp :tangle ~/.emacs.d/init.el
 (setq org-confirm-babel-evaluate nil)
 #+END_SRC
 
@@ -1470,7 +1424,7 @@ http://emacs-fu.blogspot.com/2011/04/nice-looking-pdfs-with-org-mode-and.html
 
 Задаем приложение для обработки.
 
-#+BEGIN_SRC elisp
+#+BEGIN_SRC elisp :tangle ~/.emacs.d/init.el
   (setq org-plantuml-jar-path
         (expand-file-name "~/bin/plantuml.jar"))
   (setq org-ditaa-jar-path
@@ -1491,7 +1445,7 @@ http://emacs-fu.blogspot.com/2011/04/nice-looking-pdfs-with-org-mode-and.html
 или
 :header-args:SQL:  :cmdline -xxx :engine mysql
 
-#+BEGIN_SRC elisp
+#+BEGIN_SRC elisp :tangle ~/.emacs.d/init.el
   (setq org-babel-default-header-args:sh
         (cons '(:results . "scalar replace")
               (assq-delete-all :results org-babel-default-header-args)))
@@ -1499,7 +1453,7 @@ http://emacs-fu.blogspot.com/2011/04/nice-looking-pdfs-with-org-mode-and.html
 
 *** Время
 
-#+BEGIN_SRC elisp
+#+BEGIN_SRC elisp :tangle ~/.emacs.d/init.el
 (defun bh/is-project-p-with-open-subtasks ()
   "Any task with a todo keyword subtask"
   (let ((has-subtask)
@@ -1558,7 +1512,7 @@ Skips capture tasks and tasks with subtasks"
 
 Отображение clock-table в часах.
 
-#+BEGIN_SRC elisp
+#+BEGIN_SRC elisp :tangle ~/.emacs.d/init.el
   (setq org-time-clocksum-format
         '(:hours "%d"
           :require-hours t
@@ -1572,7 +1526,7 @@ Skips capture tasks and tasks with subtasks"
 
 *** Agenda
 
-#+BEGIN_SRC elisp
+#+BEGIN_SRC elisp :tangle ~/.emacs.d/init.el
   ;; (setq org-agenda-custom-commands
   ;;       '(("x" agenda)
   ;;         ("y" agenda*)
@@ -1596,7 +1550,7 @@ Skips capture tasks and tasks with subtasks"
 
 *** Настройки блоков
 
-#+BEGIN_SRC elisp
+#+BEGIN_SRC elisp :tangle ~/.emacs.d/init.el
 (setq org-src-fontify-natively t
       org-src-window-setup 'current-window
       org-src-strip-leading-and-trailing-blank-lines t
@@ -1607,7 +1561,7 @@ Skips capture tasks and tasks with subtasks"
 
 *** github
 
-#+BEGIN_SRC elisp
+#+BEGIN_SRC elisp :tangle ~/.emacs.d/init.el
 (defun org-remove-results-tag ()
   (interactive)
   (save-excursion
@@ -1639,9 +1593,9 @@ Skips capture tasks and tasks with subtasks"
 
 *** Редактирование
 
-#+BEGIN_SRC elisp
+#+BEGIN_SRC elisp :tangle ~/.emacs.d/init.el
 (use-package flyspell
-  :if (not is-macos)
+  :if (not not-linux)
   :hook
     ((org-mode . flyspell-mode)
      (text-mode . flyspell-mode))
@@ -1651,7 +1605,7 @@ Skips capture tasks and tasks with subtasks"
 
 *** org-drill
 
-#+BEGIN_SRC elisp
+#+BEGIN_SRC elisp :tangle ~/.emacs.d/init.el
 (use-package org-drill
   :if nil
   :ensure t)
@@ -1659,7 +1613,7 @@ Skips capture tasks and tasks with subtasks"
 
 *** org-bookmarks
 
-#+BEGIN_SRC elisp
+#+BEGIN_SRC elisp :tangle ~/.emacs.d/init.el
 (use-package org-protocol
   :init (setq org-html-validation-link nil
               org-protocol-default-template-key "o"))
@@ -1677,339 +1631,6 @@ Alternative via local vars
 # eval: (add-hook 'after-save-hook (lambda () (org-html-export-to-html)) t t)
 # end:
 
-** Почта
-
-Для работы с почтой используется mu4e (http://www.djcbsoftware.nl/code/mu/mu4e/).
-mu4e идет в составе индексатора mu, который устанавливается, как системный пакет.
-file://~/Dropbox/mu_0.9.15-1_amd64.deb
-
-lisp-файлы подключаются к emacs.
-#+BEGIN_SRC elisp
-(add-to-list 'load-path "/usr/share/emacs/site-lisp/mu4e")
-#+END_SRC
-
-Почта стягивается со всех аккаунтов в ~/Maildir с помощью offlineimap
-и фильтруется imapfilter (общий конфиг для всех аккаунтов)
-[[file:~/dotfiles/.offlineimaprc::%5Bgeneral%5D]]
-Для каждого аккаунта используется конфиг imapfilter.
-[[file:~/files/settings/.imapfilter/wolfanio.lua::timeout%20=%20120][wolfanio]]
-#TODO в перерыве между фильтрацией и скачиванием нежелательные письма просачиваются
-
-Возможно, для ускорения следует попробовать серверную обработку
-http://kb.4rt.ru/mail/setup.
-
-Запуск mu4e.
-#+BEGIN_SRC elisp
-(use-package mu4e
-  :config
-    (add-to-list 'mu4e-view-actions
-      '("ViewInBrowser" . mu4e-action-view-in-browser) t)
-    (add-to-list 'mu4e-headers-actions
-      '("ViewInBrowser" . mu4e-action-view-in-browser) t)
-    (add-to-list 'mu4e-bookmarks
-      '("maildir:/wolfanio/INBOX or maildir:/mirantis/INBOX or maildir:/amadev/INBOX"  "Inbox"     ?i))
-  :if mu4e-enabled
-  :bind ("C-; m" . 'mu4e))
-#+END_SRC
-
-*** Общие настройки
-
-Команда для скачивания почты.
-#+BEGIN_SRC elisp
-(setq mu4e-get-mail-command "true")
-(setq mu4e-update-interval nil)
-#+END_SRC
-
-Преобразование html-писем в текст.
-#+BEGIN_SRC elisp
-(setq mu4e-html2text-command "html2text -utf8 -width 72")
-#+END_SRC
-
-Пароли для отправки почты храняться локально в require ~/.authinfo.
-Формат:
-machine smtp.gmail.com login EMAIL port 587 password *******
-
-Отправляем почту через smtp, используя tls, без использования очереди.
-#+BEGIN_SRC elisp
-  (setq
-   message-send-mail-function 'smtpmail-send-it
-   smtpmail-stream-type 'starttls
-   smtpmail-queue-mail  nil)
-#+END_SRC
-
-Сохранение ссылки на письмо.
-#+BEGIN_SRC elisp
-(use-package org-mu4e
-  :if mu4e-enabled)
-#+END_SRC
-
-Всегда отображаем дату и время в заголовках.
-
-#+BEGIN_SRC elisp
-(setq mu4e-headers-fields '(
-  (:date . 24)
-  (:flags . 6)
-  (:mailing-list . 10)
-  (:from . 22)
-  (:subject)))
-
-(setq mu4e-headers-date-format "%x %T")
-#+END_SRC
-
-Скрываем сообщение об индексации.
-
-#+BEGIN_SRC elisp
-(setq mu4e-hide-index-messages t)
-#+END_SRC
-
-*** Настройки для accounts.
-#+BEGIN_SRC elisp
-(setq my-mu4e-account-alist
-  '(("wolfanio"
-     (mu4e-drafts-folder "/wolfanio/drafts")
-     (mu4e-sent-folder   "/wolfanio/sent")
-     (mu4e-trash-folder  "/wolfanio/trash")
-     (mu4e-refile-folder "/wolfanio/archive")
-
-     (user-mail-address "wolfanio@gmail.com")
-     (user-full-name  "Andrey Volkov")
-     (mu4e-compose-signature
-      (concat
-       "С уважением,\n"
-       "Андрей Волков.\n\n"
-       "mobile: +7(916) 86 88 942\n"
-       "skype:  amadev_alt\n"
-       "site:   http://amadev.ru/\n"))
-     (smtpmail-smtp-server "smtp.gmail.com")
-     (smtpmail-smtp-user "wolfanio@gmail.com")
-     (smtpmail-smtp-service 587))
-    ("mirantis"
-     (mu4e-drafts-folder "/mirantis/drafts")
-     (mu4e-sent-folder   "/mirantis/sent")
-     (mu4e-trash-folder  "/mirantis/trash")
-     (mu4e-refile-folder "/mirantis/archive")
-     (user-mail-address "avolkov@mirantis.com")
-     (user-full-name  "Andrey Volkov")
-     (mu4e-compose-signature
-      (concat
-       "Thanks,\n\n"
-       "Andrey Volkov,\n"
-       "Software Engineer, Mirantis, Inc."))
-     (smtpmail-smtp-server "smtp.gmail.com")
-     (smtpmail-smtp-user "avolkov@mirantis.com")
-     (smtpmail-smtp-service 587))
-    ("amadev"
-     (mu4e-drafts-folder "/amadev/drafts")
-     (mu4e-sent-folder   "/amadev/sent")
-     (mu4e-trash-folder  "/amadev/trash")
-     (mu4e-refile-folder "/amadev/archive")
-     (user-mail-address "m@amadev.ru")
-     (user-full-name  "Andrey Volkov")
-     (mu4e-compose-signature
-      (concat
-       "Thanks,\n\n"
-       "Andrey Volkov,\n"
-       "Software Engineer, Amadev, Inc."))
-     (smtpmail-smtp-server "amadev.ru")
-     (smtpmail-smtp-user "m")
-     (smtpmail-smtp-service 587))))
-#+END_SRC
-
-#+RESULTS:
-: my-mu4e-account-alist
-
-Короткие ссылки для inbox.
-#+BEGIN_SRC elisp
-(setq mu4e-maildir-shortcuts
-      '(("/wolfanio/INBOX" . ?w)
-        ("/mirantis/INBOX" . ?m)))
-#+END_SRC
-
-*** Интерактивно выбираем account при создании письма.
-#+BEGIN_SRC elisp
-(defun my-mu4e-set-account ()
-  "Set the account for composing a message."
-  (let* ((account
-          (if mu4e-compose-parent-message
-              (let ((maildir (mu4e-message-field mu4e-compose-parent-message :maildir)))
-                (string-match "/\\(.*?\\)/" maildir)
-                (match-string 1 maildir))
-            (completing-read (format "Compose with account: (%s) "
-                                     (mapconcat #'(lambda (var) (car var))
-                                                my-mu4e-account-alist "/"))
-                             (mapcar #'(lambda (var) (car var)) my-mu4e-account-alist)
-                             nil t nil nil (caar my-mu4e-account-alist))))
-         (account-vars (cdr (assoc account my-mu4e-account-alist))))
-    (message "account: %s, account-vars: %s" account account-vars)
-    (if account-vars
-        (mapc #'(lambda (var)
-                  (set (car var) (cadr var)))
-              account-vars)
-      (error "No email account found"))))
-
-(setq mu4e-user-mail-address-list
-      (mapcar (lambda (account) (cadr (assq 'user-mail-address account)))
-              my-mu4e-account-alist))
-
-(add-hook 'mu4e-compose-pre-hook 'my-mu4e-set-account)
-#+END_SRC
-
-*** При архивировании переносим в соответствующую папку, в зависимости от текущего maildir
-
-#+BEGIN_SRC elisp
-(setq mu4e-refile-folder
-      (lambda (msg)
-        (let* ((maildir (mu4e-message-field msg :maildir))
-               (account (progn (string-match "/\\(.*?\\)/" maildir)
-                               (match-string 1 maildir)))
-               (refile (cadr (assoc 'mu4e-refile-folder (assoc account my-mu4e-account-alist)))))
-          (message "maildir: %s, refile-folder: %s" maildir refile)
-          refile)))
-#+END_SRC
-
-*** Вложения
-
-Вложения можно добавлять с помощью dired (C-c RET C-a)
-#+BEGIN_SRC elisp
-(require 'gnus-dired)
-;; make the `gnus-dired-mail-buffers' function also work on
-;; message-mode derived modes, such as mu4e-compose-mode
-(defun gnus-dired-mail-buffers ()
-  "Return a list of active message buffers."
-  (let (buffers)
-    (save-current-buffer
-      (dolist (buffer (buffer-list t))
-        (set-buffer buffer)
-        (when (and (derived-mode-p 'message-mode)
-                (null message-sent-message-via))
-          (push (buffer-name buffer) buffers))))
-    (nreverse buffers)))
-
-(setq gnus-dired-mail-mode 'mu4e-user-agent)
-(add-hook 'dired-mode-hook 'turn-on-gnus-dired-mode)
-#+END_SRC
-
-*** Требования
-**** Вся почта собирается в одном месте
-**** В inbox попадает, то на что нужно реагироgвать
-
-** Работа с БД
-
-Соединения описываются в sql-connection-alist.
-Имя формируется, как название сервиса, тип (P - бой, l - прочее),
-есть ли запись (ro, rw - default) опционально.
-Пароль хранится в keepassx под тем же именем.
-
-Для единоразовых подключений можно использовать sql-mysql, sql-postgres.
-(require 'sql) нужен, т.к. там определяется sql-connection-alist, а
-без определенной переменной add-to-list работать не будет.
-
-#+BEGIN_SRC elisp
-  (require 'sql)
-
-  (add-to-list
-   'sql-connection-alist
-   '("postgres-l"
-     (sql-product 'postgres)
-     (sql-server "localhost")
-     (sql-user "site")
-     (sql-database "site")
-     (sql-port 5432)))
-
-  (add-to-list
-   'sql-connection-alist
-   '("devstack-l"
-     (sql-product 'mysql)
-     (sql-server "james")
-     (sql-user "root")
-     (sql-database "nova")
-     (sql-port 3306)))
-#+END_SRC
-
-Интерактивно выбираем подключение, обновляем пароль в выбранной
-структуре через get-pass, также пароль копируется в буфер (для
-postgres).
-
-#+BEGIN_SRC elisp
-(defun sql-connect-with-pass (connection)
-  (interactive
-   (helm-comp-read "Select server: " (mapcar (lambda (item)
-                                               (list
-                                                (nth 0 item)
-                                                (nth 0 item)))
-                                             sql-connection-alist)))
-  ;; get the sql connection info and product from the sql-connection-alist
-  (let* ((connection-info (assoc connection sql-connection-alist))
-         (connection-product (nth 1 (nth 1 (assoc 'sql-product connection-info))))
-         (sql-password (get-pass connection)))
-    (kill-new sql-password)
-    ;; delete the connection info from the sql-connection-alist
-    (setq sql-connection-alist (assq-delete-all connection sql-connection-alist))
-    ;; delete the old password from the connection-info
-    (setq connection-info (assq-delete-all 'sql-password connection-info))
-    ;; add the password to the connection-info
-    (nconc connection-info `((sql-password ,sql-password)))
-    ;; add back the connection info to the beginning of sql-connection-alist
-    ;; (last used server will appear first for the next prompt)
-    (add-to-list 'sql-connection-alist connection-info)
-    ;; override the sql-product by the product of this connection
-    (setq sql-product connection-product)
-    ;; connect
-    (sql-connect connection connection)
-    ;; (if current-prefix-arg
-    ;;         (sql-connect connection connection)
-    ;;       (sql-connect connection))
-    ))
-#+END_SRC
-
-Добавляем перенос строки после ответа, т.к. при запросе из отдельного
-буфера может не добавиться. Включается обрезка длинных строк, не
-перенос.
-
-#+BEGIN_SRC elisp
-(global-set-key (kbd "C-c s s") 'sql-set-sqli-buffer)
-(global-set-key (kbd "C-; d") 'sql-connect-with-pass)
-
-(setq sql-mysql-options
-      (list "--default-character-set=utf8" "-A"))
-
-(defun sql-add-newline-first (output)
-  "Add newline to beginning of OUTPUT for `comint-preoutput-filter-functions'"
-  (concat "\n" output))
-
-(defun sqli-add-hooks ()
-  "Add hooks to `sql-interactive-mode-hook'."
-  (add-hook 'comint-preoutput-filter-functions
-            'sql-add-newline-first)
-  (toggle-truncate-lines t))
-
-(add-hook 'sql-interactive-mode-hook 'sqli-add-hooks)
-#+END_SRC
-
-Сохранение истории таким способом не работает при закрытии буфера,
-поэтому нужно сначала убить процесс (TODO при закрытии буфера вызывать
-сохранение истории).
-#+BEGIN_SRC elisp
-;; comint-input-ring-size 500
-  (defun my-sql-save-history-hook ()
-    (let ((lval 'sql-input-ring-file-name)
-          (rval 'sql-product))
-      (if (symbol-value rval)
-          (let ((filename
-                 (concat "~/.emacs.d/history.d/"
-                         (symbol-name (symbol-value rval))
-                         "-history.sql")))
-            (set (make-local-variable lval) filename))
-        (error
-         (format "SQL history will not be saved because %s is nil"
-                 (symbol-name rval))))))
-
-  (add-hook 'sql-interactive-mode-hook 'my-sql-save-history-hook)
-#+END_SRC
-
-#+RESULTS:
-| my-sql-save-history-hook | sqli-add-hooks |
-
 ** Python
 
 *** Просмотр документации
@@ -2017,7 +1638,7 @@ postgres).
 Для поиска документации по используется pylookup,
 который индексирует документацию python, и сохраняет индекс локально.
 
-#+BEGIN_SRC elisp
+#+BEGIN_SRC elisp :tangle ~/.emacs.d/init.el
 ;; add pylookup to your loadpath, ex) "~/.lisp/addons/pylookup"
 (setq pylookup-dir (with-emacs-dir "plugins/pylookup"))
 (add-to-list 'load-path pylookup-dir)
@@ -2039,7 +1660,7 @@ postgres).
 
 Просмотр документации: pylookup-lookup ищет слово под курсором и
 предлагает выбор.
-#+BEGIN_SRC elisp
+#+BEGIN_SRC elisp :tangle ~/.emacs.d/init.el
   (defun pylookup-view-doc-index ()
     (interactive)
     (browse-url (concat "file://"
@@ -2052,7 +1673,7 @@ postgres).
 
 *** Display current buffer structure
 
-#+BEGIN_SRC elisp
+#+BEGIN_SRC elisp :tangle ~/.emacs.d/init.el
 (defun occur-python-structure ()
   (interactive)
   (occur "def\\b\\|class\\b\\|=[ ]?lambda"))
@@ -2060,7 +1681,7 @@ postgres).
 
 *** Tools
 
-#+BEGIN_SRC elisp
+#+BEGIN_SRC elisp :tangle ~/.emacs.d/init.el
 (setq pylint-cmd
     (concat "pylint --rcfile ~/files/settings/linters/pylintrc"
             " -rn --msg-template='{path}:{line}: [{msg_id}({symbol}), {obj}] {msg}' "))
@@ -2090,7 +1711,7 @@ postgres).
 
 *** Hooks
 
-#+BEGIN_SRC elisp
+#+BEGIN_SRC elisp :tangle ~/.emacs.d/init.el
 (defun python-keys ()
   (local-unset-key (kbd "C-c C-d"))
   (local-unset-key (kbd "C-; s"))
@@ -2115,7 +1736,7 @@ postgres).
 
 *** Запуск тестов
 
-#+BEGIN_SRC elisp
+#+BEGIN_SRC elisp :tangle ~/.emacs.d/init.el
   (defun colorize-test-message (message)
     )
 
@@ -2174,7 +1795,7 @@ postgres).
 Команды run-python, shell-command, org-evaluate выполняются с учетом
 текущей virtualenv
 
-#+BEGIN_SRC elisp
+#+BEGIN_SRC elisp :tangle ~/.emacs.d/init.el
 (require 'virtualenvwrapper)
 (venv-initialize-interactive-shells) ;; if you want interactive shell support
 (venv-initialize-eshell) ;; if you want eshell support
@@ -2186,7 +1807,7 @@ postgres).
 
 *** Search symbol at point
 
-#+BEGIN_SRC elisp
+#+BEGIN_SRC elisp :tangle ~/.emacs.d/init.el
   (defun grep-at-point ()
     (interactive)
     (let ((s (thing-at-point 'symbol t)))
@@ -2202,7 +1823,7 @@ postgres).
 
 ** Lisp
 
-#+BEGIN_SRC elisp
+#+BEGIN_SRC elisp :tangle ~/.emacs.d/init.el
 (setq inferior-lisp-program "sbcl --dynamic-space-size 2048")
 (setq slime-net-coding-system 'utf-8-unix)
 (setq slime-contribs '(slime-fancy))
@@ -2210,7 +1831,7 @@ postgres).
 
 Включаем paredit для мест, где вводится lisp.
 
-#+BEGIN_SRC elisp
+#+BEGIN_SRC elisp :tangle ~/.emacs.d/init.el
 (add-hook 'clojure-mode-hook #'enable-paredit-mode)
 (add-hook 'cider-mode-hook #'enable-paredit-mode)
 (add-hook 'emacs-lisp-mode-hook #'enable-paredit-mode)
@@ -2221,7 +1842,7 @@ postgres).
 (add-hook 'scheme-mode-hook #'enable-paredit-mode)
 #+END_SRC
 
-#+BEGIN_SRC elisp
+#+BEGIN_SRC elisp :tangle ~/.emacs.d/init.el
 (add-hook 'slime-repl-mode-hook (lambda () (paredit-mode +1)))
 ;; SLIME’s REPL has the very annoying habit of grabbing DEL
 ;; which interferes with paredit’s normal operation.
@@ -2261,13 +1882,13 @@ https://ebzzry.io/en/emacs-pairs/#manipulation
 
 Настраиваем, чтобы можно было свертывать [].
 
-#+BEGIN_SRC elisp
+#+BEGIN_SRC elisp :tangle ~/.emacs.d/init.el
 (add-to-list 'hs-special-modes-alist '(js-mode . ("[{[]" "[}\\]]" "/[*/]" nil)))
 #+END_SRC
 
 Включаем hs-minor-mode для JS.
 
-#+BEGIN_SRC elisp
+#+BEGIN_SRC elisp :tangle ~/.emacs.d/init.el
 (defun add-hs-minor-mode()
   (hs-minor-mode))
 
@@ -2278,7 +1899,7 @@ https://ebzzry.io/en/emacs-pairs/#manipulation
 
 ** Golang
 
-#+BEGIN_SRC elisp
+#+BEGIN_SRC elisp :tangle ~/.emacs.d/init.el
 (defun occur-go-structure ()
   (interactive)
   (occur "func \\|type \\|interface "))
@@ -2336,7 +1957,7 @@ https://ebzzry.io/en/emacs-pairs/#manipulation
 
 ** Calendar
 
-#+BEGIN_SRC elisp
+#+BEGIN_SRC elisp :tangle ~/.emacs.d/init.el
 (require 'calendar)
 (setq calendar-week-start-day 1)
 (setq calendar-holidays '((holiday-fixed 11 4 "")
@@ -2378,7 +1999,7 @@ https://ebzzry.io/en/emacs-pairs/#manipulation
 (define-key calendar-mode-map "c" 'iy/calendar-copy-date)
 #+END_SRC
 
-#+BEGIN_SRC elisp
+#+BEGIN_SRC elisp :tangle ~/.emacs.d/init.el
 (defun yesterday-time ()
   "Provide the date/time 24 hours before the time now in the format of current-time."
   (setq
@@ -2396,38 +2017,9 @@ https://ebzzry.io/en/emacs-pairs/#manipulation
   )
 #+END_SRC
 
-** Автозапуск
-
-#+BEGIN_SRC elisp
-;; (run-or-get-shell "default")
-
-(find-file "~/emacs-conf/emacs.org")
-(find-file "~/org/task.org")
-(find-file "~/files/cpp/db.gpg")
-(find-file "~/org/reference.org")
-(find-file "~/.emacs.d/shm/shells.el")
-(find-file "~/org/log.org")
-(end-of-buffer)
-(switch-to-buffer-other-window "task.org")
-(ace-window 0)
-(server-start)
-#+END_SRC
-
-** Description
-*** Links
-
-ML archive
-http://lists.gnu.org/archive/html/emacs-devel/
-
-Emacs commits
-http://git.savannah.gnu.org/cgit/emacs.git/log/
-
-Git repo
-git://git.savannah.gnu.org/emacs.git
-
 ** Yaml
 
-#+BEGIN_SRC elisp
+#+BEGIN_SRC elisp :tangle ~/.emacs.d/init.el
 (use-package yaml-mode
   :init
 
@@ -2478,45 +2070,9 @@ git://git.savannah.gnu.org/emacs.git
   ((yaml-mode . highlight-indent-guides-mode)))
 #+END_SRC
 
-** gcal
-
-#+BEGIN_SRC elisp
-;; (setq package-check-signature nil)
-
-;; see https://github.com/myuhe/org-gcal.el
-
-(use-package org-gcal
-  :ensure t
-  :config
-  (setq org-gcal-client-id "12159727526-7s5315gp2k8hkaadmr13psq1mhsvtjq0.apps.googleusercontent.com"
-        org-gcal-client-secret (get-pass "gcal-secret")
-        org-gcal-file-alist '(("avolkov@mirantis.com" .  "~/org/work-gcal.org"))))
-
-;; (add-hook 'org-agenda-mode-hook (lambda () (org-gcal-sync)))
-;; (add-hook 'org-capture-after-finalize-hook (lambda () (org-gcal-sync)))
-#+END_SRC
-
-** functions
-
-#+BEGIN_SRC elisp
-(defun run-nova-python ()
-  (interactive)
-  (let ((python-shell-buffer-name "ipython-nova"))
-    (run-python "/home/amadev/m/nova/.tox/py27/bin/ipython --profile nova --simple-prompt -i" nil t)))
-
-(defun start-openstack-controller ()
-  (interactive)
-  (start-local "controller" "
-cd ~/m/openstack-controller
-export KUBECONFIG=~/avolkov-22
-kubectl get nodes
- export export OSCTL_METRICS_PORT=8088
-tox -e dev"))
-#+END_SRC
-
 ** Experiments
 
-#+BEGIN_SRC elisp
+#+BEGIN_SRC elisp :tangle ~/.emacs.d/init.el
  (autoload 'bash-completion-dynamic-complete
    "bash-completion"
    "BASH completion hook")
@@ -2525,7 +2081,7 @@ tox -e dev"))
 #+END_SRC
 
 run nova repl
-#+BEGIN_SRC elisp
+#+BEGIN_SRC elisp :tangle ~/.emacs.d/init.el
 (prefer-coding-system 'utf-8)
 (set-default-coding-systems 'utf-8)
 (set-terminal-coding-system 'utf-8)
@@ -2612,3 +2168,31 @@ run nova repl
       (kill-new r))))
 
 #+END_SRC
+
+** Автозапуск
+
+#+BEGIN_SRC elisp :tangle ~/.emacs.d/init.el
+(measure-time "emacs.org"
+ (find-file "~/emacs-conf/emacs.org"))
+(find-file "~/org/task.org")
+(measure-time "db.gpg"
+ (find-file "~/files/cpp/db.gpg"))
+(find-file "~/org/reference.org")
+(find-file "~/.emacs.d/shm/shells.el")
+(find-file "~/org/log.org")
+(end-of-buffer)
+(switch-to-buffer-other-window "task.org")
+(ace-window 0)
+(server-start)
+#+END_SRC
+
+** Links
+
+ML archive
+http://lists.gnu.org/archive/html/emacs-devel/
+
+Emacs commits
+http://git.savannah.gnu.org/cgit/emacs.git/log/
+
+Git repo
+git://git.savannah.gnu.org/emacs.git
