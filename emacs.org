@@ -102,7 +102,7 @@ cd emacs
 
 #+BEGIN_SRC elisp :tangle ~/.emacs.d/init.el
 ;; may split a window horizontally only if it has at least this many columns
-(setq split-width-threshold 100)
+(setq split-width-threshold 200)
 (setq split-height-threshold nil)
 #+END_SRC
 
@@ -110,6 +110,26 @@ Disable version control to speed up TRAMP opening.
 
 #+BEGIN_SRC elisp :tangle ~/.emacs.d/init.el
 (setq vc-handled-backends ())
+#+END_SRC
+
+Бекап создается при первом сохранении буфера.
+Авто-сейв после 30 сек или 300 символов.
+Сохраняемые файлы вынес в отдельную папку, чтобы не гадить в рабочей
+директории. Используем версии бекапных файлов и делаем бекапы файлов,
+которые под контролем версий (git, svn).
+
+#+BEGIN_SRC elisp :tangle ~/.emacs.d/init.el
+(setq backup-directory-alist '(("." . "~/.emacs.d/backups")))
+(setq auto-save-file-name-transforms '((".*" "~/.emacs.d/auto-save-list/" t)))
+(setq version-control t)
+(setq vc-make-backup-files t)
+(setq delete-old-versions -1)
+#+END_SRC
+
+Don't type yes.
+
+#+BEGIN_SRC elisp :tangle ~/.emacs.d/init.el
+(fset 'yes-or-no-p 'y-or-n-p)
 #+END_SRC
 
 ** Performance
@@ -170,12 +190,55 @@ http://tuhdo.github.io/helm-intro.html
                     (helm-quit-and-execute-action 'helm-old-ff))))))
 #+END_SRC
 
-** prog
+** Prog
 
 Add magit.
 
 #+BEGIN_SRC elisp :tangle ~/.emacs.d/init.el
 (use-package magit)
+#+END_SRC
+
+Display current python buffer structure.
+
+#+BEGIN_SRC elisp :tangle ~/.emacs.d/init.el
+(defun occur-python-structure ()
+  (interactive)
+  (occur "def\\b\\|class\\b\\|=[ ]?lambda"))
+#+END_SRC
+
+Grep something under cursor.
+
+#+BEGIN_SRC elisp :tangle ~/.emacs.d/init.el
+  (defun grep-at-point ()
+    (interactive)
+    (let ((s (thing-at-point 'symbol t)))
+      (ack (concat "ag -i --nogroup --nocolor " s " --ignore tests")
+           (ack-default-directory 4))))
+#+END_SRC
+
+LSP mode.
+
+go install golang.org/x/tools/gopls@latest
+
+pip install python-lsp-server[all]
+
+#+BEGIN_SRC elisp :tangle ~/.emacs.d/init.el
+(use-package lsp-mode
+  :init
+  (setq lsp-keymap-prefix "C-c l")
+  :hook
+  (
+   (python-mode . lsp)
+   (go-mode . lsp)
+   (lsp-mode . lsp-enable-which-key-integration)
+   )
+  )
+
+(use-package helm-lsp :commands helm-lsp-workspace-symbol)
+
+(use-package which-key
+    :config
+    (which-key-mode))
 #+END_SRC
 
 ** Глобальные функции
@@ -268,30 +331,15 @@ Helm comint history.
 Для просмотра истории helm-minibuffer-history.
 
 #+BEGIN_SRC elisp :tangle ~/.emacs.d/init.el
-;; (setq savehist-file "~/.emacs.d/history.d/minibuffer-history")
-;; (savehist-mode nil)
-;; (setq history-length t)
-;; (setq history-delete-duplicates t)
-;; (setq savehist-save-minibuffer-history 1)
-;; (setq savehist-additional-variables
-;;       '(kill-ring
-;;         search-ring
-;;         regexp-search-ring))
-#+END_SRC
-
-**** Бекапы
-Бекап создается при первом сохранении буфера.
-Авто-сейв после 30 сек или 300 символов.
-Сохраняемые файлы вынес в отдельную папку, чтобы не гадить в рабочей
-директории. Используем версии бекапных файлов и делаем бекапы файлов,
-которые под контролем версий (git, svn).
-
-#+BEGIN_SRC elisp :tangle ~/.emacs.d/init.el
-(setq backup-directory-alist '(("." . "~/.emacs.d/backups")))
-(setq auto-save-file-name-transforms '((".*" "~/.emacs.d/auto-save-list/" t)))
-(setq version-control t)
-(setq vc-make-backup-files t)
-(setq delete-old-versions -1)
+(setq savehist-file "~/.emacs.d/history.d/minibuffer-history")
+(savehist-mode t)
+(setq history-length 20000)
+(setq history-delete-duplicates t)
+(setq savehist-save-minibuffer-history 1)
+(setq savehist-additional-variables
+      '(kill-ring
+        search-ring
+        regexp-search-ring))
 #+END_SRC
 
 *** Поиск
@@ -541,11 +589,6 @@ M-$ - исправление первого слова с ошибкой пос�
 *** defaults
 
 #+BEGIN_SRC elisp :tangle ~/.emacs.d/init.el
-;; (require 'smex)
-;; (smex-initialize)
-;; (global-set-key (kbd "M-x") 'smex)
-;; (global-set-key (kbd "M-X") 'smex-major-mode-commands)
-;; (global-set-key (kbd "C-c C-c M-x") 'execute-extended-command)
 
 (require 'uniquify)
 (setq uniquify-buffer-name-style 'forward)
@@ -559,8 +602,6 @@ M-$ - исправление первого слова с ошибкой пос�
 (use-package ace-window
   :ensure t
   :init (global-set-key [remap other-window] 'ace-window))
-
-(fset 'yes-or-no-p 'y-or-n-p)
 
 (require 'expand-region)
 (global-set-key (kbd "C-=") 'er/expand-region)
@@ -597,8 +638,6 @@ M-$ - исправление первого слова с ошибкой пос�
 
 (setq grep-command "ag -i --nogroup --nocolor ")
 
-(require 'multiple-cursors)
-(require 'mark-multiple)
 (require 'inline-string-rectangle)
 
 (defun fc-eval-and-replace ()
@@ -621,8 +660,6 @@ M-$ - исправление первого слова с ошибкой пос�
 (global-set-key (kbd "C-x r t") 'inline-string-rectangle)
 (global-set-key (kbd "C-<") 'mark-previous-like-this)
 (global-set-key (kbd "C->") 'mark-next-like-this)
-;; like the other two, but takes an argument (negative is previous)
-(global-set-key (kbd "C-M-m") 'mark-more-like-this)
 
 (custom-set-faces
  '(which-func ((t (:foreground "#b680b1" :weight bold))))
@@ -887,6 +924,7 @@ and press 'D' after that.
 
 #+BEGIN_SRC elisp :tangle ~/.emacs.d/init.el
 (setq vpn-name "forcode")
+(setq vpn-name "surfshark")
 
 (defun kill-vpn ()
   (interactive)
@@ -1173,7 +1211,9 @@ Example config: https://github.com/Fuco1/.emacs.d/blob/master/files/smartparens.
         (set-buffer "*scratch*")
         (start-shell-buffer bf host cmd)))))
 
-(global-set-key (kbd "C-; b") 'run-or-get-shell)
+(global-set-key (kbd "C-; x") 'run-or-get-shell)
+
+(load "~/files/prog/shm/shm.el")
 #+END_SRC
 
 *** Run current file
@@ -1668,16 +1708,6 @@ Alternative via local vars
                         "/python-2.7.7-docs-html/index.html")))
 #+END_SRC
 
-#+RESULTS:
-| pylookup-keys | wisent-python-default-setup | er/add-python-mode-expansions | jedi:setup | (lambda nil (local-set-key (kbd C-M-i) (quote jedi-complete)) (local-set-key (kbd C-<tab>) (quote jedi-complete)) (local-set-key (kbd C-c C-d C-d) (quote jedi:show-doc)) (local-set-key (kbd C-c C-d h) (quote pylookup-lookup)) (local-set-key (kbd C-c v) (quote pep8)) (local-set-key (kbd C-c l) (quote pylint)) (local-set-key (kbd C-c d) (quote pep257)) (jedi:setup))  |
-
-*** Display current buffer structure
-
-#+BEGIN_SRC elisp :tangle ~/.emacs.d/init.el
-(defun occur-python-structure ()
-  (interactive)
-  (occur "def\\b\\|class\\b\\|=[ ]?lambda"))
-#+END_SRC
 
 *** Tools
 
@@ -1697,13 +1727,6 @@ Alternative via local vars
          (null-device nil))
     (grep cmd)))
 
-(setq jedi:tooltip-method '(pos-tip popup))
-;; (setq jedi:server-args '("--virtual-env" "~/m/nova/.tox/py27" "--log-traceback"))
-(setq jedi:server-args '())
-(setq jedi:setup-keys t)                      ; optional
-(setq jedi:complete-on-dot t)                 ; optional
-
-
 (setq
  python-shell-interpreter "ipython"
  python-shell-interpreter-args "-i")
@@ -1717,17 +1740,12 @@ Alternative via local vars
   (local-unset-key (kbd "C-; s"))
   (local-set-key (kbd "C-c C-d h") 'pylookup-lookup)
   (local-set-key (kbd "C-c C-d i") 'pylookup-view-doc-index)
-  (local-set-key (kbd "C-c C-d C-d") 'jedi:show-doc)
   (local-set-key (kbd "C-c v") 'pep8)
   (local-set-key (kbd "C-c l") 'pylint)
   (local-set-key (kbd "C-c d") 'pep257)
   (local-set-key (kbd "C-; s s") 'occur-python-structure)
   (local-set-key (kbd "C-; s c") 'grep-at-point)
-  (local-set-key (kbd "C-; s f") 'grep-function-at-point)
-  (local-set-key (kbd "C-; s w") 'what-function-full)
-  (local-set-key (kbd "C-M-i") 'jedi-complete)
-  (local-set-key (kbd "C-<tab>") 'jedi-complete)
-  (jedi:setup))
+  (local-set-key (kbd "C-; s w") 'what-function-full))
 
 (add-hook 'python-mode-hook 'python-keys)
 
@@ -1805,22 +1823,6 @@ Alternative via local vars
 #+RESULTS:
 : ~/.ve
 
-*** Search symbol at point
-
-#+BEGIN_SRC elisp :tangle ~/.emacs.d/init.el
-  (defun grep-at-point ()
-    (interactive)
-    (let ((s (thing-at-point 'symbol t)))
-      (ack (concat "ag -i --nogroup --nocolor " s " --ignore tests")
-           (ack-default-directory 4))))
-
-  (defun grep-function-at-point ()
-    (interactive)
-    (let ((s (what-function '(0))))
-      (ack (concat "ag -i --nogroup --nocolor " s " --ignore tests")
-           (ack-default-directory 4))))
-#+END_SRC
-
 ** Lisp
 
 #+BEGIN_SRC elisp :tangle ~/.emacs.d/init.el
@@ -1836,7 +1838,9 @@ Alternative via local vars
 (add-hook 'cider-mode-hook #'enable-paredit-mode)
 (add-hook 'emacs-lisp-mode-hook #'enable-paredit-mode)
 (add-hook 'eval-expression-minibuffer-setup-hook #'enable-paredit-mode)
-(add-hook 'ielm-mode-hook #'enable-paredit-mode)
+;; (add-hook 'ielm-mode-hook #'enable-paredit-mode)
+;; (makunbound 'ielm-mode-hook)
+
 (add-hook 'lisp-mode-hook #'enable-paredit-mode)
 (add-hook 'lisp-interaction-mode-hook #'enable-paredit-mode)
 (add-hook 'scheme-mode-hook #'enable-paredit-mode)
@@ -1914,7 +1918,8 @@ https://ebzzry.io/en/emacs-pairs/#manipulation
 
 
 (use-package lsp-mode
-  :ensure t)
+  :ensure t
+  )
 
 (add-hook 'go-mode-hook (lambda ()
     (local-set-key (kbd "C-; s s") 'occur-go-structure)
@@ -2166,6 +2171,8 @@ run nova repl
     (let ((r (shell-command-to-string (format "echo '%s' | snippet.py" selection))))
       (message r)
       (kill-new r))))
+
+(use-package lsp-docker)
 
 #+END_SRC
 
