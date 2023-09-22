@@ -220,7 +220,7 @@ LSP mode.
 
 go install golang.org/x/tools/gopls@latest
 
-pip install python-lsp-server[all]
+pip install python-lsp-server[all] python-lsp-black
 
 #+BEGIN_SRC elisp :tangle ~/.emacs.d/init.el
 (use-package lsp-mode
@@ -1291,9 +1291,9 @@ Example config: https://github.com/Fuco1/.emacs.d/blob/master/files/smartparens.
 Установка orgmode и его расширений.
 
 #+BEGIN_SRC elisp :tangle ~/.emacs.d/init.el
-(use-package org :ensure t)
+(use-package org)
 
-(use-package org-contrib :ensure t)
+(use-package org-contrib)
 #+END_SRC
 
 Устанавливаем org-plus-contrib, нужно обновлять в чистом emacs
@@ -2129,7 +2129,6 @@ run nova repl
 (fset 'mm-json-to-grpc2
    (kmacro-lambda-form [?  ?  ?  ?  ?\C-d ?s ?t ?r ?i ?n ?g ?  ?\C-s ?\" return backspace ?\C-  ?\C-r ?  ?\C-f ?\M-w ?\M-x ?s ?t ?r ?i ?n ?g ?- ?i ?n ?f ?l ?e ?c ?t ?i ?o ?n ?- ?c ?a ?m ?e ?l ?c ?a ?s ?e return ?  ?= ?  ?\M-x ?k ?m ?a ?c ?r ?o ?- ?i ?n ?s return ?  ?\[ ?j ?s ?o ?n ?_ ?n ?a ?m ?e ?  ?= ?  ?\" ?\C-y ?\" ?\C-k ?\] ?s backspace ?\; ?\C-n ?\C-a] 26 "%d"))
 
-
 (push
  (cons
   "docker"
@@ -2173,6 +2172,8 @@ run nova repl
       (kill-new r))))
 
 (use-package lsp-docker)
+
+(defun eldoc-documentation-default())
 
 #+END_SRC
 
