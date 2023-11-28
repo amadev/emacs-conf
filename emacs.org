@@ -404,7 +404,7 @@ M-e - редактирование.
 #+BEGIN_SRC elisp :tangle ~/.emacs.d/init.el
   (defun get-pass (name)
     (let ((cname (if (symbolp name) (symbol-name name) name)))
-      (chomp (shell-command-to-string (concat "cpp " cname)))))
+      (chomp (shell-command-to-string (concat "cpp.sh " cname)))))
 #+END_SRC
 
 *** Пути от домашней папки и emacs.d.
