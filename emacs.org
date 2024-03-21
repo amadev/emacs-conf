@@ -1645,6 +1645,8 @@ Skips capture tasks and tasks with subtasks"
 
 *** org-drill
 
+anki
+
 #+BEGIN_SRC elisp :tangle ~/.emacs.d/init.el
 (use-package org-drill
   :if nil
@@ -2167,7 +2169,10 @@ run nova repl
      (list (point-min) (point-max))))
   (let ((selection (buffer-substring-no-properties start end)))
     (message "posting...")
-    (let ((r (shell-command-to-string (format "echo '%s' | snippet.py" selection))))
+    (write-region selection
+              nil "/tmp/snippet"
+              nil 'quiet)
+    (let ((r (shell-command-to-string (format "cat /tmp/snippet | snippet.py" selection))))
       (message r)
       (kill-new r))))
 
