@@ -330,7 +330,7 @@ Helm comint history.
 (require 'yaml-mode)
 (require 'comint)
 
-(defvar comint-history-file "~/.emacs.d/comint-history-%Y-%m-%d.log"
+(defvar comint-history-file "~/.emacs.d/history.d/comint-history-%Y-%m-%d.log"
   "File where comint input/output history is stored.")
 
 (defun remove-ansi-escape-sequences (string)
