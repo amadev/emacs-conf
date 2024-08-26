@@ -325,6 +325,56 @@ Helm comint history.
 (add-hook 'shell-mode-hook 'shell-mode-custom-keys)
 #+END_SRC
 
+
+#+BEGIN_SRC elisp ~/.emacs.d/init.el :tangle ~/.emacs.d/init.el
+(require 'yaml-mode)
+(require 'comint)
+
+(defvar comint-history-file "~/.emacs.d/comint-history-%Y-%m-%d.log"
+  "File where comint input/output history is stored.")
+
+(defun remove-ansi-escape-sequences (string)
+"Remove ANSI escape sequences from STRING."
+(replace-regexp-in-string "\033\\[[0-9;]*[mK]" "" string))
+
+(defun comint-log-to-file (type content)
+  "Log the TYPE (either 'input or 'output) and CONTENT to the comint history file."
+
+  (if (> (length content) 0)
+      (let ((cbuffer (current-buffer))
+            (history-file (format-time-string comint-history-file (current-time))))
+        (with-temp-buffer
+          ;; (when (file-exists-p history-file)
+          ;;   (insert-file-contents history-file))
+          (goto-char (point-max))
+          (let ((timestamp (format-time-string "%Y-%m-%d %H:%M:%S"))
+                (inhibit-message t)
+                (message-log-max nil))
+            (insert (format "- %s: %s\n  buffer: %s\n  timestamp: %s\n  content: |-\n    %s\n\n"
+                            "direction" (if (eq type 'input) "input" "output")
+                            cbuffer
+                            timestamp
+                            (replace-regexp-in-string "\n" "\n    " content))))
+          (write-region (point-min) (point-max) history-file t nil)))))
+
+(defun comint-log-input (input)
+  "Function to log comint input."
+  (comint-log-to-file 'input input)
+  input)
+
+(defun comint-log-output (output)
+  "Function to log the first 2000 characters of comint output."
+  (let ((trimmed-output (if (> (length output) 2000)
+                            (substring output 0 2000)
+                          output)))
+    (comint-log-to-file 'output (remove-ansi-escape-sequences trimmed-output)))
+  output)
+
+(add-hook 'comint-input-filter-functions 'comint-log-input)
+(add-hook 'comint-output-filter-functions 'comint-log-output)
+#+END_SRC
+
+
 **** Минибуфер
 
 Работает автоматически, при загрузке emacs подгружается история.
@@ -2193,6 +2243,7 @@ run nova repl
 (find-file "~/org/reference.org")
 (find-file "~/.emacs.d/shm/shells.el")
 (find-file "~/org/log.org")
+(find-file (format-time-string comint-history-file (current-time)))
 (end-of-buffer)
 (switch-to-buffer-other-window "task.org")
 (ace-window 0)
