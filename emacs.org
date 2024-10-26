@@ -355,7 +355,7 @@ Helm comint history.
                             cbuffer
                             timestamp
                             (replace-regexp-in-string "\n" "\n    " content))))
-          (write-region (point-min) (point-max) history-file t nil)))))
+          (write-region (point-min) (point-max) history-file t 1)))))
 
 (defun comint-log-input (input)
   "Function to log comint input."
@@ -1024,7 +1024,7 @@ target-shell-session. It could be defined as file local variable:
                       cmd
                     (concat (string-trim (buffer-substring min max)) "\n")))
     ;; (message "sending '%s'  to '%s'" command target-shell-session)
-    (if (and (derived-mode-p 'org-mode) (string-prefix-p "- [" (thing-at-point 'line t)))
+    (if (and (derived-mode-p 'org-mode) (string-prefix-p "- [" (string-trim (thing-at-point 'line t))))
         (org-ctrl-c-ctrl-c)
         (progn (with-current-buffer pbuf
            (goto-char (process-mark proc))
@@ -2240,10 +2240,10 @@ run nova repl
 (find-file "~/org/task.org")
 (measure-time "db.gpg"
  (find-file "~/files/cpp/db.gpg"))
+(find-file (format-time-string comint-history-file (current-time)))
 (find-file "~/org/reference.org")
 (find-file "~/.emacs.d/shm/shells.el")
 (find-file "~/org/log.org")
-(find-file (format-time-string comint-history-file (current-time)))
 (end-of-buffer)
 (switch-to-buffer-other-window "task.org")
 (ace-window 0)
