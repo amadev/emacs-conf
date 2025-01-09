@@ -1006,19 +1006,23 @@ target-shell-session. It could be defined as file local variable:
 (require 'subr-x)
 
 (make-variable-buffer-local
- (defvar target-shell-session "shell-default"
+ (defvar target-shell "shell-default"
    "Name of session buffer for sending comands from sh-send-mode"))
+
+(setq comint-scroll-to-bottom-on-output nil)
+
+(setq comint-scroll-to-bottom-on-input t)
 
 (defun send-current-paragraph-or-region (&optional step cmd)
   (interactive ())
 
-  (let* ((pbuf (get-buffer target-shell-session))
+  (let* ((pbuf (get-buffer target-shell))
          (proc (get-buffer-process pbuf))
          min max command)
     (if (use-region-p)
         (setq min (region-beginning)
               max (region-end))
-      (setq min (save-excursion (backward-paragraph) (point))
+      (setq min (save-excursion (re-search-backward "\n[\t\n ]*\n+" nil "NOERROR") (point))
             max (save-excursion (re-search-forward "\n[\t\n ]*\n+" nil "NOERROR") (point))))
     (setq command (if cmd
                       cmd
@@ -1026,14 +1030,14 @@ target-shell-session. It could be defined as file local variable:
     ;; (message "sending '%s'  to '%s'" command target-shell-session)
     (if (and (derived-mode-p 'org-mode) (string-prefix-p "- [" (string-trim (thing-at-point 'line t))))
         (org-ctrl-c-ctrl-c)
-        (progn (with-current-buffer pbuf
-           (goto-char (process-mark proc))
-           (insert command)
-           (comint-send-input))
-         (display-buffer (process-buffer proc) t)
-         (when step
-           (goto-char max)
-           (next-line))))))
+      (progn (with-current-buffer pbuf
+               (goto-char (process-mark proc))
+               (insert command)
+               (comint-send-input))
+             (display-buffer (process-buffer proc) t)
+             (when step
+               (goto-char max)
+               (next-line))))))
 
 (defun send-current-paragraph-or-region-and-step ()
   (interactive)
@@ -1041,7 +1045,7 @@ target-shell-session. It could be defined as file local variable:
 
 (defun switch-to-process-buffer ()
   (interactive)
-  (pop-to-buffer (get-buffer target-shell-session) t))
+  (pop-to-buffer (get-buffer target-shell) t))
 
 (defun sh-set-to-current-dir ()
   (interactive)
@@ -1051,7 +1055,7 @@ target-shell-session. It could be defined as file local variable:
   "Send a paragraph or marked string to the shell buffer."
   :lighter " ss"
   :keymap (let ((map (make-sparse-keymap)))
-            (define-key map (kbd "C-c C-c") 'send-current-paragraph-or-region-and-step)
+            (define-key map (kbd "C-c C-c") 'send-current-paragraph-or-region)
             (define-key map (kbd "C-c C-z") 'switch-to-process-buffer)
             map))
 
