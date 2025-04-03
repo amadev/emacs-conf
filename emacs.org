@@ -319,6 +319,7 @@ Save history for comint buffers history on kill or Emacs closing.
 Helm comint history.
 
 #+BEGIN_SRC elisp :tangle ~/.emacs.d/init.el
+(require 'helm)
 (defun shell-mode-custom-keys ()
   (local-set-key (kbd "M-r") 'helm-comint-input-ring))
 
@@ -619,22 +620,6 @@ M-$ - исправление первого слова с ошибкой пос�
 добавить в личный словарь (i).
 
 Переключение словаря - ispell-change-dictionary.
-
-*** Magit for project
-
-#+BEGIN_SRC elisp :tangle ~/.emacs.d/init.el
-(use-package magit
-  :ensure t)
-
-(defun magit-nova ()
-  (interactive)
-  (let ((buffer "magit: nova"))
-    (if (get-buffer buffer)
-	(switch-to-buffer "magit: nova")
-      (magit-status "~/m/nova"))))
-
-(global-set-key (kbd "C-; n") 'magit-nova)
-#+END_SRC
 
 *** defaults
 
@@ -2131,6 +2116,33 @@ https://ebzzry.io/en/emacs-pairs/#manipulation
   ((yaml-mode . highlight-indent-guides-mode)))
 #+END_SRC
 
+** Gptel
+
+#+BEGIN_SRC elisp :tangle ~/.emacs.d/init.el
+(use-package gptel :ensure t)
+(setq gptel-default-mode 'org-mode
+      gptel-expert-commands t
+      gptel-track-media t
+      gptel-model 'gpt-4o
+      gptel--debug nil
+      gptel-api-key (get-pass "chatgpt2-apikey"))
+;; defer nothing
+(require 'gptel)
+(require 'gptel-curl)
+(require 'gptel-transient)
+
+(gptel-make-ollama "Ollama"             ;Any name of your choosing
+  :host "localhost:11434"               ;Where it's running
+  :stream t                             ;Stream responses
+  :models '(mistral:latest llama3.2:1b gemma3:4b TinyLlama:latest qwq:latest))
+
+
+;; xgptel--known-backends
+
+;; gptel--openai
+
+#+END_SRC
+
 ** Experiments
 
 #+BEGIN_SRC elisp :tangle ~/.emacs.d/init.el
@@ -2233,7 +2245,6 @@ run nova repl
 (use-package lsp-docker)
 
 (defun eldoc-documentation-default())
-
 #+END_SRC
 
 ** Автозапуск
