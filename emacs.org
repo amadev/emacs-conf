@@ -246,6 +246,7 @@ To write history manually just issue:
 (comint-read-input-ring)
 
 See https://oleksandrmanzyuk.wordpress.com/2011/10/23/a-persistent-command-history-in-emacs/.
+
 #+BEGIN_SRC elisp :tangle ~/.emacs.d/init.el
 (defun turn-on-comint-history ()
   (let ((process (get-buffer-process (current-buffer))))
@@ -359,7 +360,6 @@ Helm comint history.
 (add-hook 'comint-input-filter-functions 'comint-log-input)
 (add-hook 'comint-output-filter-functions 'comint-log-output)
 #+END_SRC
-
 
 **** Минибуфер
 
@@ -492,25 +492,14 @@ yas-wrap-around-region включает такое поведение.
 (use-package yasnippet
   :ensure t
   :config
-  (defun yas/org-very-safe-expand ()
-    (let ((yas/fallback-behavior 'return-nil)) (yas/expand)))
-
-  (add-hook 'org-mode-hook
-            (lambda ()
-              (make-variable-buffer-local 'yas/trigger-key)
-              (setq yas/trigger-key [tab])
-              (add-to-list 'org-tab-first-hook 'yas/org-very-safe-expand)
-              (define-key yas/keymap [tab] 'yas/next-field)))
 
   (setq
    yas-verbosity 1
    yas-wrap-around-region t
    yas-snippet-dirs (append yas-snippet-dirs
-                               '("/home/amadev/.emacs.d/snippets"))
+                            '("/home/amadev/.emacs.d/snippets"))
    )
-
-  (yas-reload-all)
-  ;; (yas-global-mode)
+  (yas-global-mode)
   )
 
 (use-package yasnippet-snippets         ; Collection of snippets
@@ -826,13 +815,6 @@ Uses `current-date-time-format' for the formatting the date/time."
   )
 
 (add-hook  'prog-mode-hook 'my-prog-mode-hook)
-
-(defun shell-yasnippet ()
-  (yas-minor-mode)
-  )
-
-(add-hook  'shell-mode-hook 'shell-yasnippet)
-
 #+END_SRC
 
 *** Макросы
