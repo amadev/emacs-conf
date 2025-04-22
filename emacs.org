@@ -6,43 +6,28 @@
 
 ** Installation
 
-Build emacs example on Ubuntu 22.04.
+Build emacs on Ubuntu 22.04.
 
 sudo cp /etc/apt/sources.list /etc/apt/sources.list~
-
 sudo sed -Ei 's/^# deb-src /deb-src /' /etc/apt/sources.list
-
 sudo apt-get update
 
-sudo apt-get build-dep emacs
-
-gcc --version
-
-sudo apt-get install libgccjit0 libgccjit-11-dev
+https://troglobit.com/post/2024-03-03-building-emacs-with-jit/
 
 cd ~/s/
+wget http://mirror.team-cymru.com/gnu/emacs/emacs-30.1.tar.xz
+dtrx emacs-30.1.tar.xz
+cd emacs-30.1
 
-wget https://ftpmirror.gnu.org/emacs/emacs-28.2.tar.xz
+sudo apt install build-essential autoconf automake git make \
+    libgtk-4-dev libwebkitgtk-6.0-dev libxpm-dev libgif-dev \
+    libjpeg-dev libxft-dev libotf-dev librsvg2-dev libwebp-dev \
+    libgccjit-11-dev libtree-sitter-dev
 
-ls -lh emacs-28.2.tar.xz
-
-tar -xvf emacs-28.2.tar.xz
-
-rm emacs-28.2.tar.xz
-
-mv emacs-28.2 emacs
-
-du -sh emacs
-
-cd emacs
-
-(compile "(cd /home/amadev/s/emacs/; ./autogen.sh)")
-
-(compile "(cd /home/amadev/s/emacs/; ./configure --with-native-compilation)")
-
-(compile "(cd /home/amadev/s/emacs/; make)")
-
-/home/amadev/s/emacs/src/emacs --batch --eval '(native-comp-available-p)'
+./autogen.sh
+# options: JIT = fast lisp, tree-sitter = fast syntax tree parse, xft = antialiased fonts,
+./configure --with-native-compilation --with-tree-sitter --with-xft
+make -j16
 
 ** Запуск и внешний вид
 
