@@ -1241,7 +1241,7 @@ Example config: https://github.com/Fuco1/.emacs.d/blob/master/files/smartparens.
               '(
                 ("php" . "php")
                 ("pl" . "perl")
-                ("py" . "~/.ve/mc/bin/python3")
+                ("py" . "python3")
                 ("rb" . "ruby")
                 ("js" . "js")
                 ("sh" . "bash")
