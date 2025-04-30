@@ -78,7 +78,7 @@ make -j16
 Другие темы warm-night, brutalist-dark, blackboard, clues, anti-zenburn.
 
 #+BEGIN_SRC elisp :tangle ~/.emacs.d/init.el
-(set-face-attribute 'default nil :height 130)
+(set-face-attribute 'default nil :height 140)
 (load-theme 'zenburn t)
 (set-cursor-color "#909090")
 #+END_SRC
@@ -194,11 +194,11 @@ Display current python buffer structure.
 Grep something under cursor.
 
 #+BEGIN_SRC elisp :tangle ~/.emacs.d/init.el
-  (defun grep-at-point ()
-    (interactive)
-    (let ((s (thing-at-point 'symbol t)))
-      (ack (concat "ag -i --nogroup --nocolor " s " --ignore tests")
-           (ack-default-directory 4))))
+(defun grep-at-point ()
+  (interactive)
+  (let ((s (thing-at-point 'symbol t)))
+    (ack (concat "ag -i --nogroup --nocolor " s " --ignore tests")
+         (ack-default-directory 4))))
 #+END_SRC
 
 LSP mode.
@@ -213,7 +213,7 @@ pip install python-lsp-server[all] python-lsp-black
   (setq lsp-keymap-prefix "C-c l")
   :hook
   (
-   (python-mode . lsp)
+   ;; (python-mode . lsp)
    (go-mode . lsp)
    (lsp-mode . lsp-enable-which-key-integration)
    )
@@ -225,6 +225,11 @@ pip install python-lsp-server[all] python-lsp-black
     :config
     (which-key-mode))
 #+END_SRC
+
+To use virtualenv from poetry:
+poetry config virtualenvs.in-project true
+# cat /home/amadev/.config/pypoetry/config.toml
+poetry install
 
 ** Глобальные функции
 
@@ -624,7 +629,9 @@ M-$ - исправление первого слова с ошибкой пос�
 
 ;; NO TABS, spaces only
 (setq-default indent-tabs-mode nil)
-(setq tab-width 4)
+(setq-default tab-width 4)
+(setq indent-line-function 'insert-tab)
+(setq c-basic-offset 4)
 
 (setq find-program "find")
 
@@ -2108,6 +2115,38 @@ https://ebzzry.io/en/emacs-pairs/#manipulation
 
 ;; gptel--openai
 
+#+END_SRC
+
+#+BEGIN_SRC elisp :tangle ~/.emacs.d/init.el
+(defun gjg/parse-prompt-file (prompt-file)
+  "Parse a single prompt file and return its description and content."
+  (with-temp-buffer
+    (insert-file-contents prompt-file)
+    (let ((prompt-description "NO DESCRIPTION"))
+      ;; nab the description - single-line descriptions only!
+      (goto-char (point-min))
+      (when (re-search-forward "#\\+description: \\(.*?\\) *--> *$" nil t)
+        (setq prompt-description (match-string 1)))
+      ;; remove all comments
+      (delete-matching-lines "^ *<!--" (point-min) (point-max))
+      ;; remove leading blank lines
+      (goto-char (point-min))
+      (while (and (looking-at "^$") (not (eobp)))
+        (delete-char 1))
+      ;; return the description and content
+      (list prompt-description (buffer-substring-no-properties (point-min) (point-max))))))
+
+(defun gjg/gptel-build-directives (promptdir)
+  "Build `gptel-directives' from Markdown files in PROMPTDIR."
+  (let* ((prompt-files (directory-files promptdir t "md$")))
+    (mapcar (lambda (prompt-file)
+              (let ((parsed-prompt (gjg/parse-prompt-file prompt-file)))
+                (cons (intern (f-base prompt-file))  ; gptel-directives key
+                      (nth 1 parsed-prompt))))       ; prompt content
+            prompt-files)))
+
+;; (custom-set-variables '(gptel-directives (gjg/gptel-build-directives "~/projects/ai/AIPIHKAL/system-prompts/")))
+(setq gptel-directives (gjg/gptel-build-directives "~/s/AIPIHKAL/system-prompts/"))
 #+END_SRC
 
 ** Experiments
