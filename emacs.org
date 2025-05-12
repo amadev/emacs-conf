@@ -244,6 +244,9 @@ poetry install
    comint-scroll-show-maximum-output t
    comint-input-ignoredups t
    comint-input-ring-separator "$$$\n"))
+
+(defvar comint-history-enabled t
+  "Wether log comint history or not.")
 #+END_SRC
 
 To write history manually just issue:
@@ -265,7 +268,7 @@ See https://oleksandrmanzyuk.wordpress.com/2011/10/23/a-persistent-command-histo
 
 #+BEGIN_SRC elisp :tangle ~/.emacs.d/init.el
 (defun comint-write-input-ring-before-output (str)
-  (if str (comint-write-input-ring))
+  (if comint-history-enabled (if str (comint-write-input-ring)))
   str)
 
 (add-hook 'comint-preoutput-filter-functions
@@ -332,22 +335,23 @@ Helm comint history.
 (defun comint-log-to-file (type content)
   "Log the TYPE (either 'input or 'output) and CONTENT to the comint history file."
 
-  (if (> (length content) 0)
-      (let ((cbuffer (current-buffer))
-            (history-file (format-time-string comint-history-file (current-time))))
-        (with-temp-buffer
-          ;; (when (file-exists-p history-file)
-          ;;   (insert-file-contents history-file))
-          (goto-char (point-max))
-          (let ((timestamp (format-time-string "%Y-%m-%d %H:%M:%S"))
-                (inhibit-message t)
-                (message-log-max nil))
-            (insert (format "- %s: %s\n  buffer: %s\n  timestamp: %s\n  content: |-\n    %s\n\n"
-                            "direction" (if (eq type 'input) "input" "output")
-                            cbuffer
-                            timestamp
-                            (replace-regexp-in-string "\n" "\n    " content))))
-          (write-region (point-min) (point-max) history-file t 1)))))
+  (if comint-history-enabled
+      (if (> (length content) 0)
+          (let ((cbuffer (current-buffer))
+                (history-file (format-time-string comint-history-file (current-time))))
+            (with-temp-buffer
+              ;; (when (file-exists-p history-file)
+              ;;   (insert-file-contents history-file))
+              (goto-char (point-max))
+              (let ((timestamp (format-time-string "%Y-%m-%d %H:%M:%S"))
+                    (inhibit-message t)
+                    (message-log-max nil))
+                (insert (format "- %s: %s\n  buffer: %s\n  timestamp: %s\n  content: |-\n    %s\n\n"
+                                "direction" (if (eq type 'input) "input" "output")
+                                cbuffer
+                                timestamp
+                                (replace-regexp-in-string "\n" "\n    " content))))
+              (write-region (point-min) (point-max) history-file t 1))))))
 
 (defun comint-log-input (input)
   "Function to log comint input."
@@ -1873,6 +1877,9 @@ Alternative via local vars
   (define-key slime-repl-mode-map
     (read-kbd-macro paredit-backward-delete-key) nil))
 (add-hook 'slime-repl-mode-hook 'override-slime-repl-bindings-with-paredit)
+
+(define-key paredit-mode-map (kbd "RET") nil)
+(define-key paredit-mode-map (kbd "C-j") 'paredit-newline)
 #+END_SRC
 
 ;; (checkdoc)
