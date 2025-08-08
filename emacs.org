@@ -230,7 +230,12 @@ pip install python-lsp-server[all] python-lsp-black
    :ensure t
    :config
    (add-hook 'xref-backend-functions #'dumb-jump-xref-activate)
+   (setq xref-show-definitions-function #'xref-show-definitions-completing-read)
+   (setq dumb-jump-force-searcher 'ag)
    )
+
+(use-package helm-xref
+  :ensure t)
 #+END_SRC
 
 To use virtualenv from poetry:
@@ -1885,6 +1890,7 @@ Alternative via local vars
     (read-kbd-macro paredit-backward-delete-key) nil))
 (add-hook 'slime-repl-mode-hook 'override-slime-repl-bindings-with-paredit)
 
+(require 'paredit)
 (define-key paredit-mode-map (kbd "RET") nil)
 (define-key paredit-mode-map (kbd "C-j") 'paredit-newline)
 #+END_SRC
