@@ -197,7 +197,7 @@ Grep something under cursor.
 (defun grep-at-point ()
   (interactive)
   (let ((s (thing-at-point 'symbol t)))
-    (ack (concat "ag -i --nogroup --nocolor " s " --ignore tests")
+    (ack (concat "ag -U -i --nogroup --nocolor " s " --ignore tests")
          (ack-default-directory 4))))
 #+END_SRC
 
@@ -232,6 +232,7 @@ pip install python-lsp-server[all] python-lsp-black
    (add-hook 'xref-backend-functions #'dumb-jump-xref-activate)
    (setq xref-show-definitions-function #'xref-show-definitions-completing-read)
    (setq dumb-jump-force-searcher 'ag)
+   (setq dumb-jump-ag-cmd "ag -U")
    )
 
 (use-package helm-xref
@@ -665,10 +666,10 @@ M-$ - исправление первого слова с ошибкой пос�
   :ensure t
   :init (setq
          ack-defaults-function 'ack-legacy-defaults
-         ack-command "ag -i --nogroup --nocolor ")
+         ack-command "ag -U -i --nogroup --nocolor ")
   :config (defalias 'grep 'ack))
 
-(setq grep-command "ag -i --nogroup --nocolor ")
+(setq grep-command "ag -U -i --nogroup --nocolor ")
 
 (require 'inline-string-rectangle)
 
@@ -1498,7 +1499,7 @@ http://emacs-fu.blogspot.com/2011/04/nice-looking-pdfs-with-org-mode-and.html
         (expand-file-name "~/bin/plantuml.jar"))
   (setq org-ditaa-jar-path
         (expand-file-name "~/.emacs.d/bin/ditaa0_9.jar"))
-  (setq org-babel-python-command "PYTHONPATH=$PYTHONPATH:~/files/prog python")
+  (setq org-babel-python-command "python")
   (setq org-babel-sh-command "bash")
 #+END_SRC
 
@@ -1778,9 +1779,17 @@ Alternative via local vars
   (local-set-key (kbd "C-; s c") 'grep-at-point)
   (local-set-key (kbd "C-; s w") 'what-function-full))
 
+(defun helm-xref-configure ()
+  (setq xref-show-xrefs-function 'helm-xref-show-xrefs-27)
+  (setq xref-show-definitions-function 'helm-xref-show-defs-27))
+
 (add-hook 'python-mode-hook 'python-keys)
 
 (add-hook 'python-mode-hook 'which-function-mode)
+
+(add-hook 'python-mode-hook 'helm-xref-configure)
+
+
 #+END_SRC
 
 *** Запуск тестов
@@ -2117,24 +2126,30 @@ https://ebzzry.io/en/emacs-pairs/#manipulation
 (setq gptel-default-mode 'org-mode
       gptel-expert-commands t
       gptel-track-media t
-      gptel-model 'gpt-4o
-      gptel--debug nil
-      gptel-api-key (get-pass "chatgpt2-apikey"))
+      gptel--debug t
+      gptel-api-key (get-pass "claude-api-key"))
 ;; defer nothing
-(require 'gptel)
-(require 'gptel-curl)
-(require 'gptel-transient)
+;; (require 'gptel)
+;; (require 'gptel-curl)
+;; (require 'gptel-transient)
 
-(gptel-make-ollama "Ollama"             ;Any name of your choosing
-  :host "localhost:11434"               ;Where it's running
-  :stream t                             ;Stream responses
-  :models '(mistral:latest llama3.2:1b gemma3:4b TinyLlama:latest qwq:latest))
+(setq backend-claude (gptel-make-anthropic "claude" :stream t :key gptel-api-key))
 
+(setq backend-ollama-local (gptel-make-ollama "ollama-local" :host "localhost:11434" :stream t :models '("qwen3:latest" "llama3.2:1b" "mistral:latest" "gemma3:4b" "TinyLlama:latest")))
+
+;; run owui-proxy.sh ; curl 192.168.1.5:11434
+(setq backend-ollama-forcode (gptel-make-ollama "ollama-forcode" :host "192.168.1.5:11434" :stream t :models '("command-a:111b" "llama3.1:latest" "gpt-oss:20b" "gpt-oss:120b" "wizardlm2:8x22b" "phi4:14b" "wizardlm2:7b" "deepseek-coder-v2:236b" "qwen3:235b" "codellama:70b" "deepseek-r1:70b" "deepseek-r1:671b" "evilfreelancer/enbeddrus:v0.2" "magistral:24b")))
+
+;; (setq owuill (gptel-make-ollama "owuill"
+;;    :host "localhost:11435"
+;;    :stream t
+;;    ))
+
+;; (setq gptel-backend owui
+;;       gptel-model 'codellama:70b)
 
 ;; xgptel--known-backends
-
 ;; gptel--openai
-
 #+END_SRC
 
 #+BEGIN_SRC elisp :tangle ~/.emacs.d/init.el
