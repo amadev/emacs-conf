@@ -2138,7 +2138,7 @@ https://ebzzry.io/en/emacs-pairs/#manipulation
 (setq backend-ollama-local (gptel-make-ollama "ollama-local" :host "localhost:11434" :stream t :models '("qwen3:latest" "llama3.2:1b" "mistral:latest" "gemma3:4b" "TinyLlama:latest")))
 
 ;; run owui-proxy.sh ; curl 192.168.1.5:11434
-(setq backend-ollama-forcode (gptel-make-ollama "ollama-forcode" :host "192.168.1.5:11434" :stream t :models '("command-a:111b" "llama3.1:latest" "gpt-oss:20b" "gpt-oss:120b" "wizardlm2:8x22b" "phi4:14b" "wizardlm2:7b" "deepseek-coder-v2:236b" "qwen3:235b" "codellama:70b" "deepseek-r1:70b" "deepseek-r1:671b" "evilfreelancer/enbeddrus:v0.2" "magistral:24b")))
+(setq backend-ollama-forcode (gptel-make-ollama "ollama-forcode" :host "192.168.1.5:11434" :stream t :models '("command-a:111b" "llama3.1:latest" "gpt-oss:20b" "gpt-oss:120b" "wizardlm2:8x22b" "phi4:14b" "wizardlm2:7b" "deepseek-coder-v2:236b" "qwen3:235b" "codellama:70b" "deepseek-r1:70b" "deepseek-r1:671b" "evilfreelancer/enbeddrus:v0.2" "magistral:24b" "qwen3:30b")))
 
 ;; (setq owuill (gptel-make-ollama "owuill"
 ;;    :host "localhost:11435"
