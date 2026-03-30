@@ -2119,7 +2119,7 @@ https://ebzzry.io/en/emacs-pairs/#manipulation
   ((yaml-mode . highlight-indent-guides-mode)))
 #+END_SRC
 
-** Gptel
+** LLM
 
 #+BEGIN_SRC elisp :tangle ~/.emacs.d/init.el
 (use-package gptel :ensure t)
@@ -2182,6 +2182,18 @@ https://ebzzry.io/en/emacs-pairs/#manipulation
 
 ;; (custom-set-variables '(gptel-directives (gjg/gptel-build-directives "~/projects/ai/AIPIHKAL/system-prompts/")))
 (setq gptel-directives (gjg/gptel-build-directives "~/s/AIPIHKAL/system-prompts/"))
+#+END_SRC
+
+#+BEGIN_SRC elisp :tangle ~/.emacs.d/init.el
+(use-package agent-shell
+    :ensure t
+    ;; :ensure-system-package
+    ;; Add agent installation configs here
+    ;; ((claude . "brew install claude-code")
+    ;;  (claude-agent-acp . "npm install -g @zed-industries/claude-agent-acp"))
+    )
+
+;; (setq agent-shell-cursor-acp-command '("cursor-agent-acp"))
 #+END_SRC
 
 ** Experiments
