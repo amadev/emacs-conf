@@ -258,7 +258,7 @@ poetry install
    comint-input-ignoredups t
    comint-input-ring-separator "$$$\n"))
 
-(defvar comint-history-enabled t
+(defvar comint-history-enabled nil
   "Wether log comint history or not.")
 #+END_SRC
 
@@ -284,8 +284,9 @@ See https://oleksandrmanzyuk.wordpress.com/2011/10/23/a-persistent-command-histo
   (if comint-history-enabled (if str (comint-write-input-ring)))
   str)
 
-(add-hook 'comint-preoutput-filter-functions
-          'comint-write-input-ring-before-output)
+(if comint-history-enabled (add-hook
+                            'comint-preoutput-filter-functions
+                            'comint-write-input-ring-before-output))
 #+END_SRC
 
 #+BEGIN_SRC elisp :tangle ~/.emacs.d/init.el
@@ -325,10 +326,48 @@ Save history for comint buffers history on kill or Emacs closing.
 
 Helm comint history.
 
+*** Shell interrupt: optional kill-style interrupt
+
+By default =comint-interrupt-subjob= (=C-c C-c=) may send the tty =VINTR=
+character (=^C=) down the PTY instead of calling =kill(2)=.  =C-u C-c C-c=
+uses the foreground process group from =process-attributes= (=tpgid=) and
+=signal-process= with =SIGINT= (=kill -INT= to a negative process group).
+=C-u C-u C-c C-c= uses =SIGKILL= (=kill -9= style).
+
 #+BEGIN_SRC elisp :tangle ~/.emacs.d/init.el
 (require 'helm)
+(require 'comint)
+
+(defun shell-mode--signal-foreground-pgrp (proc sig)
+  "Send SIG (symbol, e.g. SIGINT or SIGKILL) to the foreground tty pgrp of PROC.
+If the tpgid attribute is missing, signal PROC itself."
+  (let* ((pid (process-id proc))
+         (attrs (and pid (process-attributes pid)))
+         (tpgid (and attrs (alist-get 'tpgid attrs))))
+    (if (and tpgid (numberp tpgid) (/= (truncate tpgid) 0))
+        (signal-process (- (truncate tpgid)) sig)
+      (signal-process proc sig))))
+
+(defun shell-mode-interrupt-subjob-via-signal (signal)
+  "Skip pending comint input, then send SIGNAL via `signal-process' / foreground pgrp.
+SIGNAL is a symbol such as SIGINT or SIGKILL (not the PTY ^C path)."
+  (comint-skip-input)
+  (when-let ((proc (get-buffer-process (current-buffer))))
+    (shell-mode--signal-foreground-pgrp proc signal)))
+
+(defun shell-mode-interrupt-subjob-dwim (arg)
+  "Interrupt subjob: no prefix is default comint; C-u is kill-style SIGINT; C-u C-u is SIGKILL."
+  (interactive "P" comint-mode)
+  (cond ((null arg)
+         (comint-interrupt-subjob))
+        ((equal arg '(16))
+         (shell-mode-interrupt-subjob-via-signal 'SIGKILL))
+        (t
+         (shell-mode-interrupt-subjob-via-signal 'SIGINT))))
+
 (defun shell-mode-custom-keys ()
-  (local-set-key (kbd "M-r") 'helm-comint-input-ring))
+  (local-set-key (kbd "M-r") 'helm-comint-input-ring)
+  (local-set-key (kbd "C-c C-c") #'shell-mode-interrupt-subjob-dwim))
 
 (add-hook 'shell-mode-hook 'shell-mode-custom-keys)
 #+END_SRC
@@ -379,8 +418,10 @@ Helm comint history.
     (comint-log-to-file 'output (remove-ansi-escape-sequences trimmed-output)))
   output)
 
-(add-hook 'comint-input-filter-functions 'comint-log-input)
-(add-hook 'comint-output-filter-functions 'comint-log-output)
+(if comint-history-enabled (progn (add-hook 'comint-input-filter-functions 'comint-log-input)
+                                  (add-hook 'comint-output-filter-functions 'comint-log-output)))
+
+
 #+END_SRC
 
 **** Минибуфер
