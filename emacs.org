@@ -2265,6 +2265,38 @@ run nova repl
     (ansi-color-apply-on-region (point-min) (point-max))))
 (add-hook 'compilation-filter-hook 'colorize-compilation-buffer)
 
+(defun compilation-desktop-notify--command (buffer)
+  "Return the shell command for this compilation buffer, or an empty string."
+  (with-current-buffer buffer
+    (or (and (boundp 'compilation-arguments)
+             compilation-arguments
+             (let ((a (car compilation-arguments)))
+               (if (stringp a) a (prin1-to-string a))))
+        (and (boundp 'compile-command) compile-command
+             (if (stringp compile-command)
+                 compile-command
+               (prin1-to-string compile-command)))
+        "")))
+
+(defun compilation-desktop-notify (buffer finish-msg)
+  "Desktop notification when compilation finishes (requires D-Bus / libnotify)."
+  (when (and (buffer-live-p buffer)
+             (require 'notifications nil t))
+    (let* ((name (buffer-name buffer))
+           (cmd (compilation-desktop-notify--command buffer))
+           (failed (string-match-p "exited abnormally" finish-msg))
+           (body (if (string-empty-p cmd)
+                     (format "%s\n%s" name (string-trim finish-msg))
+                   (format "%s\nCommand: %s\n%s" name cmd (string-trim finish-msg)))))
+      (condition-case nil
+          (notifications-notify
+           :title (if failed "Compilation failed" "Compilation finished")
+           :body body
+           :app-name "Emacs"
+           :urgency (if failed 'critical 'normal))
+        (error nil)))))
+(add-hook 'compilation-finish-functions #'compilation-desktop-notify)
+
 (use-package bash-completion
   :ensure t)
 
