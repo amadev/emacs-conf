@@ -636,6 +636,8 @@ yas-wrap-around-region включает такое поведение.
 (key-chord-define-global "yy" 'ack)
 (key-chord-define-global "jj" 'ace-jump-mode)
 (key-chord-define-global "hh" 'magit-status)
+(key-chord-define-global "ff" 'agent-shell-cursor-start-agent)
+(key-chord-define-global "kk" 'agent-shell)
 #+END_SRC
 
 *** Работа c unicode
@@ -2227,12 +2229,66 @@ https://ebzzry.io/en/emacs-pairs/#manipulation
 
 #+BEGIN_SRC elisp :tangle ~/.emacs.d/init.el
 (use-package agent-shell
-    :ensure t
-    ;; :ensure-system-package
-    ;; Add agent installation configs here
-    ;; ((claude . "brew install claude-code")
-    ;;  (claude-agent-acp . "npm install -g @zed-industries/claude-agent-acp"))
-    )
+  :ensure t
+  ;; :ensure-system-package
+  ;; Add agent installation configs here
+  ;; ((claude . "brew install claude-code")
+  ;;  (claude-agent-acp . "npm install -g @zed-industries/claude-agent-acp"))
+  :config
+  (declare-function agent-shell--tool-call-command-to-string "agent-shell" (command))
+  (declare-function agent-shell-subscribe-to "agent-shell" t)
+
+  (defun agent-shell-desktop-notify--truncate (s maxlen)
+    (if (and s (> (length s) maxlen))
+        (concat (substring s 0 (- maxlen 3)) "...")
+      s))
+
+  (defun agent-shell-desktop-notify--permission-body (tool-call)
+    "Build desktop notification body describing TOOL-CALL."
+    (if (null tool-call)
+        "Open the agent shell buffer to review and respond."
+      (let* ((title (map-elt tool-call :title))
+             (kind (map-elt tool-call :kind))
+             (cmd (ignore-errors
+                    (agent-shell--tool-call-command-to-string
+                     (map-nested-elt tool-call '(rawInput command)))))
+             (path (or (map-nested-elt tool-call '(rawInput filepath))
+                       (map-nested-elt tool-call '(rawInput fileName))
+                       (map-nested-elt tool-call '(rawInput path))
+                       (map-nested-elt tool-call '(rawInput file_path)))))
+        (let ((body (string-trim
+                     (concat (when title (concat title "\n"))
+                             (when kind (concat "Kind: " kind "\n"))
+                             (when (and cmd (not (string-empty-p cmd)))
+                               (concat "Command: " cmd "\n"))
+                             (when path (concat "Path: " path "\n"))))))
+          (if (string-empty-p body)
+              "Permission requested for a tool call."
+            body)))))
+
+  (defun agent-shell-desktop-notify--send (tool-call)
+    (when (require 'notifications nil t)
+      (let ((body (agent-shell-desktop-notify--truncate
+                   (agent-shell-desktop-notify--permission-body tool-call)
+                   800)))
+        (condition-case nil
+            (notifications-notify
+             :title "Agent shell: permission required"
+             :body body
+             :app-name "Emacs"
+             :urgency 'normal)
+          (error nil)))))
+
+  (defun agent-shell-desktop-notify-on-permission (event)
+    (agent-shell-desktop-notify--send (map-elt (map-elt event :data) :tool-call)))
+
+  (defun agent-shell-desktop-notify-setup ()
+    (agent-shell-subscribe-to
+     :shell-buffer (current-buffer)
+     :event 'permission-request
+     :on-event #'agent-shell-desktop-notify-on-permission))
+
+  (add-hook 'agent-shell-mode-hook #'agent-shell-desktop-notify-setup))
 
 ;; (setq agent-shell-cursor-acp-command '("cursor-agent-acp"))
 #+END_SRC
