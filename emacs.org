@@ -180,7 +180,15 @@ http://tuhdo.github.io/helm-intro.html
 Add magit.
 
 #+BEGIN_SRC elisp :tangle ~/.emacs.d/init.el
-(use-package magit)
+(use-package magit
+  :init
+  ;; Magit ships with :no-byte-compile: t; stale .elc files break
+  ;; transient prefixes (e.g. void-variable magit-log).
+  (let ((elpa (expand-file-name "elpa" user-emacs-directory)))
+    (when (file-directory-p elpa)
+      (dolist (pkg (directory-files elpa t "^magit-"))
+        (dolist (elc (directory-files pkg t "\\.elc\\'"))
+          (delete-file elc))))))
 #+END_SRC
 
 Display current python buffer structure.
@@ -636,8 +644,10 @@ yas-wrap-around-region включает такое поведение.
 (key-chord-define-global "yy" 'ack)
 (key-chord-define-global "jj" 'ace-jump-mode)
 (key-chord-define-global "hh" 'magit-status)
-(key-chord-define-global "ff" 'agent-shell-cursor-start-agent)
-(key-chord-define-global "kk" 'agent-shell)
+;; (key-chord-define-global "ff" 'agent-shell)
+(key-chord-define-global "kk" 'agent-shell-cursor-start-agent)
+
+(setq agent-recall-search-paths '("~/s" "~/bin"))
 #+END_SRC
 
 *** Работа c unicode
@@ -1335,13 +1345,53 @@ Example config: https://github.com/Fuco1/.emacs.d/blob/master/files/smartparens.
             ))))
 #+END_SRC
 
-*** Run tmp command
+*** Compile keys
 
 #+BEGIN_SRC elisp :tangle ~/.emacs.d/init.el
-  (defun tmp-command()
-    (interactive)
-    (comint-send-string "shell_placement" "~/m/python-openstackclient/.tox/py27/bin/pytest -vxlk TestSetInventory\n"))
-  (global-set-key (kbd "<f8>") 'tmp-command)
+(global-set-key (kbd "<f8>") 'compile)
+(global-set-key (kbd "<f9>") 'recompile)
+#+END_SRC
+
+*** Compilation manager
+
+#+BEGIN_SRC elisp :tangle ~/.emacs.d/init.el
+(require 'compile)
+
+(defun cm-display-compilation-buffer (buffer alist)
+  "Show compilation BUFFER, reusing a visible compilation window if any."
+  (or (display-buffer-reuse-mode-window buffer alist)
+      (display-buffer-at-bottom buffer alist)))
+
+(add-to-list 'display-buffer-alist
+             '("\\`\\*compilation"
+               (cm-display-compilation-buffer)
+               (mode . compilation-mode)
+               (reusable-frames . visible)
+               (inhibit-same-window . t)))
+
+(defun cm-open-last-buffer ()
+  "Switch to the last compilation buffer."
+  (interactive)
+  (switch-to-buffer
+   (or (and next-error-last-buffer
+            (buffer-live-p next-error-last-buffer)
+            (compilation-buffer-p next-error-last-buffer)
+            next-error-last-buffer)
+       (compilation-find-buffer t))))
+
+(defun cm-kill-all-buffers ()
+  "Kill all compilation buffers, stopping any running processes."
+  (interactive)
+  (let ((killed 0))
+    (dolist (buf (buffer-list))
+      (when (compilation-buffer-p buf)
+        (let ((proc (get-buffer-process buf)))
+          (when proc (delete-process proc)))
+        (kill-buffer buf)
+        (setq killed (1+ killed))))
+    (message "Killed %d compilation buffer(s)" killed)))
+
+(global-set-key (kbd "<f10>") 'cm-open-last-buffer)
 #+END_SRC
 
 *** Eshell
@@ -2334,6 +2384,8 @@ run nova repl
     (ansi-color-apply-on-region (point-min) (point-max))))
 
 (require 'ansi-color)
+(setq compilation-buffer-name-function
+      (lambda (_mode) (generate-new-buffer-name "*compilation* ")))
 (defun colorize-compilation-buffer ()
   (let ((inhibit-read-only t))
     (ansi-color-apply-on-region (point-min) (point-max))))
