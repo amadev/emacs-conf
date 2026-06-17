@@ -36,6 +36,31 @@ make -j16
 
 Конфигурация создается через tangle всех исходников описанных ниже.
 Для создания файла org-babel-tangle c-c c-v t.
+Или `M-x amadev/tangle-and-reload-init`.
+
+#+BEGIN_SRC elisp :tangle ~/.emacs.d/init.el
+(defvar amadev/emacs-conf-org-file
+  (expand-file-name "~/emacs-conf/emacs.org")
+  "Org file that tangles into `user-init-file'.")
+
+(defun amadev/tangle-and-reload-init ()
+  "Tangle `amadev/emacs-conf-org-file' and reload `user-init-file'."
+  (interactive)
+  (require 'org)
+  (require 'ob-tangle)
+  (let ((org-file amadev/emacs-conf-org-file)
+        (init-file (or user-init-file (expand-file-name "~/.emacs.d/init.el")))
+        (org-confirm-babel-evaluate nil))
+    (unless (file-exists-p org-file)
+      (user-error "Org config not found: %s" org-file))
+    (when-let ((buf (find-buffer-visiting org-file)))
+      (when (buffer-modified-p buf)
+        (with-current-buffer buf
+          (save-buffer))))
+    (org-babel-tangle-file org-file)
+    (load init-file nil t)
+    (message "Tangled %s and reloaded %s" org-file init-file)))
+#+END_SRC
 
 #+BEGIN_SRC elisp :tangle ~/.emacs.d/init.el
 (require 'package)
@@ -646,8 +671,6 @@ yas-wrap-around-region включает такое поведение.
 (key-chord-define-global "hh" 'magit-status)
 ;; (key-chord-define-global "ff" 'agent-shell)
 (key-chord-define-global "kk" 'agent-shell-cursor-start-agent)
-
-(setq agent-recall-search-paths '("~/s" "~/bin"))
 #+END_SRC
 
 *** Работа c unicode
@@ -2303,6 +2326,24 @@ https://ebzzry.io/en/emacs-pairs/#manipulation
   ;; ((claude . "brew install claude-code")
   ;;  (claude-agent-acp . "npm install -g @zed-industries/claude-agent-acp"))
   :config
+  (defun amadev/agent-shell--project-key (project-root)
+    "Return a filesystem-safe key for PROJECT-ROOT."
+    (let ((cwd (string-remove-suffix "/" (expand-file-name project-root))))
+      (replace-regexp-in-string "/" "-" (string-remove-prefix "/" cwd))))
+
+  (defun amadev/agent-shell--emacs-d-project-dir (project-root)
+    "Return ~/.emacs.d/agent-shell/<project-key>/ for PROJECT-ROOT."
+    (locate-user-emacs-file
+     (concat "agent-shell/" (amadev/agent-shell--project-key project-root))))
+
+  (defun amadev/agent-shell-dot-subdir (subdir)
+    "Store agent-shell project data under ~/.emacs.d/agent-shell/."
+    (expand-file-name subdir
+                       (amadev/agent-shell--emacs-d-project-dir
+                        (agent-shell-cwd))))
+
+  (setopt agent-shell-dot-subdir-function #'amadev/agent-shell-dot-subdir)
+
   (declare-function agent-shell--tool-call-command-to-string "agent-shell" (command))
   (declare-function agent-shell-subscribe-to "agent-shell" t)
 
@@ -2359,6 +2400,439 @@ https://ebzzry.io/en/emacs-pairs/#manipulation
   (add-hook 'agent-shell-mode-hook #'agent-shell-desktop-notify-setup))
 
 ;; (setq agent-shell-cursor-acp-command '("cursor-agent-acp"))
+#+END_SRC
+
+#+BEGIN_SRC elisp :tangle ~/.emacs.d/init.el
+(use-package agent-recall
+  :ensure t
+  :after agent-shell
+  :init
+  (require 'cl-lib)
+  :config
+  (setq agent-recall-search-paths '("~/s" "~/bin"))
+
+  (defun amadev/agent-recall--emacs-d-transcript-root ()
+    "Return ~/.emacs.d/agent-shell/."
+    (file-name-as-directory
+     (expand-file-name "agent-shell" user-emacs-directory)))
+
+  (defun amadev/agent-recall--emacs-d-transcript-path-p (dir)
+    "Return non-nil when DIR looks like a central agent-shell transcripts path."
+    (let* ((root (amadev/agent-recall--emacs-d-transcript-root))
+           (dir (file-name-as-directory (expand-file-name dir)))
+           (rel (when (string-prefix-p root dir)
+                  (substring dir (length root)))))
+      (and rel
+           (string-match-p "^[^/]+/transcripts/?\\'" rel)
+           (not (string-match "/\\.agent-shell/" rel)))))
+
+  (defun amadev/agent-recall--emacs-d-transcript-dir-p (dir)
+    "Return non-nil when DIR is an existing central transcripts directory."
+    (and (amadev/agent-recall--emacs-d-transcript-path-p dir)
+         (file-directory-p dir)))
+
+  (defun amadev/agent-recall--emacs-d-project-key (transcript-dir)
+    (when (string-match "/agent-shell/\\([^/]+\\)/transcripts"
+                        (file-name-as-directory transcript-dir))
+      (match-string 1 transcript-dir)))
+
+  (defun amadev/agent-recall--project-root-from-transcript-dir (transcript-dir)
+    "Read project root from a transcript header in TRANSCRIPT-DIR."
+    (when (file-directory-p transcript-dir)
+      (cl-some (lambda (file)
+                 (agent-recall--read-working-directory file))
+               (directory-files transcript-dir t "\\.md\\'" t))))
+
+  (defun amadev/agent-recall--key-mask->path (parts mask)
+    (let ((result (car parts)))
+      (dotimes (i (1- (length parts)))
+        (setq result
+              (concat result
+                      (if (zerop (logand (lsh 1 i) mask)) "-" "/")
+                      (nth (1+ i) parts))))
+      result))
+
+  (defun amadev/agent-recall--project-root-from-key (key)
+    "Best-effort reverse of `amadev/agent-shell--project-key'."
+    (let* ((parts (split-string key "-" t))
+           (gaps (max 0 (1- (length parts))))
+           (best nil))
+      (when parts
+        (cl-loop for mask from 0 below (ash 1 gaps)
+                 for candidate = (amadev/agent-recall--key-mask->path parts mask)
+                 when (file-directory-p (expand-file-name candidate "/"))
+                 do (when (or (null best) (> (length candidate) (length best)))
+                      (setq best candidate))))
+      (and best (expand-file-name best "/"))))
+
+  (defun amadev/agent-recall--project-root-for-transcript-dir (transcript-dir)
+    (or (amadev/agent-recall--project-root-from-transcript-dir transcript-dir)
+        (amadev/agent-recall--project-root-from-key
+         (amadev/agent-recall--emacs-d-project-key transcript-dir))))
+
+  (defun amadev/agent-recall--project-name-for-transcript-dir (transcript-dir)
+    (file-name-nondirectory
+     (directory-file-name
+      (or (amadev/agent-recall--project-root-for-transcript-dir transcript-dir)
+          (amadev/agent-recall--emacs-d-project-key transcript-dir)))))
+
+  (defun amadev/agent-recall--emacs-d-transcript-dirs ()
+    (let (dirs)
+      (when (file-directory-p (amadev/agent-recall--emacs-d-transcript-root))
+        (dolist (entry (directory-files (amadev/agent-recall--emacs-d-transcript-root)
+                                         t "^[^.]"))
+          (when (file-directory-p entry)
+            (let ((transcripts (expand-file-name "transcripts" entry)))
+              (when (amadev/agent-recall--emacs-d-transcript-dir-p transcripts)
+                (push transcripts dirs))))))
+      dirs))
+
+  (defun amadev/agent-recall--discover-transcript-dirs ()
+    (let (dirs)
+      (dolist (root agent-recall-search-paths)
+        (when (file-directory-p root)
+          (let* ((cmd (format "find %s -maxdepth %d -path %s -type d 2>/dev/null"
+                              (shell-quote-argument (expand-file-name root))
+                              agent-recall-max-depth
+                              (shell-quote-argument
+                               (concat "*/" agent-recall-transcript-dir-name))))
+                 (output (shell-command-to-string cmd))
+                 (found (split-string output "\n" t)))
+            (setq dirs (append dirs found)))))
+      (setq dirs (append dirs (amadev/agent-recall--emacs-d-transcript-dirs)))
+      (seq-filter #'file-directory-p dirs)))
+
+  (defun amadev/agent-recall-reindex ()
+    "Rebuild transcript index including ~/.emacs.d/agent-shell/ storage."
+    (interactive)
+    (unless agent-recall-search-paths
+      (user-error "`agent-recall-search-paths' is not set"))
+    (let* ((dirs (delete-dups (amadev/agent-recall--discover-transcript-dirs)))
+           (new-index (make-hash-table :test 'equal))
+           (file-count 0)
+           (project-count (length dirs))
+           (without-session 0))
+      (dolist (dir dirs)
+        (let ((project (agent-recall--project-name dir))
+              (files (directory-files dir t "\\.md\\'" t)))
+          (dolist (file files)
+            (let* ((basename (file-name-sans-extension (file-name-nondirectory file)))
+                   (preview (agent-recall--transcript-preview file))
+                   (session-id (agent-recall--resolve-session-id file)))
+              (puthash file
+                       (list :project project
+                             :dir (directory-file-name dir)
+                             :timestamp basename
+                             :session-id session-id
+                             :preview (or preview "(empty)"))
+                       new-index)
+              (cl-incf file-count)))))
+      (setq agent-recall--index new-index
+            agent-recall--index-loaded-p t)
+      (agent-recall--index-save)
+      (maphash (lambda (_file props)
+                 (unless (plist-get props :session-id)
+                   (cl-incf without-session)))
+               new-index)
+      (message "agent-recall: indexed %d transcripts across %d projects%s"
+               file-count project-count
+               (if (> without-session 0)
+                   (format " (%d without session IDs -- run M-x agent-recall-backfill)"
+                           without-session)
+                 ""))))
+
+  (defun amadev/agent-recall--project-name-advice (orig dir)
+    (if (amadev/agent-recall--emacs-d-transcript-dir-p dir)
+        (amadev/agent-recall--project-name-for-transcript-dir dir)
+      (funcall orig dir)))
+
+  (defun amadev/agent-recall--project-root-advice (orig dir)
+    (if (amadev/agent-recall--emacs-d-transcript-dir-p dir)
+        (or (amadev/agent-recall--project-root-for-transcript-dir dir)
+            (file-name-directory
+             (directory-file-name
+              (amadev/agent-recall--emacs-d-transcript-root))))
+      (funcall orig dir)))
+
+  (defun amadev/agent-recall--transcript-file-p-advice (orig file)
+    (or (funcall orig file)
+        (and file
+             (amadev/agent-recall--emacs-d-transcript-path-p
+              (file-name-directory file)))))
+
+  (defun amadev/agent-recall--index-dirs-advice (orig)
+    (seq-filter #'file-directory-p (funcall orig)))
+
+  (advice-add #'agent-recall--project-name :around
+              #'amadev/agent-recall--project-name-advice)
+  (advice-add #'agent-recall--project-root :around
+              #'amadev/agent-recall--project-root-advice)
+  (advice-add #'agent-recall--transcript-file-p :around
+              #'amadev/agent-recall--transcript-file-p-advice)
+  (advice-add #'agent-recall--index-dirs :around
+              #'amadev/agent-recall--index-dirs-advice)
+  (advice-add #'agent-recall-reindex :override #'amadev/agent-recall-reindex)
+
+  ;; Cursor ACP session backfill (~/.cursor/acp-sessions/)
+  (defcustom amadev/agent-recall-cursor-acp-sessions-dir
+    (expand-file-name "acp-sessions" (expand-file-name ".cursor" "~"))
+    "Directory where `cursor-agent acp' stores session data."
+    :type 'directory
+    :group 'agent-recall)
+
+  (defconst amadev/agent-recall--cursor-message-row-script
+    "import sqlite3,sys
+store,needle=sys.argv[1],sys.argv[2]
+prefix=' '.join(needle.lower().split())[:80]
+if not prefix: sys.exit(1)
+conn=sqlite3.connect(store)
+for rowid,(data,) in enumerate(conn.execute('SELECT data FROM blobs ORDER BY rowid')):
+    text=' '.join(bytes(data).decode('utf-8','ignore').lower().split())
+    if prefix in text:
+        print(rowid); sys.exit(0)
+sys.exit(1)")
+
+  (defun amadev/agent-recall--cursor-message-row (session-dir transcript-msg)
+    "Return the earliest blob row index containing TRANSCRIPT-MSG, or nil."
+    (let ((store (expand-file-name "store.db" session-dir)))
+      (when (and (file-exists-p store) transcript-msg)
+        (let ((output (string-trim
+                        (shell-command-to-string
+                         (format "python3 -c %S %S %S"
+                                 amadev/agent-recall--cursor-message-row-script
+                                 store
+                                 transcript-msg)))))
+          (when (and (not (string-empty-p output))
+                     (string-match-p "^[0-9]+$" output))
+            (string-to-number output))))))
+
+  (defun amadev/agent-recall--cursor-session-entries (project-root)
+    "Return Cursor ACP sessions for PROJECT-ROOT as (ID . SESSION-DIR) alist."
+    (let ((root amadev/agent-recall-cursor-acp-sessions-dir)
+          (project (amadev/agent-recall--normalize-path project-root))
+          entries)
+      (when (file-directory-p root)
+        (dolist (meta (directory-files root t "meta\\.json\\'"))
+          (let* ((session-dir (file-name-as-directory (file-name-directory meta)))
+                 (session-id (file-name-nondirectory
+                              (directory-file-name session-dir)))
+                 (meta-data (with-temp-buffer
+                              (insert-file-contents meta)
+                              (json-read)))
+                 (cwd (cdr (assoc 'cwd meta-data))))
+            (when (and cwd
+                       (string= project (amadev/agent-recall--normalize-path cwd))
+                       (file-exists-p (expand-file-name "store.db" session-dir)))
+              (push (cons session-id session-dir) entries)))))
+      entries))
+
+  (defun amadev/agent-recall--cursor-agent-p (file)
+    "Return non-nil when FILE is a Cursor agent-shell transcript."
+    (equal (agent-recall--read-agent-name file) "Cursor"))
+
+  (defun amadev/agent-recall--normalize-path (path)
+    (file-name-as-directory (expand-file-name (or path ""))))
+
+  (defun amadev/agent-recall--match-cursor-session-id (file)
+    "Match transcript FILE to a Cursor ACP session ID, or nil."
+    (when (amadev/agent-recall--cursor-agent-p file)
+      (let* ((transcript-dir (agent-recall--transcript-dir-from-file file))
+             (project-root (agent-recall--project-root transcript-dir))
+             (transcript-msg (agent-recall--transcript-first-message file))
+             (sessions (amadev/agent-recall--cursor-session-entries project-root))
+             (best-id nil)
+             (best-row most-positive-fixnum))
+        (when (and transcript-msg sessions)
+          (dolist (entry sessions)
+            (let* ((session-id (car entry))
+                   (session-dir (cdr entry))
+                   (row (amadev/agent-recall--cursor-message-row
+                         session-dir transcript-msg)))
+              (when (and row (< row best-row))
+                (setq best-id session-id
+                      best-row row))))
+          best-id))))
+
+  (defun amadev/agent-recall--resolve-session-id-cursor-advice (orig file)
+    (let* ((embedded (agent-recall--read-embedded-session-id file))
+           (cached (gethash file agent-recall--session-id-cache)))
+      (cond
+       (embedded embedded)
+       ((and cached (not (eq cached 'none))) cached)
+       (t
+        (let ((session-id
+               (or (unless (eq cached 'none) (funcall orig file))
+                   (amadev/agent-recall--match-cursor-session-id file))))
+          (puthash file (or session-id 'none) agent-recall--session-id-cache)
+          session-id)))))
+
+  (defun amadev/agent-recall-backfill-cursor-pass (&optional write-mode)
+    "Match Cursor transcripts and optionally write `**Session:**' headers."
+    (agent-recall--index-ensure)
+    (let ((matched 0)
+          (no-match 0)
+          (modified-files '()))
+      (maphash
+       (lambda (file entry)
+         (when (and (file-exists-p file)
+                    (not (agent-recall--read-embedded-session-id file))
+                    (amadev/agent-recall--cursor-agent-p file))
+           (let ((project (plist-get entry :project))
+                 (session-id (amadev/agent-recall--match-cursor-session-id file)))
+             (if session-id
+                 (progn
+                   (cl-incf matched)
+                   (when write-mode
+                     (agent-recall--write-session-id-to-file file session-id)
+                     (agent-recall--index-add file session-id)
+                     (puthash file session-id agent-recall--session-id-cache)
+                     (push file modified-files))
+                   (when (get-buffer "*agent-recall-backfill*")
+                     (with-current-buffer "*agent-recall-backfill*"
+                       (goto-char (point-max))
+                       (insert (format "  CURSOR:   [%s] %s → %s\n"
+                                       project
+                                       (file-name-nondirectory file)
+                                       (substring session-id 0 8))))))
+               (cl-incf no-match)
+               (when (get-buffer "*agent-recall-backfill*")
+                 (with-current-buffer "*agent-recall-backfill*"
+                   (goto-char (point-max))
+                   (insert (format "  CURSOR:   [%s] %s (no Cursor session match)\n"
+                                   project
+                                   (file-name-nondirectory file)))))))))
+       agent-recall--index)
+      (when (and write-mode modified-files)
+        (agent-recall--index-save))
+      (when (> matched 0)
+        (message "agent-recall cursor backfill: matched %d, no match %d"
+                 matched no-match))
+      (list matched no-match modified-files)))
+
+  (defun amadev/agent-recall-backfill-cursor (&optional write-mode)
+    "Backfill session IDs for Cursor transcripts from ~/.cursor/acp-sessions/."
+    (interactive "P")
+    (amadev/agent-recall-backfill-cursor-pass write-mode))
+
+  (defun amadev/agent-recall-backfill-around (orig &optional write-mode)
+    (funcall orig write-mode)
+    (amadev/agent-recall-backfill-cursor-pass write-mode))
+
+  (advice-add #'agent-recall--resolve-session-id :around
+              #'amadev/agent-recall--resolve-session-id-cursor-advice)
+  (advice-add #'agent-recall-backfill :around
+              #'amadev/agent-recall-backfill-around)
+
+  (defcustom amadev/agent-recall-browse-prefer-helm t
+    "When non-nil, `agent-recall-browse' uses Helm with live preview."
+    :type 'boolean
+    :group 'agent-recall)
+
+  (defvar amadev/agent-recall--helm-temporary-buffers nil
+    "Temporary transcript buffers opened during Helm browse preview.")
+
+  (defun amadev/agent-recall--browse-helm-teardown-hooks ()
+    (remove-hook 'helm-after-update-hook
+                 #'amadev/agent-recall--browse-helm-update-preview t)
+    (remove-hook 'helm-move-selection-after-hook
+                 #'amadev/agent-recall--browse-helm-update-preview t))
+
+  (defun amadev/agent-recall--browse-helm-cleanup ()
+    (amadev/agent-recall--browse-helm-teardown-hooks)
+    (mapc (lambda (buf)
+            (when (buffer-live-p buf)
+              (kill-buffer buf)))
+          amadev/agent-recall--helm-temporary-buffers)
+    (setq amadev/agent-recall--helm-temporary-buffers nil))
+
+  (defun amadev/agent-recall--browse-helm-buffer (file)
+    "Return a buffer visiting transcript FILE, creating a temp one if needed."
+    (or (get-file-buffer file)
+        (let ((buf (find-file-noselect file)))
+          (push buf amadev/agent-recall--helm-temporary-buffers)
+          buf)))
+
+  (defun amadev/agent-recall--browse-helm-show-preview (file)
+    (when-let* ((file (and file (stringp file)))
+                (buf (amadev/agent-recall--browse-helm-buffer file)))
+      (with-helm-window
+        (with-selected-window (helm-persistent-action-display-window :split t)
+          (switch-to-buffer buf 'norecord)
+          (goto-char (point-min))
+          (when agent-recall-auto-transcript-mode
+            (agent-recall-transcript-mode 1))))))
+
+  (defun amadev/agent-recall--browse-helm-update-preview ()
+    (condition-case nil
+        (unless (or (not (bound-and-true-p helm-alive-p))
+                    (helm-empty-buffer-p)
+                    (helm-pos-header-line-p))
+          (amadev/agent-recall--browse-helm-show-preview
+           (helm-get-selection nil nil)))
+      (error nil)))
+
+  (defun amadev/agent-recall--browse-helm-persistent-action (file)
+    (amadev/agent-recall--browse-helm-show-preview file))
+
+  (defun amadev/agent-recall--browse-helm-candidates (transcripts)
+    "Build Helm (DISPLAY . FILE) candidates from TRANSCRIPTS."
+    (mapcar
+     (lambda (entry)
+       (let* ((file (cdr entry))
+              (display (car entry))
+              (preview (when-let* ((idx-entry (gethash file agent-recall--index))
+                                  (p (plist-get idx-entry :preview)))
+                         (unless (string-empty-p p) p))))
+         (cons (if preview (concat display (concat "  " preview)) display)
+               file)))
+     transcripts))
+
+  (defun amadev/agent-recall--browse-helm (candidates)
+    "Browse transcripts with Helm and live preview.
+Returns the selected transcript file path, or nil."
+    (require 'helm-core)
+    (let ((default (car agent-recall--browse-history)))
+      (unwind-protect
+          (progn
+            (add-hook 'helm-after-update-hook
+                      #'amadev/agent-recall--browse-helm-update-preview nil t)
+            (add-hook 'helm-move-selection-after-hook
+                      #'amadev/agent-recall--browse-helm-update-preview nil t)
+            (helm
+             :sources
+             (helm-build-sync-source "Transcripts"
+               :candidates candidates
+               :persistent-action #'amadev/agent-recall--browse-helm-persistent-action
+               :persistent-help "Preview transcript"
+               :action #'identity
+               :nomark t
+               :group 'agent-recall)
+             :prompt "Transcript: "
+             :buffer "*helm agent-recall*"
+             :history 'agent-recall--browse-history
+             :default default
+             :preselect default))
+        (amadev/agent-recall--browse-helm-cleanup))))
+
+  (defun amadev/agent-recall-browse-helm-advice (orig)
+    (interactive)
+    (if (and agent-recall-browse-preview
+             amadev/agent-recall-browse-prefer-helm
+             (require 'helm-core nil t))
+        (progn
+          (agent-recall--setup-embark)
+          (let* ((transcripts (agent-recall--list-transcripts)))
+            (unless transcripts
+              (user-error "No transcripts indexed.  Run M-x agent-recall-reindex"))
+            (when-let ((file (amadev/agent-recall--browse-helm
+                              (amadev/agent-recall--browse-helm-candidates
+                               transcripts))))
+              (agent-recall--open-transcript file))))
+      (funcall orig)))
+
+  (advice-add #'agent-recall-browse :around #'amadev/agent-recall-browse-helm-advice)
+
+  (add-hook 'agent-shell-mode-hook #'agent-recall-track-sessions))
 #+END_SRC
 
 ** Experiments
