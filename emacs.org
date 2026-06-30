@@ -2345,7 +2345,61 @@ https://ebzzry.io/en/emacs-pairs/#manipulation
   (setopt agent-shell-dot-subdir-function #'amadev/agent-shell-dot-subdir)
 
   (declare-function agent-shell--tool-call-command-to-string "agent-shell" (command))
+  (declare-function agent-shell--format-buffer-name "agent-shell" (agent-name project-name))
+  (declare-function agent-shell--project-name "agent-shell-project" ())
   (declare-function agent-shell-subscribe-to "agent-shell" t)
+  (declare-function shell-maker-set-buffer-name "shell-maker" (buffer new-name))
+
+  (defvar-local amadev/agent-shell--renamed-from-prompt-p nil)
+
+  (defun amadev/agent-shell--prompt-snippet (title &optional max-words max-len)
+    "Return first MAX-WORDS words of TITLE, capped at MAX-LEN chars."
+    (let* ((words (or max-words 5))
+           (len (or max-len 60))
+           (line (string-trim (replace-regexp-in-string "[\r\n]+" " " title)))
+           (snippet (mapconcat #'identity
+                               (seq-take (split-string line "\\s-+" t) words)
+                               " ")))
+      (if (> (length snippet) len)
+          (concat (substring snippet 0 (- len 3)) "...")
+        snippet)))
+
+  (defun amadev/agent-shell--rename-buffer-with-title (title)
+    "Append a TITLE snippet to the agent-shell buffer name, once per buffer."
+    (when (and (stringp title) (not (string-empty-p title))
+               (not amadev/agent-shell--renamed-from-prompt-p))
+      (let* ((state agent-shell--state)
+             (agent-name (or (map-nested-elt state '(:agent-config :mode-line-name))
+                             (map-nested-elt state '(:agent-config :buffer-name))
+                             "Agent"))
+             (base (agent-shell--format-buffer-name
+                    agent-name (agent-shell--project-name)))
+             (snippet (amadev/agent-shell--prompt-snippet title))
+             (new-name (format "%s [%s]" base snippet)))
+        (shell-maker-set-buffer-name (current-buffer) new-name)
+        (setq amadev/agent-shell--renamed-from-prompt-p t))))
+
+  (defun amadev/agent-shell-rename-from-prompt (event)
+    (when (eq (map-elt event :event) 'session-title-changed)
+      (amadev/agent-shell--rename-buffer-with-title
+       (map-elt (map-elt event :data) :title))))
+
+  (defun amadev/agent-shell-on-session-selected (_event)
+    (amadev/agent-shell--rename-buffer-with-title
+     (map-nested-elt agent-shell--state '(:session :title))))
+
+  (defun amadev/agent-shell-setup-prompt-buffer-name ()
+    (setq amadev/agent-shell--renamed-from-prompt-p nil)
+    (agent-shell-subscribe-to
+     :shell-buffer (current-buffer)
+     :event 'session-title-changed
+     :on-event #'amadev/agent-shell-rename-from-prompt)
+    (agent-shell-subscribe-to
+     :shell-buffer (current-buffer)
+     :event 'session-selected
+     :on-event #'amadev/agent-shell-on-session-selected))
+
+  (add-hook 'agent-shell-mode-hook #'amadev/agent-shell-setup-prompt-buffer-name)
 
   (defun agent-shell-desktop-notify--truncate (s maxlen)
     (if (and s (> (length s) maxlen))
