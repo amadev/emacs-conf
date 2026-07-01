@@ -399,9 +399,11 @@ SIGNAL is a symbol such as SIGINT or SIGKILL (not the PTY ^C path)."
          (shell-mode-interrupt-subjob-via-signal 'SIGINT))))
 
 (defun shell-mode-delete-above-current-line ()
-  "Delete all text from the start of the buffer through the line above point."
+  "Delete all text from the start of the buffer through the line above point.
+The line containing point is preserved in full, including its prompt."
   (interactive nil comint-mode)
-  (let ((end (line-beginning-position)))
+  (let ((end (let ((inhibit-field-text-motion t))
+               (line-beginning-position))))
     (when (> end (point-min))
       (let ((inhibit-read-only t))
         (delete-region (point-min) end)))))
