@@ -398,9 +398,18 @@ SIGNAL is a symbol such as SIGINT or SIGKILL (not the PTY ^C path)."
         (t
          (shell-mode-interrupt-subjob-via-signal 'SIGINT))))
 
+(defun shell-mode-delete-above-current-line ()
+  "Delete all text from the start of the buffer through the line above point."
+  (interactive nil comint-mode)
+  (let ((end (line-beginning-position)))
+    (when (> end (point-min))
+      (let ((inhibit-read-only t))
+        (delete-region (point-min) end)))))
+
 (defun shell-mode-custom-keys ()
   (local-set-key (kbd "M-r") 'helm-comint-input-ring)
-  (local-set-key (kbd "C-c C-c") #'shell-mode-interrupt-subjob-dwim))
+  (local-set-key (kbd "C-c C-c") #'shell-mode-interrupt-subjob-dwim)
+  (local-set-key (kbd "C-c u") #'shell-mode-delete-above-current-line))
 
 (add-hook 'shell-mode-hook 'shell-mode-custom-keys)
 #+END_SRC
