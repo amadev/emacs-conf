@@ -1403,15 +1403,28 @@ Example config: https://github.com/Fuco1/.emacs.d/blob/master/files/smartparens.
                (reusable-frames . visible)
                (inhibit-same-window . t)))
 
+(defun cm-compilation-buffer-id (name)
+  "Return the numeric suffix of compilation buffer NAME, or 1 for the base name."
+  (when (string-match "\\`\\*compilation" name)
+    (if (string-match "<\\([0-9]+\\)>\\'" name)
+        (string-to-number (match-string 1 name))
+      1)))
+
 (defun cm-open-last-buffer ()
-  "Switch to the last compilation buffer."
+  "Show the *compilation* buffer with the highest ID."
   (interactive)
-  (switch-to-buffer
-   (or (and next-error-last-buffer
-            (buffer-live-p next-error-last-buffer)
-            (compilation-buffer-p next-error-last-buffer)
-            next-error-last-buffer)
-       (compilation-find-buffer t))))
+  (let ((best nil)
+        (best-id 0))
+    (dolist (buf (buffer-list))
+      (when (and (buffer-live-p buf)
+                 (compilation-buffer-p buf))
+        (let ((id (cm-compilation-buffer-id (buffer-name buf))))
+          (when (and id (> id best-id))
+            (setq best-id id
+                  best buf)))))
+    (if best
+        (display-buffer best)
+      (user-error "No compilation buffer"))))
 
 (defun cm-kill-all-buffers ()
   "Kill all compilation buffers, stopping any running processes."
