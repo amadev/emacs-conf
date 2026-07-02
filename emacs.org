@@ -680,7 +680,7 @@ yas-wrap-around-region включает такое поведение.
 (key-chord-define-global "yy" 'ack)
 (key-chord-define-global "jj" 'ace-jump-mode)
 (key-chord-define-global "hh" 'magit-status)
-;; (key-chord-define-global "ff" 'agent-shell)
+(key-chord-define-global "zz" 'agent-shell)
 (key-chord-define-global "kk" 'agent-shell-cursor-start-agent)
 #+END_SRC
 
@@ -2440,27 +2440,49 @@ https://ebzzry.io/en/emacs-pairs/#manipulation
               "Permission requested for a tool call."
             body)))))
 
-  (defun agent-shell-desktop-notify--send (tool-call)
+  (defun agent-shell-desktop-notify--notify (title body &optional urgency)
+    "Show a persistent desktop notification with TITLE and BODY."
     (when (require 'notifications nil t)
-      (let ((body (agent-shell-desktop-notify--truncate
-                   (agent-shell-desktop-notify--permission-body tool-call)
-                   800)))
-        (condition-case nil
-            (notifications-notify
-             :title "Agent shell: permission required"
-             :body body
-             :app-name "Emacs"
-             :urgency 'normal)
-          (error nil)))))
+      (condition-case nil
+          (notifications-notify
+           :title title
+           :body (agent-shell-desktop-notify--truncate body 800)
+           :app-name "Emacs"
+           :urgency (or urgency 'normal)
+           :timeout 0)
+        (error nil))))
+
+  (defun agent-shell-desktop-notify--send (tool-call)
+    (agent-shell-desktop-notify--notify
+     "Agent shell: permission required"
+     (agent-shell-desktop-notify--permission-body tool-call)))
+
+  (defun agent-shell-desktop-notify--error-body (data)
+    "Build desktop notification body for an agent-shell error event."
+    (let ((code (map-elt data :code))
+          (message (map-elt data :message)))
+      (string-trim
+       (concat (when code (format "Code: %s\n" code))
+               (or message "Open the agent shell buffer for details.")))))
 
   (defun agent-shell-desktop-notify-on-permission (event)
     (agent-shell-desktop-notify--send (map-elt (map-elt event :data) :tool-call)))
+
+  (defun agent-shell-desktop-notify-on-error (event)
+    (agent-shell-desktop-notify--notify
+     "Agent shell: error"
+     (agent-shell-desktop-notify--error-body (map-elt event :data))
+     'critical))
 
   (defun agent-shell-desktop-notify-setup ()
     (agent-shell-subscribe-to
      :shell-buffer (current-buffer)
      :event 'permission-request
-     :on-event #'agent-shell-desktop-notify-on-permission))
+     :on-event #'agent-shell-desktop-notify-on-permission)
+    (agent-shell-subscribe-to
+     :shell-buffer (current-buffer)
+     :event 'error
+     :on-event #'agent-shell-desktop-notify-on-error))
 
   (add-hook 'agent-shell-mode-hook #'agent-shell-desktop-notify-setup))
 
