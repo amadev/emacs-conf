@@ -58,8 +58,9 @@ make -j16
         (with-current-buffer buf
           (save-buffer))))
     (org-babel-tangle-file org-file)
-    (load init-file nil t)
-    (message "Tangled %s and reloaded %s" org-file init-file)))
+    (load (expand-file-name "init.el" user-emacs-directory) nil t)
+    (message "Tangled %s and reloaded %s" org-file
+             (expand-file-name "init.el" user-emacs-directory))))
 #+END_SRC
 
 #+BEGIN_SRC elisp :tangle ~/.emacs.d/init.el
@@ -114,6 +115,55 @@ make -j16
 ;; may split a window horizontally only if it has at least this many columns
 (setq split-width-threshold 200)
 (setq split-height-threshold nil)
+#+END_SRC
+
+На большом/ultrawide мониторе Emacs по умолчанию режет фрейм на
+крошечные окна. Поднимаем минимальные размеры и складываем служебные
+буферы (compilation, agent-shell, *Help*) в одно нижнее utility-окно.
+
+#+BEGIN_SRC elisp :tangle ~/.emacs.d/init.el
+(defun amadev/set-window-min-sizes (&optional frame)
+  "Raise `window-min-height' and `window-min-width' from FRAME geometry."
+  (let* ((frame (or frame (selected-frame)))
+         (lines (max 20 (frame-height frame)))
+         (cols (max 80 (frame-width frame))))
+    (setq window-min-height (max 12 (/ lines 5)))
+    (setq window-min-width (max 40 (/ cols 6)))))
+
+(add-hook 'window-configuration-change-hook
+          #'amadev/set-window-min-sizes)
+(add-hook 'after-make-frame-functions #'amadev/set-window-min-sizes)
+(amadev/set-window-min-sizes)
+
+(defun amadev/display-bottom-utility-buffer (buffer alist)
+  "Show BUFFER in a reusable bottom utility window."
+  (or (display-buffer-reuse-mode-window buffer alist)
+      (display-buffer-in-side-window
+       buffer
+       (append '((side . bottom)
+                 (slot . 0)
+                 (window-height . 0.3)
+                 (preserve-size . (nil . t)))
+               alist))))
+
+(add-to-list 'display-buffer-alist
+             '("\\`\\*\\(Help\\|Apropos\\|Completions\\|Warnings\\|Shell Command Output\\|Backtrace\\)"
+               (amadev/display-bottom-utility-buffer)
+               (inhibit-same-window . t)))
+
+(add-to-list 'display-buffer-alist
+             '((derived-mode . comint-mode)
+               (amadev/display-bottom-utility-buffer)
+               (inhibit-same-window . t)))
+
+(defun amadev/configure-utility-buffer-display ()
+  "Route agent-shell buffers through the shared bottom utility window."
+  (setq agent-shell-display-action
+        '(amadev/display-bottom-utility-buffer)))
+
+(with-eval-after-load 'agent-shell #'amadev/configure-utility-buffer-display)
+(when (featurep 'agent-shell)
+  (amadev/configure-utility-buffer-display))
 #+END_SRC
 
 Disable version control to speed up TRAMP opening.
@@ -1183,6 +1233,71 @@ Example config: https://github.com/Fuco1/.emacs.d/blob/master/files/smartparens.
                         'shell-procfs-dirtrack t))))
 #+END_SRC
 
+*** Timer
+
+Set a countdown timer with a persistent desktop notification that stays
+until dismissed, plus a repeating echo-area reminder every 60 seconds
+until you call =my/cancel-timer-reminder=.
+
+#+BEGIN_SRC elisp :tangle ~/.emacs.d/init.el
+(defvar my/timer-reminders nil
+  "Alist of (label . timer) for active repeating reminders.")
+
+(defun my/cancel-timer-reminder ()
+  "Cancel a repeating timer reminder, chosen by label."
+  (interactive)
+  (if (null my/timer-reminders)
+      (message "No active timer reminders.")
+    (let* ((labels (mapcar #'car my/timer-reminders))
+           (label (if (= (length labels) 1)
+                      (car labels)
+                    (completing-read "Cancel reminder: " labels nil t))))
+      (let ((entry (assoc label my/timer-reminders)))
+        (when entry
+          (cancel-timer (cdr entry))
+          (setq my/timer-reminders (delq entry my/timer-reminders))
+          (message "Timer reminder cancelled: %s" label))))))
+
+(defun my/timer-fire (label)
+  "Fire the timer: send a sticky desktop notification and start nagging."
+  (notifications-notify
+   :title "Emacs Timer"
+   :body label
+   :urgency 'critical
+   :expire-time -1)
+  (message "⏰ Timer: %s  (M-x my/cancel-timer-reminder to stop)" label)
+  (push (cons label
+              (run-at-time 60 60
+                           (lambda ()
+                             (message "⏰ Timer: %s  (M-x my/cancel-timer-reminder to stop)"
+                                      label))))
+        my/timer-reminders))
+
+(defun my/parse-timer-input (input)
+  "Parse INPUT like \"5\", \"5m\", \"5s\", \"5h\" into seconds.
+Plain numbers default to minutes."
+  (cond
+   ((string-match "^\\([0-9]+\\)s$" input)
+    (string-to-number (match-string 1 input)))
+   ((string-match "^\\([0-9]+\\)m$" input)
+    (* 60 (string-to-number (match-string 1 input))))
+   ((string-match "^\\([0-9]+\\)h$" input)
+    (* 3600 (string-to-number (match-string 1 input))))
+   ((string-match "^\\([0-9]+\\)$" input)
+    (* 60 (string-to-number (match-string 1 input))))
+   (t (user-error "Invalid time format: %s (use e.g. 5, 5m, 30s, 2h)" input))))
+
+(defun my/set-timer (time-input label)
+  "Set a timer using TIME-INPUT (e.g. \"5\", \"5m\", \"30s\", \"2h\") with a LABEL.
+Plain numbers default to minutes."
+  (interactive
+   (list (read-string "Time (5, 5m, 30s, 2h): ")
+         (read-string "Label: " "Time's up!")))
+  (let ((seconds (my/parse-timer-input time-input)))
+    (run-at-time seconds nil #'my/timer-fire label)
+    (message "Timer set for %s (%d sec): %s" time-input seconds label)))
+#+END_SRC
+
 *** Docker
 
 #+BEGIN_SRC elisp :tangle ~/.emacs.d/init.el
@@ -1392,9 +1507,8 @@ Example config: https://github.com/Fuco1/.emacs.d/blob/master/files/smartparens.
 (require 'compile)
 
 (defun cm-display-compilation-buffer (buffer alist)
-  "Show compilation BUFFER, reusing a visible compilation window if any."
-  (or (display-buffer-reuse-mode-window buffer alist)
-      (display-buffer-at-bottom buffer alist)))
+  "Show compilation BUFFER in the shared bottom utility window."
+  (amadev/display-bottom-utility-buffer buffer alist))
 
 (add-to-list 'display-buffer-alist
              '("\\`\\*compilation"
