@@ -119,7 +119,8 @@ make -j16
 
 На большом/ultrawide мониторе Emacs по умолчанию режет фрейм на
 крошечные окна. Поднимаем минимальные размеры и складываем служебные
-буферы (compilation, agent-shell, *Help*) в одно нижнее utility-окно.
+буферы (compilation, *Help*) в одно нижнее utility-окно. Agent-shell
+и Magit открываются только в основном окне.
 
 #+BEGIN_SRC elisp :tangle ~/.emacs.d/init.el
 (defun amadev/set-window-min-sizes (&optional frame)
@@ -135,6 +136,25 @@ make -j16
 (add-hook 'after-make-frame-functions #'amadev/set-window-min-sizes)
 (amadev/set-window-min-sizes)
 
+(defun amadev/non-side-window-p (window)
+  "Return non-nil when WINDOW is a regular frame window."
+  (and (window-live-p window)
+       (not (window-parameter window 'side))))
+
+(defun amadev/select-main-window ()
+  "Select a non-side window in the current frame."
+  (select-window
+   (or (and (amadev/non-side-window-p (selected-window))
+            (selected-window))
+       (seq-find #'amadev/non-side-window-p (window-list nil 'no-minibuf))
+       (get-largest-window nil 'visible)
+       (selected-window))))
+
+(defun amadev/display-main-window-buffer (buffer alist)
+  "Show BUFFER in a main window, never a bottom side window."
+  (amadev/select-main-window)
+  (display-buffer-same-window buffer alist))
+
 (defun amadev/display-bottom-utility-buffer (buffer alist)
   "Show BUFFER in a reusable bottom utility window."
   (or (display-buffer-reuse-mode-window buffer alist)
@@ -146,24 +166,57 @@ make -j16
                  (preserve-size . (nil . t)))
                alist))))
 
+(defun amadev/display-comint-utility-buffer (buffer alist)
+  "Show comint BUFFER in the utility window, excluding agent shells."
+  (unless (derived-mode-p 'agent-shell-mode buffer)
+    (amadev/display-bottom-utility-buffer buffer alist)))
+
 (add-to-list 'display-buffer-alist
              '("\\`\\*\\(Help\\|Apropos\\|Completions\\|Warnings\\|Shell Command Output\\|Backtrace\\)"
                (amadev/display-bottom-utility-buffer)
                (inhibit-same-window . t)))
 
 (add-to-list 'display-buffer-alist
+             '("\\`\\*shell\\*"
+               (display-buffer-same-window)))
+
+(add-to-list 'display-buffer-alist
              '((derived-mode . comint-mode)
-               (amadev/display-bottom-utility-buffer)
+               (amadev/display-comint-utility-buffer)
                (inhibit-same-window . t)))
 
-(defun amadev/configure-utility-buffer-display ()
-  "Route agent-shell buffers through the shared bottom utility window."
-  (setq agent-shell-display-action
-        '(amadev/display-bottom-utility-buffer)))
+(add-to-list 'display-buffer-alist
+             '((derived-mode . agent-shell-mode)
+               (amadev/display-main-window-buffer)))
 
-(with-eval-after-load 'agent-shell #'amadev/configure-utility-buffer-display)
+(add-to-list 'display-buffer-alist
+             '((derived-mode . magit-mode)
+               (amadev/display-main-window-buffer)))
+
+(defun amadev/configure-agent-shell-display ()
+  "Keep agent-shell buffers in the main window when agent-shell displays them."
+  (setq agent-shell-display-action '(amadev/display-main-window-buffer)))
+
+(defun amadev/magit-display-buffer (buffer)
+  "Display Magit BUFFER in a main window, never a side window."
+  (amadev/select-main-window)
+  (display-buffer
+   buffer (if (with-current-buffer buffer
+                (derived-mode-p 'magit-diff-mode 'magit-process-mode))
+              '(nil (inhibit-same-window . t))
+            '(display-buffer-same-window))))
+
+(defun amadev/configure-magit-display ()
+  "Keep Magit buffers in the main window."
+  (setq magit-display-buffer-function #'amadev/magit-display-buffer))
+
+(with-eval-after-load 'agent-shell #'amadev/configure-agent-shell-display)
 (when (featurep 'agent-shell)
-  (amadev/configure-utility-buffer-display))
+  (amadev/configure-agent-shell-display))
+
+(with-eval-after-load 'magit-mode #'amadev/configure-magit-display)
+(when (featurep 'magit-mode)
+  (amadev/configure-magit-display))
 #+END_SRC
 
 Disable version control to speed up TRAMP opening.
@@ -1357,8 +1410,10 @@ Plain numbers default to minutes."
 
 #+BEGIN_SRC elisp :tangle ~/.emacs.d/init.el
 (use-package tramp
-  :config (add-to-list 'tramp-connection-properties
-                       (list nil "session-timeout" nil)))
+  :config
+  (add-to-list 'tramp-connection-properties
+               (list nil "session-timeout" nil))
+  (setq tramp-ssh-extra-args '("-o" "SetEnv EMACS_TRAMP=1")))
 #+END_SRC
 
 *** Shell management
