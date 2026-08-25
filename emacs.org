@@ -784,7 +784,8 @@ yas-wrap-around-region включает такое поведение.
 (key-chord-define-global "jj" 'ace-jump-mode)
 (key-chord-define-global "hh" 'magit-status)
 (key-chord-define-global "zz" 'agent-shell)
-(key-chord-define-global "kk" 'agent-shell-cursor-start-agent)
+;; (key-chord-define-global "kk" 'agent-shell-cursor-start-agent)
+(key-chord-define-global "kk" 'agent-shell-anthropic-start-claude-code)
 #+END_SRC
 
 *** Работа c unicode
@@ -819,6 +820,12 @@ M-$ - исправление первого слова с ошибкой пос�
 
 (global-set-key (kbd "M-/") 'hippie-expand)
 (global-set-key (kbd "C-x C-b") 'ibuffer)
+(setq ibuffer-formats
+      '((mark modified read-only locked
+              " " (name 100 100 :left :elide)
+              " " (size 9 -1 :right)
+              " " (mode 16 16 :left :elide) " " filename-and-process)
+        (mark " " (name 16 -1) " " filename)))
 
 (use-package ace-window
   :ensure t
@@ -1127,11 +1134,15 @@ and press 'D' after that.
   (defun git-link-openstack-github (hostname dirname filename branch commit start end)
     (funcall 'git-link-github "github.com" dirname filename branch commit start end))
 
+  (defun git-link-amadev (hostname dirname filename branch commit start end)
+    (funcall 'git-link-github "amadev.ru" dirname filename branch commit start end))
+
   (defun git-link-commit-openstack-github (hostname dirname commit)
     (funcall 'git-link-commit-github "github.com" dirname commit))
 
   ;; (add-to-list 'git-link-remote-alist '("review.openstack.org" git-link-openstack))
   (add-to-list 'git-link-remote-alist '("review.openstack.org" git-link-openstack-github))
+  (add-to-list 'git-link-remote-alist '("amadev.ru" git-link-amadev))
   (add-to-list 'git-link-commit-remote-alist '("review.openstack.org" git-link-commit-openstack-github))
   )
 #+END_SRC
@@ -2565,10 +2576,8 @@ https://ebzzry.io/en/emacs-pairs/#manipulation
              (agent-name (or (map-nested-elt state '(:agent-config :mode-line-name))
                              (map-nested-elt state '(:agent-config :buffer-name))
                              "Agent"))
-             (base (agent-shell--format-buffer-name
-                    agent-name (agent-shell--project-name)))
              (snippet (amadev/agent-shell--prompt-snippet title))
-             (new-name (format "%s [%s]" base snippet)))
+             (new-name (format "Agent [%s] [%s]" agent-name snippet)))
         (shell-maker-set-buffer-name (current-buffer) new-name)
         (setq amadev/agent-shell--renamed-from-prompt-p t))))
 
@@ -2592,7 +2601,27 @@ https://ebzzry.io/en/emacs-pairs/#manipulation
      :event 'session-selected
      :on-event #'amadev/agent-shell-on-session-selected))
 
+  (defun amadev/agent-shell-set-initial-buffer-name ()
+    "Rename a new agent-shell buffer to Agent [Name] immediately on mode start."
+    (let* ((agent-name (or (map-nested-elt agent-shell--state '(:agent-config :mode-line-name))
+                           (map-nested-elt agent-shell--state '(:agent-config :buffer-name))
+                           "Agent"))
+           (project (agent-shell--project-name))
+           (new-name (format "Agent [%s] %s" agent-name project)))
+      (shell-maker-set-buffer-name (current-buffer) new-name)))
+
+  (add-hook 'agent-shell-mode-hook #'amadev/agent-shell-set-initial-buffer-name)
   (add-hook 'agent-shell-mode-hook #'amadev/agent-shell-setup-prompt-buffer-name)
+
+  (defun agent-shell-desktop-notify--agent-name ()
+    "Return the agent name for the current agent-shell buffer."
+    (or (map-nested-elt agent-shell--state '(:agent-config :mode-line-name))
+        (map-nested-elt agent-shell--state '(:agent-config :buffer-name))
+        "Agent"))
+
+  (defun agent-shell-desktop-notify--title (suffix)
+    "Return notification title with agent name prefix: Agent [Name] SUFFIX."
+    (format "Agent [%s] %s" (agent-shell-desktop-notify--agent-name) suffix))
 
   (defun agent-shell-desktop-notify--truncate (s maxlen)
     (if (and s (> (length s) maxlen))
@@ -2636,7 +2665,7 @@ https://ebzzry.io/en/emacs-pairs/#manipulation
 
   (defun agent-shell-desktop-notify--send (tool-call)
     (agent-shell-desktop-notify--notify
-     "Agent shell: permission required"
+     (agent-shell-desktop-notify--title "permission required")
      (agent-shell-desktop-notify--permission-body tool-call)))
 
   (defun agent-shell-desktop-notify--error-body (data)
@@ -2652,7 +2681,7 @@ https://ebzzry.io/en/emacs-pairs/#manipulation
 
   (defun agent-shell-desktop-notify-on-error (event)
     (agent-shell-desktop-notify--notify
-     "Agent shell: error"
+     (agent-shell-desktop-notify--title "error")
      (agent-shell-desktop-notify--error-body (map-elt event :data))
      'critical))
 
@@ -2666,9 +2695,17 @@ https://ebzzry.io/en/emacs-pairs/#manipulation
      :event 'error
      :on-event #'agent-shell-desktop-notify-on-error))
 
-  (add-hook 'agent-shell-mode-hook #'agent-shell-desktop-notify-setup))
+  (add-hook 'agent-shell-mode-hook #'agent-shell-desktop-notify-setup)
 
-;; (setq agent-shell-cursor-acp-command '("cursor-agent-acp"))
+  (defun amadev/agent-shell-copy-transcript-path ()
+    "Copy the current agent-shell buffer's transcript file path to the kill ring."
+    (interactive)
+    (let ((path (buffer-local-value 'agent-shell--transcript-file (current-buffer))))
+      (if (and path (stringp path))
+          (progn
+            (kill-new path)
+            (message "Copied transcript path: %s" path))
+        (user-error "No transcript file associated with this buffer")))))
 #+END_SRC
 
 #+BEGIN_SRC elisp :tangle ~/.emacs.d/init.el
