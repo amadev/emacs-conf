@@ -214,9 +214,21 @@ make -j16
 (when (featurep 'agent-shell)
   (amadev/configure-agent-shell-display))
 
+(defun amadev/switch-to-agents-ibuffer ()
+  "Switch to or create an ibuffer buffer named *AGENTS* filtered by agent-shell-mode."
+  (interactive)
+  (let ((buf (get-buffer "*AGENTS*")))
+    (if buf
+        (progn
+          (switch-to-buffer buf)
+          (ibuffer-update nil t))
+      (ibuffer nil "*AGENTS*" '((mode . agent-shell-mode))))))
+
 (with-eval-after-load 'magit-mode #'amadev/configure-magit-display)
 (when (featurep 'magit-mode)
   (amadev/configure-magit-display))
+
+(global-set-key (kbd "<f6>") 'amadev/switch-to-agents-ibuffer)
 #+END_SRC
 
 Disable version control to speed up TRAMP opening.
@@ -667,15 +679,19 @@ M-e - редактирование.
 
 *** Копирование имени файла текущего буфера в clipboard.
 #+BEGIN_SRC elisp :tangle ~/.emacs.d/init.el
-  (defun copy-file-name-to-clipboard ()
-    "Copy the current buffer file name to the clipboard."
-    (interactive)
+  (defun copy-file-name-to-clipboard (arg)
+    "Copy the current buffer file name to the clipboard.
+With C-u, append the current line number as #L<N>."
+    (interactive "P")
     (let ((filename (if (equal major-mode 'dired-mode)
                         default-directory
                       (buffer-file-name))))
       (when filename
-        (kill-new filename)
-        (message "Copied buffer file name '%s' to the clipboard." filename))))
+        (let ((result (if arg
+                          (format "%s#L%d" filename (line-number-at-pos))
+                        filename)))
+          (kill-new result)
+          (message "Copied buffer file name '%s' to the clipboard." result)))))
 
 #+END_SRC
 
@@ -786,6 +802,7 @@ yas-wrap-around-region включает такое поведение.
 (key-chord-define-global "zz" 'agent-shell)
 ;; (key-chord-define-global "kk" 'agent-shell-cursor-start-agent)
 (key-chord-define-global "kk" 'agent-shell-anthropic-start-claude-code)
+(key-chord-define-global "aa" 'amadev/switch-to-agents-ibuffer)
 #+END_SRC
 
 *** Работа c unicode
