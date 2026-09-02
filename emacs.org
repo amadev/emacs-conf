@@ -224,6 +224,36 @@ make -j16
           (ibuffer-update nil t))
       (ibuffer nil "*AGENTS*" '((mode . agent-shell-mode))))))
 
+(defun amadev/clean-history ()
+  "Reset the agent-shell comint input-ring history.
+shell-maker reloads ~/.emacs.d/agent/history with `read' on every
+`agent-shell' start; once it grows large `read' hangs Emacs.  Move the
+file aside and clear the ring in any live agent-shell buffers.  With a
+prefix arg, delete outright instead of backing up."
+  (interactive)
+  (let* ((path (expand-file-name "agent/history" user-emacs-directory))
+         (size (and (file-exists-p path)
+                    (file-attribute-size (file-attributes path)))))
+    (cond
+     ((not size)
+      (message "No agent history at %s" path))
+     (current-prefix-arg
+      (delete-file path)
+      (message "Deleted %s (%s)" path (file-size-human-readable size)))
+     (t
+      (let ((bak (expand-file-name
+                  (format "agent/backup/history-%s.bak"
+                          (format-time-string "%Y%m%d-%H%M%S"))
+                  user-emacs-directory)))
+        (make-directory (file-name-directory bak) t)
+        (rename-file path bak t)
+        (message "Moved %s -> %s (%s)" path bak
+                 (file-size-human-readable size)))))
+    (dolist (buf (buffer-list))
+      (with-current-buffer buf
+        (when (derived-mode-p 'agent-shell-mode)
+          (setq-local comint-input-ring (make-ring 1)))))))
+
 (with-eval-after-load 'magit-mode #'amadev/configure-magit-display)
 (when (featurep 'magit-mode)
   (amadev/configure-magit-display))
@@ -2564,6 +2594,32 @@ https://ebzzry.io/en/emacs-pairs/#manipulation
                         (agent-shell-cwd))))
 
   (setopt agent-shell-dot-subdir-function #'amadev/agent-shell-dot-subdir)
+
+  ;; shell-maker persists comint-input-ring to ~/.emacs.d/agent/history via
+  ;; prin1 WITH text properties and no size cap, then reloads it with `read'
+  ;; on every `agent-shell' start.  That file grew to ~10 MB of #("..." ...)
+  ;; propertied-string syntax and `read' on it never returns - Emacs froze
+  ;; (C-g breakable) before any agent process spawned, for both claude and
+  ;; cursor (they share config name "agent").  Keep the ring small and
+  ;; property-free so the file stays tiny and parses instantly.
+  (defun amadev/agent-shell--slim-input-ring (ring &optional keep)
+    "Copy RING with text properties stripped, keeping at most KEEP entries."
+    (if (ring-p ring)
+        (let* ((keep (or keep 200))
+               (elems (seq-take (ring-elements ring) keep)) ; newest first
+               (slim (make-ring (max 1 (length elems)))))
+          (dolist (el (nreverse elems))
+            (ring-insert slim (if (stringp el) (substring-no-properties el) el)))
+          slim)
+      ring))
+
+  (define-advice shell-maker--write-input-ring-history
+      (:around (orig config) amadev/slim-history)
+    (let ((comint-input-ring (amadev/agent-shell--slim-input-ring comint-input-ring)))
+      (funcall orig config)))
+
+  (add-hook 'agent-shell-mode-hook
+            (lambda () (setq-local comint-input-ring-size 200)))
 
   (declare-function agent-shell--tool-call-command-to-string "agent-shell" (command))
   (declare-function agent-shell--format-buffer-name "agent-shell" (agent-name project-name))
