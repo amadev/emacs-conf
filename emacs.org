@@ -458,13 +458,32 @@ See https://oleksandrmanzyuk.wordpress.com/2011/10/23/a-persistent-command-histo
 #+END_SRC
 
 #+BEGIN_SRC elisp :tangle ~/.emacs.d/init.el
-(defun comint-write-input-ring-before-output (str)
-  (if comint-history-enabled (if str (comint-write-input-ring)))
-  str)
+(defcustom comint-input-ring-save-idle-seconds 1.0
+  "Idle time before writing the comint input ring to disk.
+Debouncing avoids blocking the UI when many lines are sent in one burst."
+  :type 'float
+  :group 'comint)
 
-(if comint-history-enabled (add-hook
-                            'comint-preoutput-filter-functions
-                            'comint-write-input-ring-before-output))
+(defvar-local comint--input-ring-save-timer nil)
+
+(defun comint--write-input-ring-from-buffer (buffer)
+  (when (buffer-live-p buffer)
+    (with-current-buffer buffer
+      (setq comint--input-ring-save-timer nil)
+      (when comint-history-enabled
+        (comint-write-input-ring)))))
+
+(defun comint-write-input-ring-after-input (_str)
+  "Schedule a debounced write of the comint input ring."
+  (when comint-history-enabled
+    (when (timerp comint--input-ring-save-timer)
+      (cancel-timer comint--input-ring-save-timer))
+    (setq comint--input-ring-save-timer
+          (run-with-idle-timer comint-input-ring-save-idle-seconds nil
+                               #'comint--write-input-ring-from-buffer
+                               (current-buffer)))))
+
+(add-hook 'comint-input-filter-functions #'comint-write-input-ring-after-input)
 #+END_SRC
 
 #+BEGIN_SRC elisp :tangle ~/.emacs.d/init.el
@@ -569,48 +588,108 @@ The line containing point is preserved in full, including its prompt."
 (defvar comint-history-file "~/.emacs.d/history.d/comint-history-%Y-%m-%d.log"
   "File where comint input/output history is stored.")
 
+(defcustom comint-log-flush-idle-seconds 0.5
+  "After this many seconds of idle time, flush queued comint log lines to disk."
+  :type 'float
+  :group 'comint)
+
+(defcustom comint-log-flush-max-pending-bytes (* 512 1024)
+  "Flush the comint log queue immediately when pending text exceeds this size.
+Avoids unbounded memory if a process floods output."
+  :type 'integer
+  :group 'comint)
+
+(defvar-local comint-log--pending nil
+  "List of (TYPE . CONTENT) log events, newest first; flushed in reverse order.")
+(defvar-local comint-log--pending-bytes 0)
+(defvar-local comint-log--flush-timer nil)
+
 (defun remove-ansi-escape-sequences (string)
-"Remove ANSI escape sequences from STRING."
-(replace-regexp-in-string "\033\\[[0-9;]*[mK]" "" string))
+  "Remove ANSI escape sequences from STRING."
+  (replace-regexp-in-string "\033\\[[0-9;]*[mK]" "" string))
 
-(defun comint-log-to-file (type content)
-  "Log the TYPE (either 'input or 'output) and CONTENT to the comint history file."
+(defun comint-log--format-record (type content buffer)
+  "Return one YAML-shaped log record as a string."
+  (let ((timestamp (format-time-string "%Y-%m-%d %H:%M:%S"))
+        (clean (replace-regexp-in-string
+                "\n" "\n    "
+                (remove-ansi-escape-sequences content)))
+        (inhibit-message t)
+        (message-log-max nil))
+    (format "- %s: %s\n  buffer: %s\n  timestamp: %s\n  content: |-\n    %s\n\n"
+            "direction" (if (eq type 'input) "input" "output")
+            (buffer-name buffer)
+            timestamp
+            clean)))
 
-  (if comint-history-enabled
-      (if (> (length content) 0)
-          (let ((cbuffer (current-buffer))
-                (history-file (format-time-string comint-history-file (current-time))))
+(defun comint-log--flush (&optional buffer)
+  "Write queued comint log events for BUFFER (default: current) to the log file."
+  (let ((buf (or buffer (current-buffer))))
+    (when (buffer-live-p buf)
+      (with-current-buffer buf
+        (when (timerp comint-log--flush-timer)
+          (cancel-timer comint-log--flush-timer)
+          (setq comint-log--flush-timer nil))
+        (when (and comint-history-enabled comint-log--pending)
+          (let* ((history-file (format-time-string comint-history-file (current-time)))
+                 (events (nreverse comint-log--pending)))
+            (setq comint-log--pending nil
+                  comint-log--pending-bytes 0)
             (with-temp-buffer
-              ;; (when (file-exists-p history-file)
-              ;;   (insert-file-contents history-file))
-              (goto-char (point-max))
-              (let ((timestamp (format-time-string "%Y-%m-%d %H:%M:%S"))
-                    (inhibit-message t)
-                    (message-log-max nil))
-                (insert (format "- %s: %s\n  buffer: %s\n  timestamp: %s\n  content: |-\n    %s\n\n"
-                                "direction" (if (eq type 'input) "input" "output")
-                                cbuffer
-                                timestamp
-                                (replace-regexp-in-string "\n" "\n    " content))))
-              (write-region (point-min) (point-max) history-file t 1))))))
+              (dolist (cell events)
+                (insert (comint-log--format-record (car cell) (cdr cell) buf)))
+              (write-region (point-min) (point-max) history-file t 1))))))))
+
+(defun comint-log--schedule-flush ()
+  "Schedule an idle flush of the comint log queue."
+  (when (timerp comint-log--flush-timer)
+    (cancel-timer comint-log--flush-timer))
+  (setq comint-log--flush-timer
+        (run-with-idle-timer comint-log-flush-idle-seconds nil
+                             #'comint-log--flush (current-buffer))))
+
+(defun comint-log--enqueue (type content)
+  "Record one log event; flush on idle or when the queue grows too large."
+  (when (and comint-history-enabled (> (length content) 0))
+    (push (cons type content) comint-log--pending)
+    (setq comint-log--pending-bytes (+ comint-log--pending-bytes (length content)))
+    (if (>= comint-log--pending-bytes comint-log-flush-max-pending-bytes)
+        (comint-log--flush)
+      (comint-log--schedule-flush))))
 
 (defun comint-log-input (input)
-  "Function to log comint input."
-  (comint-log-to-file 'input input)
+  "Queue comint input for the session log (batched disk write)."
+  (comint-log--enqueue 'input input)
   input)
 
 (defun comint-log-output (output)
-  "Function to log the first 2000 characters of comint output."
-  (let ((trimmed-output (if (> (length output) 2000)
-                            (substring output 0 2000)
-                          output)))
-    (comint-log-to-file 'output (remove-ansi-escape-sequences trimmed-output)))
+  "Queue comint output for the session log; full chunks, no truncation."
+  (comint-log--enqueue 'output output)
   output)
 
-(if comint-history-enabled (progn (add-hook 'comint-input-filter-functions 'comint-log-input)
-                                  (add-hook 'comint-output-filter-functions 'comint-log-output)))
+(defun comint-log--init-buffer-state ()
+  "Set up buffer-local comint log state and flush log on buffer kill."
+  (unless (memq #'comint-log--flush-on-kill kill-buffer-hook)
+    (setq-local comint-log--pending nil)
+    (setq-local comint-log--pending-bytes 0)
+    (add-hook 'kill-buffer-hook #'comint-log--flush-on-kill nil t))
+  (setq-local comint-log--flush-timer nil))
 
+(defun comint-log--flush-on-kill ()
+  (comint-log--flush (current-buffer)))
 
+(defun comint-log--flush-all-buffers ()
+  "Flush comint log queues in every live buffer (e.g. before Emacs exits)."
+  (dolist (buf (buffer-list))
+    (when (and (buffer-live-p buf)
+               (local-variable-p 'comint-log--pending buf)
+               (buffer-local-value 'comint-log--pending buf))
+      (comint-log--flush buf))))
+
+(add-hook 'comint-mode-hook #'comint-log--init-buffer-state)
+(add-hook 'comint-input-filter-functions #'comint-log-input)
+(add-hook 'comint-output-filter-functions #'comint-log-output)
+(add-hook 'kill-emacs-hook #'comint-log--flush-all-buffers)
 #+END_SRC
 
 **** Минибуфер
@@ -829,9 +908,14 @@ yas-wrap-around-region включает такое поведение.
 (key-chord-define-global "yy" 'ack)
 (key-chord-define-global "jj" 'ace-jump-mode)
 (key-chord-define-global "hh" 'magit-status)
-(key-chord-define-global "zz" 'agent-shell)
-;; (key-chord-define-global "kk" 'agent-shell-cursor-start-agent)
-(key-chord-define-global "kk" 'agent-shell-anthropic-start-claude-code)
+(key-chord-define-global "pp" 'agent-shell)
+(defun amadev/agent-shell-kk-dispatch (arg)
+  "Start agent-shell: with prefix arg start Cursor agent, otherwise Claude Code."
+  (interactive "P")
+  (if arg
+      (agent-shell-cursor-start-agent)
+    (agent-shell-anthropic-start-claude-code)))
+(key-chord-define-global "kk" 'amadev/agent-shell-kk-dispatch)
 (key-chord-define-global "aa" 'amadev/switch-to-agents-ibuffer)
 #+END_SRC
 
@@ -2594,6 +2678,11 @@ https://ebzzry.io/en/emacs-pairs/#manipulation
                         (agent-shell-cwd))))
 
   (setopt agent-shell-dot-subdir-function #'amadev/agent-shell-dot-subdir)
+
+  ;; Point Claude Agent SDK at ~/bin/claude.sh (skip-permissions wrapper).
+  (setopt agent-shell-anthropic-claude-environment
+          (agent-shell-make-environment-variables
+           "CLAUDE_CODE_EXECUTABLE" (expand-file-name "~/bin/claude.sh")))
 
   ;; shell-maker persists comint-input-ring to ~/.emacs.d/agent/history via
   ;; prin1 WITH text properties and no size cap, then reloads it with `read'
