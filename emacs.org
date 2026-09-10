@@ -436,7 +436,7 @@ poetry install
    comint-input-ignoredups t
    comint-input-ring-separator "$$$\n"))
 
-(defvar comint-history-enabled nil
+(defvar comint-history-enabled t
   "Wether log comint history or not.")
 #+END_SRC
 
@@ -690,6 +690,122 @@ Avoids unbounded memory if a process floods output."
 (add-hook 'comint-input-filter-functions #'comint-log-input)
 (add-hook 'comint-output-filter-functions #'comint-log-output)
 (add-hook 'kill-emacs-hook #'comint-log--flush-all-buffers)
+#+END_SRC
+
+**** Compile history
+
+Each compilation run logs its command as an input record and its process
+output as output records, mirroring the comint session log format above.
+Records are flushed on idle, on buffer kill, or when the queue exceeds
+=compile-log-flush-max-pending-bytes=.
+
+#+BEGIN_SRC elisp :tangle ~/.emacs.d/init.el
+(require 'compile)
+
+(defvar compile-history-file "~/.emacs.d/history.d/compile-history-%Y-%m-%d.log"
+  "File where compile-mode command/output history is stored.")
+
+(defcustom compile-log-flush-idle-seconds 0.5
+  "After this many seconds of idle time, flush queued compile log lines to disk."
+  :type 'float
+  :group 'compile)
+
+(defcustom compile-log-flush-max-pending-bytes (* 512 1024)
+  "Flush the compile log queue immediately when pending text exceeds this size.
+Avoids unbounded memory if a compile floods output."
+  :type 'integer
+  :group 'compile)
+
+(defvar-local compile-log--pending nil
+  "List of (TYPE . CONTENT) log events, newest first; flushed in reverse order.")
+(defvar-local compile-log--pending-bytes 0)
+(defvar-local compile-log--flush-timer nil)
+
+(defun compile-log--format-record (type content buffer)
+  "Return one YAML-shaped log record as a string."
+  (let ((timestamp (format-time-string "%Y-%m-%d %H:%M:%S"))
+        (clean (replace-regexp-in-string
+                "\n" "\n    "
+                (remove-ansi-escape-sequences content)))
+        (inhibit-message t)
+        (message-log-max nil))
+    (format "- %s: %s\n  buffer: %s\n  timestamp: %s\n  content: |-\n    %s\n\n"
+            "direction" (if (eq type 'input) "input" "output")
+            (buffer-name buffer)
+            timestamp
+            clean)))
+
+(defun compile-log--flush (&optional buffer)
+  "Write queued compile log events for BUFFER (default: current) to the log file."
+  (let ((buf (or buffer (current-buffer))))
+    (when (buffer-live-p buf)
+      (with-current-buffer buf
+        (when (timerp compile-log--flush-timer)
+          (cancel-timer compile-log--flush-timer)
+          (setq compile-log--flush-timer nil))
+        (when compile-log--pending
+          (let* ((history-file (format-time-string compile-history-file (current-time)))
+                 (events (nreverse compile-log--pending)))
+            (setq compile-log--pending nil
+                  compile-log--pending-bytes 0)
+            (with-temp-buffer
+              (dolist (cell events)
+                (insert (compile-log--format-record (car cell) (cdr cell) buf)))
+              (write-region (point-min) (point-max) history-file t 1))))))))
+
+(defun compile-log--schedule-flush ()
+  "Schedule an idle flush of the compile log queue."
+  (when (timerp compile-log--flush-timer)
+    (cancel-timer compile-log--flush-timer))
+  (setq compile-log--flush-timer
+        (run-with-idle-timer compile-log-flush-idle-seconds nil
+                             #'compile-log--flush (current-buffer))))
+
+(defun compile-log--enqueue (type content)
+  "Record one log event; flush on idle or when the queue grows too large."
+  (when (> (length content) 0)
+    (push (cons type content) compile-log--pending)
+    (setq compile-log--pending-bytes (+ compile-log--pending-bytes (length content)))
+    (if (>= compile-log--pending-bytes compile-log-flush-max-pending-bytes)
+        (compile-log--flush)
+      (compile-log--schedule-flush))))
+
+(defun compile-log--start (_proc)
+  "Record the compile command as an input record for the session log."
+  (when-let ((cmd (car compilation-arguments)))
+    (compile-log--enqueue 'input cmd)))
+
+(defun compile-log--filter ()
+  "Record one newly inserted chunk of compile output."
+  (let ((start compilation-filter-start)
+        (end (point)))
+    (when (> end start)
+      (compile-log--enqueue 'output
+                            (buffer-substring-no-properties start end)))))
+
+(defun compile-log--init-buffer-state ()
+  "Set up buffer-local compile log state and flush log on buffer kill."
+  (unless (memq #'compile-log--flush-on-kill kill-buffer-hook)
+    (setq-local compile-log--pending nil)
+    (setq-local compile-log--pending-bytes 0)
+    (add-hook 'kill-buffer-hook #'compile-log--flush-on-kill nil t))
+  (setq-local compile-log--flush-timer nil))
+
+(defun compile-log--flush-on-kill ()
+  (compile-log--flush (current-buffer)))
+
+(defun compile-log--flush-all-buffers ()
+  "Flush compile log queues in every live buffer (e.g. before Emacs exits)."
+  (dolist (buf (buffer-list))
+    (when (and (buffer-live-p buf)
+               (local-variable-p 'compile-log--pending buf)
+               (buffer-local-value 'compile-log--pending buf))
+      (compile-log--flush buf))))
+
+(add-hook 'compilation-mode-hook #'compile-log--init-buffer-state)
+(add-hook 'compilation-start-hook #'compile-log--start)
+(add-hook 'compilation-filter-hook #'compile-log--filter)
+(add-hook 'kill-emacs-hook #'compile-log--flush-all-buffers)
 #+END_SRC
 
 **** Минибуфер
