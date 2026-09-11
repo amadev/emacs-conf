@@ -1907,6 +1907,14 @@ Plain numbers default to minutes."
 (use-package org-contrib)
 #+END_SRC
 
+Org files (e.g. log.org) can legitimately contain very long lines. Don't let
+=so-long= flip them to a read-only pseudo-mode when that happens.
+#+BEGIN_SRC elisp :tangle ~/.emacs.d/init.el
+(with-eval-after-load 'so-long
+  (setq so-long-target-modes (delq 'org-mode so-long-target-modes))
+  (setq so-long-target-modes (delq 'text-mode so-long-target-modes)))
+#+END_SRC
+
 Устанавливаем org-plus-contrib, нужно обновлять в чистом emacs
 или удалять файлы elc при ошибках компиляции.
 
