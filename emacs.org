@@ -1135,20 +1135,73 @@ M-$ - исправление первого слова с ошибкой пос�
 (global-set-key (kbd "M-w") 'clipboard-kill-ring-save)
 (global-set-key (kbd "C-y") 'clipboard-yank)
 
-;; Qt apps (e.g. Telegram Desktop) often fail to paste from Emacs' full
-;; CLIPBOARD TARGETS list (MIME text/plain* plus metadata like FILE_NAME).
-;; Keep only classic ICCCM text atoms — same profile that works with xsel —
-;; so Emacs owns CLIPBOARD directly without an external mirror process.
+;; M-w stays native Emacs. Telegram/Qt often won't paste from Emacs as
+;; CLIPBOARD owner — use C-M-w when you need a plain system clipboard via xclip.
 (when (fboundp 'my/xsel-set-clipboard)
   (advice-remove 'gui-select-text #'my/xsel-set-clipboard)
   (fmakunbound 'my/xsel-set-clipboard))
-(setq selection-converter-alist
-      (seq-filter
-       (lambda (elt)
-         (memq (car elt)
-               '(TEXT COMPOUND_TEXT STRING UTF8_STRING
-                 TARGETS LENGTH DELETE SAVE_TARGETS)))
-       selection-converter-alist))
+(when (fboundp 'my/gui-select-text-plain)
+  (fmakunbound 'my/gui-select-text-plain))
+(setq interprogram-cut-function #'gui-select-text)
+
+(defun my/xclip-set-clipboard (text)
+  "Make xclip own CLIPBOARD with plain TEXT (no text properties)."
+  (unless (executable-find "xclip")
+    (user-error "xclip not found"))
+  (when (and (display-graphic-p) (stringp text) (> (length text) 0))
+    (let* ((process-connection-type nil)
+           (coding-system-for-write 'utf-8-unix)
+           (text (substring-no-properties text))
+           (proc (start-process "xclip-clipboard" nil
+                                "xclip" "-selection" "clipboard"
+                                "-in" "-silent"
+                                "-t" "text/plain;charset=utf-8")))
+      (set-process-query-on-exit-flag proc nil)
+      (process-send-string proc text)
+      (process-send-eof proc))))
+
+(defun my/clipboard-kill-ring-save-plain (beg end &optional region)
+  "Like `clipboard-kill-ring-save', but CLIPBOARD via plain xclip (for Telegram).
+Also pushes onto the kill-ring. PRIMARY is left alone."
+  (interactive (list (mark) (point) 'region))
+  (let ((text (if region
+                  (funcall region-extract-function nil)
+                (filter-buffer-substring beg end))))
+    (when (or (not text) (string-empty-p text))
+      (user-error "Empty region"))
+    (kill-new text)
+    (my/xclip-set-clipboard text)
+    (setq deactivate-mark t)
+    (message "Copied plain (%d chars)" (length text))))
+
+(global-set-key (kbd "C-M-w") #'my/clipboard-kill-ring-save-plain)
+
+(defun my/latest-screenshot-path (&optional n)
+  "Absolute path of the Nth newest file in ~/Pictures/Screenshots (default 1)."
+  (let* ((n (or n 1))
+         (dir (expand-file-name "~/Pictures/Screenshots/"))
+         (files (directory-files dir t directory-files-no-dot-files-regexp t))
+         (sorted
+          (sort files
+                (lambda (a b)
+                  (time-less-p
+                   (file-attribute-modification-time (file-attributes b))
+                   (file-attribute-modification-time (file-attributes a)))))))
+    (when (or (< n 1) (> n (length sorted)))
+      (user-error "No screenshot N=%s in %s" n dir))
+    (nth (1- n) sorted)))
+
+(defun my/insert-latest-screenshot-link (&optional n)
+  "Insert org-link to Nth newest screenshot; also `kill-new' it.
+N defaults to 1 (newest). Digits set N: M-2 <f2> = second newest,
+M-3 <f2> = third, and so on."
+  (interactive "p")
+  (let ((link (format "[[%s]]" (my/latest-screenshot-path n))))
+    (kill-new link)
+    (insert link)
+    (message "%s" link)))
+
+(global-set-key (kbd "<f2>") #'my/insert-latest-screenshot-link)
 
 (global-set-key (kbd "C-x r t") 'inline-string-rectangle)
 (global-set-key (kbd "C-<") 'mark-previous-like-this)
