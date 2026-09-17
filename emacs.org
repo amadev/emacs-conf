@@ -1830,6 +1830,99 @@ Plain numbers default to minutes."
 (load "~/files/prog/shm/shm.el")
 #+END_SRC
 
+*** Sob env switching
+
+Быстрое переключение между Sob k8s окружениями (аналог `~/bin/l`
+из шелла), после чего credentials.yaml открывается на
+редактирование бесшовно: `sops` сам расшифровывает файл, отдаёт
+его на редактирование в этот же Emacs (через `emacsclient` как
+$EDITOR) и зашифровывает обратно при выходе (C-x # / server-edit).
+Если credentials.yaml нет — просто открывается dired. Список
+окружений парсится прямо из `~/bin/l`, чтобы не дублировать его
+тут. `AWS_PROFILE` выставляется в самом Emacs после успешного tsh
+login, поэтому sops берёт правильные AWS-ключи для KMS.
+
+#+BEGIN_SRC elisp :tangle ~/.emacs.d/init.el
+(defun amadev/sob-envs ()
+  "Parse ~/bin/l for l-<env> functions, return alist of (env . dir)."
+  (let (envs)
+    (with-temp-buffer
+      (insert-file-contents "~/bin/l")
+      (goto-char (point-min))
+      (while (re-search-forward "^function l-\\([a-zA-Z0-9_-]+\\)()" nil t)
+        (let ((name (match-string 1)))
+          (when (re-search-forward "l-_go [^ ]+ [^ ]+ \\([^ \"]+\\)" (line-end-position 2) t)
+            (push (cons name (expand-file-name (match-string 1))) envs)))))
+    (nreverse envs)))
+
+(setq sob-env-history nil)
+
+(defun amadev/sops-edit-sentinel (proc _event)
+  (unless (process-live-p proc)
+    (let ((file (process-get proc 'sops-file))
+          (buf (process-buffer proc))
+          ;; sops exits 0 on a saved re-encrypt, 200 when the editor
+          ;; closed without any changes -- both are success.
+          (code (process-exit-status proc)))
+      (if (memq code '(0 200))
+          (progn
+            (message "sops: done editing %s" file)
+            (when (buffer-live-p buf) (kill-buffer buf)))
+        (message "sops failed for %s (exit %s), see buffer %s" file code (buffer-name buf))))))
+
+(defun amadev/sops-edit-file (file)
+  "Edit sops-encrypted FILE seamlessly.
+Runs `sops FILE', with $EDITOR pointed at `emacsclient' so this
+running Emacs is used to edit the decrypted contents; finish
+editing with `server-edit' (C-x #) and sops re-encrypts FILE in
+place using the AWS_PROFILE already set in this Emacs session."
+  (let ((process-environment (cons "EDITOR=emacsclient" process-environment))
+        proc)
+    (message "sops: decrypting %s (edit, then C-x # to save & re-encrypt)" file)
+    (setq proc (start-process "sops-edit" (generate-new-buffer " *sops-edit*")
+                               "sops" (expand-file-name file)))
+    (process-put proc 'sops-file file)
+    (set-process-sentinel proc #'amadev/sops-edit-sentinel)))
+
+(defun amadev/l-switch-env-sentinel (proc _event)
+  (unless (process-live-p proc)
+    (let ((env (process-get proc 'sob-env))
+          (dir (process-get proc 'sob-dir))
+          (profile (with-current-buffer (process-buffer proc) (buffer-string)))
+          (ok (zerop (process-exit-status proc))))
+      (kill-buffer (process-buffer proc))
+      (if (not ok)
+          (message "Failed to switch to Sob env %s" env)
+        (setenv "AWS_PROFILE" profile)
+        (let ((cred (expand-file-name "credentials.yaml" dir)))
+          (if (file-exists-p cred)
+              (amadev/sops-edit-file cred)
+            (dired dir)))
+        (message "Switched to Sob env %s (AWS_PROFILE=%s)" env profile)))))
+
+(defun amadev/l-switch-env (env)
+  "Switch Sob k8s env to ENV via ~/bin/l, then open its credentials.yaml (or dired)."
+  (interactive
+   (list (helm-comp-read "Sob env: " (mapcar #'car (amadev/sob-envs))
+                         :history 'sob-env-history)))
+  (let* ((dir (cdr (assoc env (amadev/sob-envs))))
+         (buf (generate-new-buffer " *l-switch-env*"))
+         proc)
+    (unless dir (error "Unknown Sob env: %s" env))
+    (message "Switching to Sob env %s..." env)
+    (setq proc
+          (make-process
+           :name "l-switch-env"
+           :buffer buf
+           :command (list "bash" "-c"
+                           (format "source ~/bin/l && l-%s >/dev/null 2>&1 && printf '%%s' \"$AWS_PROFILE\"" env))
+           :sentinel #'amadev/l-switch-env-sentinel))
+    (process-put proc 'sob-env env)
+    (process-put proc 'sob-dir dir)))
+
+(global-set-key (kbd "C-; e") 'amadev/l-switch-env)
+#+END_SRC
+
 *** Run current file
 
 Запуск текущего файла в compilation mode.
